@@ -1,0 +1,87 @@
+@import url('https://fonts.googleapis.com/css2?family=Montserrat:wght@300;400;500;600;700;800;900&family=Raleway:wght@300;400;500;600;700;800;900&display=swap');
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --background: 16 15 45; /* #100f2d */
+    --foreground: 255 255 255;
+    --card: 35 32 89; /* #232059 */
+    --card-foreground: 255 255 255;
+    --popover: 35 32 89;
+    --popover-foreground: 255 255 255;
+    --primary: 78 149 215; /* #4e95d7 */
+    --primary-foreground: 255 255 255;
+    --secondary: 64 64 129; /* #404081 */
+    --secondary-foreground: 255 255 255;
+    --muted: 64 64 129;
+    --muted-foreground: 163 163 163;
+    --accent: 81 117 187; /* #5175bb */
+    --accent-foreground: 255 255 255;
+    --destructive: 239 68 68;
+    --destructive-foreground: 255 255 255;
+    --border: 64 64 129;
+    --input: 64 64 129;
+    --ring: 78 149 215;
+    --radius: 0.5rem;
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+  body {
+    @apply bg-background text-foreground font-montserrat;
+    background: linear-gradient(180deg, #100f2d 0%, #232059 50%, #404081 100%);
+    min-height: 100vh;
+  }
+  h1, h2, h3, h4, h5, h6 {
+    @apply font-raleway;
+  }
+}
+
+@layer utilities {
+  .font-montserrat {
+    font-family: 'Montserrat', sans-serif;
+  }
+  .font-raleway {
+    font-family: 'Raleway', sans-serif;
+  }
+  .gradient-text {
+    background: linear-gradient(135deg, #ff6b9d, #c44569, #6c5ce7, #74b9ff);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+  .cosmic-bg {
+    background:
+      radial-gradient(ellipse at 20% 50%, rgba(78, 149, 215, 0.4) 0%, transparent 50%),
+      radial-gradient(ellipse at 80% 20%, rgba(156, 39, 176, 0.3) 0%, transparent 50%),
+      radial-gradient(ellipse at 40% 80%, rgba(63, 81, 181, 0.3) 0%, transparent 50%),
+      linear-gradient(135deg, #100f2d 0%, #232059 50%, #404081 100%);
+    position: relative;
+  }
+  .cosmic-bg::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-image:
+      radial-gradient(circle at 25% 25%, white 1px, transparent 1px),
+      radial-gradient(circle at 75% 75%, white 1px, transparent 1px),
+      radial-gradient(circle at 50% 10%, white 1px, transparent 1px),
+      radial-gradient(circle at 10% 60%, white 1px, transparent 1px),
+      radial-gradient(circle at 90% 40%, white 1px, transparent 1px);
+    background-size: 100px 100px, 120px 120px, 80px 80px, 150px 150px, 90px 90px;
+    opacity: 0.4;
+    pointer-events: none;
+  }
+  .magical-glow {
+    box-shadow: 0 0 20px rgba(78, 149, 215, 0.3), 0 0 40px rgba(156, 39, 176, 0.2);
+  }
+}
