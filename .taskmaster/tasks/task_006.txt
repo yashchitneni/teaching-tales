@@ -1,0 +1,11 @@
+# Task ID: 6
+# Title: Create book creation wizard - Character selection
+# Status: pending
+# Dependencies: 5 (Not found)
+# Priority: high
+# Description: Build the character selection step of book creation
+# Details:
+Display characters based on selected universe, implement card selection UI with character images, maintain selection state, and enable progression to next step.
+
+# Test Strategy:
+

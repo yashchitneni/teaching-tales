@@ -24,10 +24,10 @@ export default function HomePage() {
         {/* Desktop Navigation */}
         <nav className="hidden md:flex items-center gap-8">
           <a href="#" className="text-white hover:text-primary transition-colors">Feedback</a>
-          <a href="#" className="text-white hover:text-primary transition-colors">Login</a>
-          <button className="bg-primary hover:bg-primary/90 text-white px-6 py-2 rounded-lg font-medium transition-colors magical-glow">
+          <a href="/login" className="text-white hover:text-primary transition-colors">Login</a>
+          <a href="/login" className="bg-primary hover:bg-primary/90 text-white px-6 py-2 rounded-lg font-medium transition-colors magical-glow">
             SIGN UP
-          </button>
+          </a>
         </nav>
 
         {/* Mobile Menu Button */}
@@ -45,10 +45,10 @@ export default function HomePage() {
           <div className="absolute top-full left-0 right-0 bg-card/95 backdrop-blur-sm border-t border-secondary/30 md:hidden">
             <nav className="flex flex-col p-6 gap-4">
               <a href="#" className="text-white hover:text-primary transition-colors">Feedback</a>
-              <a href="#" className="text-white hover:text-primary transition-colors">Login</a>
-              <button className="bg-primary hover:bg-primary/90 text-white px-6 py-2 rounded-lg font-medium transition-colors text-left">
+              <a href="/login" className="text-white hover:text-primary transition-colors">Login</a>
+              <a href="/login" className="bg-primary hover:bg-primary/90 text-white px-6 py-2 rounded-lg font-medium transition-colors text-left block">
                 SIGN UP
-              </button>
+              </a>
             </nav>
           </div>
         )}
@@ -67,9 +67,9 @@ export default function HomePage() {
               Create stories with characters from Harry Potter, Pokémon, and more. Our AI-driven adventures
               keep kids engaged and adapt to their reading level for real growth.
             </p>
-            <button className="bg-primary hover:bg-primary/90 text-white px-8 py-4 rounded-lg text-lg font-semibold transition-colors magical-glow">
+            <a href="/login" className="inline-block bg-primary hover:bg-primary/90 text-white px-8 py-4 rounded-lg text-lg font-semibold transition-colors magical-glow">
               TRY BETA FOR FREE
-            </button>
+            </a>
           </div>
           <div className="mt-16 relative z-10">
             <Image

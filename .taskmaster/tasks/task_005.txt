@@ -1,0 +1,11 @@
+# Task ID: 5
+# Title: Create book creation wizard - Universe selection
+# Status: pending
+# Dependencies: 4 (Not found)
+# Priority: high
+# Description: Build the first step of book creation for selecting story universe
+# Details:
+Create card-based selection UI for universes (Pokemon, Mario, etc.), implement visual selection states, add navigation controls (Next button), and store selection in state.
+
+# Test Strategy:
+

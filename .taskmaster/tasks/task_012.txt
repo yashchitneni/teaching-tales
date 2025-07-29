@@ -1,0 +1,11 @@
+# Task ID: 12
+# Title: Build reading summary and analytics
+# Status: pending
+# Dependencies: 11 (Not found)
+# Priority: medium
+# Description: Create performance tracking and summary screens
+# Details:
+Calculate and display reading speed metrics, show quiz performance results, track overall progress, and store analytics data for parent review.
+
+# Test Strategy:
+

@@ -1,0 +1,11 @@
+# Task ID: 11
+# Title: Create chapter quiz functionality
+# Status: pending
+# Dependencies: 10 (Not found)
+# Priority: medium
+# Description: Build end-of-chapter quiz system
+# Details:
+Design quiz interface with multiple questions, implement answer tracking and scoring, create quiz completion flow, and transition to reading summary screen.
+
+# Test Strategy:
+

@@ -1,0 +1,11 @@
+# Task ID: 14
+# Title: Add progress tracking and streaks
+# Status: pending
+# Dependencies: 12 (Not found)
+# Priority: low
+# Description: Implement reading streak and progress tracking features
+# Details:
+Create streak calculation logic, build streak display UI, implement daily reading reminders, track books completed and questions answered, and create progress visualization.
+
+# Test Strategy:
+

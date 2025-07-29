@@ -1,0 +1,11 @@
+# Task ID: 7
+# Title: Create book creation wizard - Story spark selection
+# Status: pending
+# Dependencies: 6 (Not found)
+# Priority: high
+# Description: Build the story prompt selection interface
+# Details:
+Create cards with story spark options, implement selection mechanism, add 'Create Book' final action button, and prepare data for story generation API call.
+
+# Test Strategy:
+

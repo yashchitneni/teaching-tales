@@ -1,0 +1,11 @@
+# Task ID: 2
+# Title: Create database schema and models
+# Status: pending
+# Dependencies: None
+# Priority: high
+# Description: Design and implement database schema for users, children, stories, and progress tracking
+# Details:
+Create models for: Parent users, Child profiles (linked to parents), Generated stories, Reading progress, Quiz results, and Story preferences. Set up PostgreSQL with Prisma ORM.
+
+# Test Strategy:
+

@@ -1,0 +1,11 @@
+# Task ID: 8
+# Title: Integrate AI story generation service
+# Status: pending
+# Dependencies: 7 (Not found)
+# Priority: high
+# Description: Connect to AI service for generating personalized stories
+# Details:
+Set up API integration with story generation service (OpenAI/Claude API), implement prompt engineering based on selections, handle story generation requests, and implement error handling and loading states.
+
+# Test Strategy:
+

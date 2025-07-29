@@ -1,0 +1,148 @@
+{
+  "master": {
+    "tasks": [
+      {
+        "id": "1",
+        "title": "Set up authentication system with Google OAuth",
+        "description": "Implement Google OAuth authentication for parent accounts",
+        "details": "Set up NextAuth.js with Google provider, create authentication pages for sign in/sign up, implement session management, and create protected routes. Ensure proper error handling and user feedback.",
+        "priority": "high",
+        "status": "pending",
+        "dependencies": []
+      },
+      {
+        "id": "2", 
+        "title": "Create database schema and models",
+        "description": "Design and implement database schema for users, children, stories, and progress tracking",
+        "details": "Create models for: Parent users, Child profiles (linked to parents), Generated stories, Reading progress, Quiz results, and Story preferences. Set up PostgreSQL with Prisma ORM.",
+        "priority": "high",
+        "status": "pending",
+        "dependencies": []
+      },
+      {
+        "id": "3",
+        "title": "Build child account creation flow",
+        "description": "Implement the interface for parents to create child profiles",
+        "details": "Create form for child details (first name, last name, grade, email), implement validation, connect to database, and show onboarding modal after account creation. Include streak initialization.",
+        "priority": "high",
+        "status": "pending",
+        "dependencies": ["1", "2"]
+      },
+      {
+        "id": "4",
+        "title": "Design and implement main dashboard",
+        "description": "Create the main dashboard showing child profiles and book library",
+        "details": "Build dashboard layout with navigation, display child account switcher, show book library/history, implement 'Create New Book' CTA, and display reading streak information.",
+        "priority": "medium",
+        "status": "pending",
+        "dependencies": ["3"]
+      },
+      {
+        "id": "5",
+        "title": "Create book creation wizard - Universe selection",
+        "description": "Build the first step of book creation for selecting story universe",
+        "details": "Create card-based selection UI for universes (Pokemon, Mario, etc.), implement visual selection states, add navigation controls (Next button), and store selection in state.",
+        "priority": "high",
+        "status": "pending",
+        "dependencies": ["4"]
+      },
+      {
+        "id": "6",
+        "title": "Create book creation wizard - Character selection",
+        "description": "Build the character selection step of book creation",
+        "details": "Display characters based on selected universe, implement card selection UI with character images, maintain selection state, and enable progression to next step.",
+        "priority": "high",
+        "status": "pending",
+        "dependencies": ["5"]
+      },
+      {
+        "id": "7",
+        "title": "Create book creation wizard - Story spark selection",
+        "description": "Build the story prompt selection interface",
+        "details": "Create cards with story spark options, implement selection mechanism, add 'Create Book' final action button, and prepare data for story generation API call.",
+        "priority": "high",
+        "status": "pending",
+        "dependencies": ["6"]
+      },
+      {
+        "id": "8",
+        "title": "Integrate AI story generation service",
+        "description": "Connect to AI service for generating personalized stories",
+        "details": "Set up API integration with story generation service (OpenAI/Claude API), implement prompt engineering based on selections, handle story generation requests, and implement error handling and loading states.",
+        "priority": "high",
+        "status": "pending",
+        "dependencies": ["7"]
+      },
+      {
+        "id": "9",
+        "title": "Build interactive reading interface",
+        "description": "Create the dual-pane reading interface with story and questions",
+        "details": "Implement two-column layout (story left, questions right), add text highlighting for nouns/adjectives, implement progressive content reveal with blur effect, and create smooth scrolling behavior.",
+        "priority": "high",
+        "status": "pending",
+        "dependencies": ["8"]
+      },
+      {
+        "id": "10",
+        "title": "Implement question-answer system",
+        "description": "Build the interactive Q&A functionality that unlocks content",
+        "details": "Generate contextual questions based on story content, implement multiple choice UI, validate answers with visual feedback, unlock next story section on correct answer, and handle incorrect answer attempts.",
+        "priority": "high",
+        "status": "pending",
+        "dependencies": ["9"]
+      },
+      {
+        "id": "11",
+        "title": "Create chapter quiz functionality",
+        "description": "Build end-of-chapter quiz system",
+        "details": "Design quiz interface with multiple questions, implement answer tracking and scoring, create quiz completion flow, and transition to reading summary screen.",
+        "priority": "medium",
+        "status": "pending",
+        "dependencies": ["10"]
+      },
+      {
+        "id": "12",
+        "title": "Build reading summary and analytics",
+        "description": "Create performance tracking and summary screens",
+        "details": "Calculate and display reading speed metrics, show quiz performance results, track overall progress, and store analytics data for parent review.",
+        "priority": "medium",
+        "status": "pending",
+        "dependencies": ["11"]
+      },
+      {
+        "id": "13",
+        "title": "Implement story path selection",
+        "description": "Build the 'What happens next?' branching story feature",
+        "details": "Create UI for displaying path options at chapter end, implement selection mechanism, integrate with story generation for next chapter, and maintain story continuity.",
+        "priority": "medium",
+        "status": "pending",
+        "dependencies": ["11"]
+      },
+      {
+        "id": "14",
+        "title": "Add progress tracking and streaks",
+        "description": "Implement reading streak and progress tracking features",
+        "details": "Create streak calculation logic, build streak display UI, implement daily reading reminders, track books completed and questions answered, and create progress visualization.",
+        "priority": "low",
+        "status": "pending",
+        "dependencies": ["12"]
+      },
+      {
+        "id": "15",
+        "title": "Polish UI/UX and responsive design",
+        "description": "Refine the user interface and ensure mobile responsiveness",
+        "details": "Implement purple/violet color scheme consistently, ensure tablet and mobile responsiveness, add smooth transitions and animations, optimize loading states, and conduct usability testing.",
+        "priority": "low",
+        "status": "pending",
+        "dependencies": ["14"]
+      }
+    ],
+    "metadata": {
+      "name": "TeachTales Clone Development",
+      "description": "Building an educational story platform for children with AI-generated content",
+      "projectRoot": "/Users/yashchitneni/Development/Cursor Projects/current-projects/teaching-tales",
+      "createdAt": "2025-07-29",
+      "lastUpdated": "2025-07-29"
+    }
+  }
+}

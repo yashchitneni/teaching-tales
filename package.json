@@ -10,6 +10,8 @@
     "format": "bunx biome format --write"
   },
   "dependencies": {
+    "@radix-ui/react-slot": "^1.2.3",
+    "@supabase/supabase-js": "^2.53.0",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
     "lucide-react": "^0.475.0",
@@ -28,7 +30,9 @@
     "@types/react-dom": "^18.3.7",
     "eslint": "^9.27.0",
     "eslint-config-next": "15.1.7",
+    "playwright": "^1.54.1",
     "postcss": "^8.5.3",
+    "puppeteer": "^24.15.0",
     "tailwindcss": "^3.4.17",
     "typescript": "^5.8.3"
   }

@@ -1,0 +1,11 @@
+# Task ID: 4
+# Title: Design and implement main dashboard
+# Status: pending
+# Dependencies: 3 (Not found)
+# Priority: medium
+# Description: Create the main dashboard showing child profiles and book library
+# Details:
+Build dashboard layout with navigation, display child account switcher, show book library/history, implement 'Create New Book' CTA, and display reading streak information.
+
+# Test Strategy:
+

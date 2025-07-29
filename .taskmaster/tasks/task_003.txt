@@ -1,0 +1,11 @@
+# Task ID: 3
+# Title: Build child account creation flow
+# Status: pending
+# Dependencies: 1 (Not found), 2 (Not found)
+# Priority: high
+# Description: Implement the interface for parents to create child profiles
+# Details:
+Create form for child details (first name, last name, grade, email), implement validation, connect to database, and show onboarding modal after account creation. Include streak initialization.
+
+# Test Strategy:
+

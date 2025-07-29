@@ -1,0 +1,104 @@
+Project: TeachTales - Educational Story Platform Clone
+
+OVERALL DESCRIPTION:
+TeachTales is an educational platform that creates personalized, interactive stories for children. The platform allows parents to create child accounts and generates custom stories based on selected universes (like Pokemon), characters, and story prompts. Each story includes educational elements with interactive questions that unlock content progressively. The application tracks reading progress and provides learning analytics.
+
+TARGET AUDIENCE:
+- Primary: Parents managing educational content for their children (ages 6-12)
+- Secondary: Children who will be reading and interacting with the stories
+
+MAIN USER SCENARIOS:
+
+1. Parent Authentication and Setup
+   - Parents sign up/sign in using Google authentication
+   - Create child profiles with name, grade level, and email
+   - Manage multiple child accounts under one parent account
+
+2. Story Creation and Customization
+   - Select from various story universes (Pokemon, Mario, etc.)
+   - Choose specific characters within each universe
+   - Pick story "sparks" (prompts) that guide the narrative direction
+   - Generate unique AI-powered stories based on selections
+
+3. Interactive Reading Experience
+   - Read generated stories in a dual-pane interface
+   - Answer comprehension questions that unlock story sections
+   - Highlighted vocabulary words (nouns/adjectives) for learning
+   - Progressive reveal of content based on correct answers
+
+4. Learning Assessment
+   - Complete chapter quizzes after each story section
+   - Track reading speed and comprehension metrics
+   - View performance summaries and progress reports
+   - Choose story paths to influence narrative direction
+
+5. Progress Tracking
+   - Maintain reading streaks to encourage daily use
+   - Track books read and questions answered
+   - Monitor child's learning progress over time
+
+FUNCTIONAL REQUIREMENTS:
+
+Authentication System:
+- Google OAuth integration for parent accounts
+- Session management and secure token handling
+- Multi-child account support per parent
+
+Content Generation:
+- AI-powered story generation based on universe/character/prompt selections
+- Dynamic question generation related to story content
+- Multiple choice options for story progression
+
+Interactive Features:
+- Text highlighting for educational vocabulary
+- Progressive content unlock mechanism
+- Real-time answer validation
+- Visual feedback for correct/incorrect answers
+
+User Interface:
+- Responsive design for tablet and desktop use
+- Clean, child-friendly visual design
+- Purple/violet primary color scheme
+- Intuitive navigation between sections
+
+Data Management:
+- Store user profiles and child accounts
+- Track reading history and progress
+- Save quiz scores and performance metrics
+- Maintain story state between sessions
+
+TECHNICAL REQUIREMENTS:
+- Modern web application using Next.js framework
+- TypeScript for type safety
+- Tailwind CSS for styling
+- Responsive design principles
+- RESTful API architecture
+- Database for user and content storage
+- Integration with AI story generation service
+- Real-time state management
+- Progressive web app capabilities
+
+QUALITY REQUIREMENTS:
+- Page load times under 3 seconds
+- Mobile-responsive design
+- Accessibility compliance (WCAG 2.1 AA)
+- Cross-browser compatibility
+- Data privacy compliance for children's information
+- Smooth animations and transitions
+- Error handling with user-friendly messages
+
+KEY DIFFERENTIATORS:
+- Personalized story generation based on child interests
+- Educational focus with integrated learning assessments
+- Progressive content reveal to maintain engagement
+- Visual vocabulary highlighting for learning
+- Parent-controlled content creation
+- Streak system for habit building
+
+SUCCESS METRICS:
+- User retention rate (daily active users)
+- Story completion rates
+- Quiz performance improvements over time
+- Reading streak maintenance
+- Parent satisfaction scores
+- Child engagement metrics
