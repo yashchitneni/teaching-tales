@@ -1,63 +1,47 @@
 'use client'
 
-import { useState, useEffect } from "react"
-import { Button } from "@/components/ui/button"
-import { SelectableCard, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import Link from "next/link"
-import { useRouter } from "next/navigation"
+import { useState } from 'react'
+import { useRouter, useSearchParams } from 'next/navigation'
+import { Button } from '@/components/ui/button'
+import { TopNavWithTabs } from '@/components/TopNavWithTabs'
+import { FeedbackButton } from '@/components/FeedbackButton'
 
 interface Character {
   id: string
   name: string
-  description: string
   image: string
+  isSpecial?: boolean
+  isCustom?: boolean
 }
 
-const charactersByUniverse: Record<string, Character[]> = {
-  pokemon: [
-    { id: "pikachu", name: "Pikachu", description: "Electric mouse Pokemon", image: "⚡" },
-    { id: "charizard", name: "Charizard", description: "Fire/Flying dragon Pokemon", image: "🔥" },
-    { id: "bulbasaur", name: "Bulbasaur", description: "Grass/Poison Pokemon", image: "🌱" },
-    { id: "squirtle", name: "Squirtle", description: "Water turtle Pokemon", image: "💧" },
-    { id: "eevee", name: "Eevee", description: "Evolution Pokemon", image: "🦊" },
-    { id: "mewtwo", name: "Mewtwo", description: "Psychic Pokemon", image: "🔮" }
-  ],
-  mario: [
-    { id: "mario", name: "Mario", description: "The famous plumber", image: "👨" },
-    { id: "luigi", name: "Luigi", description: "Mario's brother", image: "👨" },
-    { id: "peach", name: "Princess Peach", description: "Princess of Mushroom Kingdom", image: "👸" },
-    { id: "yoshi", name: "Yoshi", description: "Mario's dinosaur friend", image: "🦕" },
-    { id: "bowser", name: "Bowser", description: "King of the Koopas", image: "🐢" },
-    { id: "toad", name: "Toad", description: "Mushroom Kingdom resident", image: "🍄" }
-  ],
-  "harry-potter": [
-    { id: "harry", name: "Harry Potter", description: "The Boy Who Lived", image: "⚡" },
-    { id: "hermione", name: "Hermione Granger", description: "The brightest witch", image: "📚" },
-    { id: "ron", name: "Ron Weasley", description: "Harry's best friend", image: "♟️" },
-    { id: "dumbledore", name: "Albus Dumbledore", description: "Hogwarts Headmaster", image: "🧙" },
-    { id: "hagrid", name: "Rubeus Hagrid", description: "Keeper of Keys", image: "🗝️" },
-    { id: "snape", name: "Severus Snape", description: "Potions Master", image: "🧪" }
-  ],
-  // Add more characters for other universes...
-}
+const characters: Character[] = [
+  { id: 'create-own', name: 'Create Your Choice', image: '', isCustom: true },
+  { id: 'spiderman', name: 'Spiderman', image: '/characters/spiderman.jpg', isSpecial: true },
+  { id: 'cinderella', name: 'Cinderella', image: '/characters/cinderella.jpg', isSpecial: true },
+  { id: 'albert-einstein', name: 'Albert Einstein', image: '/characters/einstein.jpg', isSpecial: true },
+  { id: 'patrick-mahomes', name: 'Patrick Mahomes', image: '/characters/mahomes.jpg', isSpecial: true },
+  { id: 'emily-hayes', name: 'Emily Hayes', image: '/characters/emily.jpg' },
+  { id: 'navin-hayes', name: 'Navin Hayes', image: '/characters/navin.jpg' },
+  { id: 'miskit', name: 'Miskit', image: '/characters/miskit.jpg' },
+  { id: 'trellis', name: 'Trellis', image: '/characters/trellis.jpg' },
+  { id: 'leon-redbeard', name: 'Leon Redbeard', image: '/characters/leon.jpg' },
+]
 
 export default function CharacterSelectionPage() {
-  const [selectedCharacter, setSelectedCharacter] = useState<string>("")
-  const [selectedUniverse, setSelectedUniverse] = useState<string>("")
-  const [characters, setCharacters] = useState<Character[]>([])
   const router = useRouter()
+  const searchParams = useSearchParams()
+  const universe = searchParams.get('universe')
+  const [selectedCharacter, setSelectedCharacter] = useState<string | null>(null)
+  const [searchQuery, setSearchQuery] = useState('')
 
-  useEffect(() => {
-    // Get selected universe from session storage
-    const universe = sessionStorage.getItem('selectedUniverse') || 'pokemon'
-    setSelectedUniverse(universe)
-    setCharacters(charactersByUniverse[universe] || charactersByUniverse.pokemon)
-  }, [])
+  const handleCharacterSelect = (characterId: string) => {
+    if (characterId === 'create-own') return // Not implemented yet
+    setSelectedCharacter(characterId)
+  }
 
   const handleNext = () => {
-    if (selectedCharacter) {
-      sessionStorage.setItem('selectedCharacter', selectedCharacter)
-      router.push('/create-book/spark')
+    if (selectedCharacter && universe) {
+      router.push(`/create-book/spark?universe=${universe}&character=${selectedCharacter}`)
     }
   }
 
@@ -65,94 +49,122 @@ export default function CharacterSelectionPage() {
     router.push('/create-book/universe')
   }
 
-  return (
-    <div className="min-h-screen cosmic-bg">
-      {/* Navigation */}
-      <nav className="relative z-10 bg-background/80 backdrop-blur-sm border-b border-border">
-        <div className="container mx-auto px-4 py-4 flex items-center justify-between">
-          <Button variant="ghost" size="sm" onClick={handleBack}>
-            <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
-            </svg>
-            Back
-          </Button>
-          <h1 className="text-xl font-raleway font-bold text-secondary">Create a Book</h1>
-          <div className="w-20" />
-        </div>
-      </nav>
+  const filteredCharacters = characters.filter(character =>
+    character.name.toLowerCase().includes(searchQuery.toLowerCase())
+  )
 
-      {/* Main Content */}
-      <main className="container mx-auto px-4 py-8 relative z-10">
-        <div className="max-w-4xl mx-auto">
-          {/* Progress Indicator */}
-          <div className="flex items-center justify-center mb-8">
-            <div className="flex items-center gap-2">
-              <div className="w-8 h-8 rounded-full bg-muted text-muted-foreground flex items-center justify-center text-sm">
-                ✓
-              </div>
-              <div className="w-16 h-1 bg-primary" />
-              <div className="w-8 h-8 rounded-full bg-primary text-primary-foreground flex items-center justify-center text-sm font-bold">
-                2
-              </div>
-              <div className="w-16 h-1 bg-muted" />
-              <div className="w-8 h-8 rounded-full bg-muted text-muted-foreground flex items-center justify-center text-sm">
-                3
-              </div>
+  return (
+    <div className="min-h-screen bg-gray-50">
+      <TopNavWithTabs />
+      
+      <main className="container mx-auto px-4 py-8">
+        {/* Header with Progress */}
+        <div className="flex items-center justify-between mb-6">
+          <h1 className="text-3xl font-bold">Create a Book</h1>
+          <div className="flex items-center space-x-4">
+            <Button variant="outline" className="flex items-center gap-2">
+              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
+              </svg>
+              Create with a Friend
+            </Button>
+            {/* Progress Bar */}
+            <div className="flex items-center space-x-1">
+              <div className="w-24 h-2 bg-blue-600 rounded-full"></div>
+              <div className="w-24 h-2 bg-blue-600 rounded-full"></div>
+              <div className="w-24 h-2 bg-gray-300 rounded-full"></div>
+              <div className="w-24 h-2 bg-gray-300 rounded-full"></div>
             </div>
           </div>
+        </div>
 
-          {/* Title */}
-          <div className="text-center mb-8">
-            <h2 className="text-3xl font-raleway font-bold mb-2 text-secondary">
-              Choose Your Character
-            </h2>
-            <p className="text-muted-foreground">
-              Select who will be the hero of your story
-            </p>
-          </div>
+        {/* Section Title */}
+        <div className="mb-6">
+          <h2 className="text-xl font-semibold mb-2">
+            Who will take the lead in your {universe === 'amulet' ? 'Amulet' : universe} adventure?
+          </h2>
+          <p className="text-gray-600">
+            The power of the Amulet chooses its bearer carefully – who will step forward to face its challenges?
+          </p>
+        </div>
 
-          {/* Character Grid */}
-          <div className="grid grid-cols-2 md:grid-cols-3 gap-6 mb-8">
-            {characters.map((character) => (
-              <SelectableCard
-                key={character.id}
-                selected={selectedCharacter === character.id}
-                onClick={() => setSelectedCharacter(character.id)}
-                className="cursor-pointer"
-              >
-                <CardHeader className="text-center">
-                  <div className="text-5xl mb-3">{character.image}</div>
-                  <CardTitle className="text-lg">{character.name}</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <p className="text-sm text-center text-muted-foreground">
-                    {character.description}
-                  </p>
-                </CardContent>
-              </SelectableCard>
-            ))}
-          </div>
-
-          {/* Navigation Buttons */}
-          <div className="flex justify-between">
-            <Button variant="outline" onClick={handleBack}>
-              <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
-              </svg>
-              Previous
-            </Button>
-            <Button
-              onClick={handleNext}
-              disabled={!selectedCharacter}
-            >
-              Next
-              <svg className="w-5 h-5 ml-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-              </svg>
-            </Button>
+        {/* Search Bar */}
+        <div className="mb-6 flex justify-end">
+          <div className="relative w-64">
+            <input
+              type="text"
+              placeholder="Search..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+            />
+            <svg className="absolute right-3 top-3 w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+            </svg>
           </div>
         </div>
+
+        {/* Character Grid */}
+        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 mb-8">
+          {filteredCharacters.map((character) => (
+            <div
+              key={character.id}
+              onClick={() => handleCharacterSelect(character.id)}
+              className={`relative rounded-lg overflow-hidden cursor-pointer transition-all ${
+                selectedCharacter === character.id
+                  ? 'ring-4 ring-yellow-400 shadow-lg'
+                  : 'hover:shadow-md'
+              }`}
+            >
+              {character.isCustom ? (
+                <div className="bg-gray-200 p-4 h-48 flex flex-col items-center justify-center text-center">
+                  <div className="w-12 h-12 bg-blue-500 rounded-full mb-2 flex items-center justify-center">
+                    <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
+                    </svg>
+                  </div>
+                  <h3 className="font-medium text-sm mb-1">{character.name}</h3>
+                  <p className="text-xs text-gray-600">Add your own unique choice</p>
+                </div>
+              ) : (
+                <div className="bg-gray-200 h-48 flex items-end justify-center relative">
+                  <div className="absolute inset-0 flex items-center justify-center">
+                    <div className="w-24 h-24 bg-gray-300 rounded-full"></div>
+                  </div>
+                  <div className="bg-white/90 w-full py-2 px-2 text-center">
+                    <h3 className="font-medium text-sm">
+                      {character.name} {character.isSpecial && '👑'}
+                    </h3>
+                  </div>
+                </div>
+              )}
+            </div>
+          ))}
+        </div>
+
+        {/* Navigation Buttons */}
+        <div className="flex justify-between">
+          <Button
+            onClick={handleBack}
+            className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2"
+          >
+            Back
+          </Button>
+          <Button
+            onClick={handleNext}
+            disabled={!selectedCharacter}
+            className={`px-6 py-2 ${
+              selectedCharacter
+                ? 'bg-blue-600 hover:bg-blue-700 text-white'
+                : 'bg-gray-300 cursor-not-allowed text-gray-500'
+            }`}
+          >
+            Next
+          </Button>
+        </div>
       </main>
+
+      <FeedbackButton />
     </div>
   )
 }

@@ -81,3 +81,10 @@ node_modules/
 # Task files
 # tasks.json
 # tasks/ 
+
+# MCP configuration with sensitive keys
+.cursor/mcp.json
+.mcp.json
+
+# Setup script with hardcoded keys
+setup-env.sh 
