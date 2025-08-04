@@ -62,7 +62,7 @@ export function TopNavWithTabs() {
             </div>
 
             {/* Level */}
-            <div className="min-w-8 h-9 max-sm:h-7 p-2 cursor-pointer bg-blue-100 rounded-full border border-yellow-500/20 justify-start items-center gap-1.5 inline-flex" title="Level 0: 30/60 XP">
+            <Link href="/my-stats" className="min-w-8 h-9 max-sm:h-7 p-2 cursor-pointer bg-blue-100 rounded-full border border-yellow-500/20 justify-start items-center gap-1.5 inline-flex" title="Level 0: 30/60 XP">
               <div className="w-6 h-6 relative">
                 <div className="shrink-0 self-start w-4 aspect-square absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2">
                   <svg className="w-full h-full" viewBox="0 0 16 16" fill="#FFC107">
@@ -75,7 +75,7 @@ export function TopNavWithTabs() {
                 </svg>
               </div>
               <div className="text-center text-blue-600 text-base font-bold whitespace-nowrap">Lvl 0</div>
-            </div>
+            </Link>
 
             {/* Coins */}
             <div className="min-w-8 h-9 max-sm:h-7 p-2 cursor-pointer bg-yellow-100 rounded-full border border-yellow-500/20 justify-start items-center gap-1.5 inline-flex">
