@@ -382,8 +382,13 @@ export default function LibraryPage() {
               {/* Split into rows of 4 items each */}
               {(() => {
                 const categoryName = expandedCategory.split(':')[1]
-                const categoryData = libraryData[expandedArea as keyof typeof libraryData].categories[categoryName as keyof typeof libraryData[keyof typeof libraryData]['categories']]
-                const items = categoryData.items;
+                const areaData = libraryData[expandedArea as keyof typeof libraryData]
+                if (!areaData || !areaData.categories) return null;
+                
+                const categoryData = (areaData.categories as any)[categoryName]
+                if (!categoryData || !categoryData.items) return null;
+                
+                const items = categoryData.items as Array<{name: string, image: string}>;
                 const rows = [];
                 for (let i = 0; i < items.length; i += 4) {
                   rows.push(items.slice(i, i + 4));
