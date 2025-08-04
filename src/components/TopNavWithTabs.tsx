@@ -3,9 +3,12 @@
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import Image from 'next/image'
+import { useState } from 'react'
+import { StreakModal } from './StreakModal'
 
 export function TopNavWithTabs() {
   const pathname = usePathname()
+  const [showStreakModal, setShowStreakModal] = useState(false)
 
   const tabs = [
     { name: 'Create My Own Story', href: '/create-book/universe' },
@@ -52,17 +55,21 @@ export function TopNavWithTabs() {
         <div className="flex flex-1 justify-end">
           <div className="flex flex-row items-center gap-2 text-white">
             {/* Streak */}
-            <div className="h-9 max-sm:h-7 p-2 cursor-pointer bg-[#FFE5B9] rounded-full border border-[#FF6723] border-opacity-20 justify-start items-center inline-flex">
+            <button 
+              onClick={() => setShowStreakModal(true)}
+              className="h-9 max-sm:h-7 p-2 cursor-pointer bg-[#FFE5B9] rounded-full border border-[#FF6723] border-opacity-20 justify-start items-center inline-flex hover:bg-[#FFD28C] transition-colors"
+              title="View your reading streak"
+            >
               <div className="relative w-4 h-4 mr-1">
                 <svg className="w-full h-full" viewBox="0 0 16 16" fill="#FF6723">
                   <path d="M8 16c3.314 0 6-2 6-5.5 0-1.5-.5-4-2.5-6 .25 1.5-1.25 2-1.25 2C11 4 9 .5 6 0c.357 2 .5 4-2 6-1.25 1-2 2.729-2 4.5C2 14 4.686 16 8 16zm0-1c-1.657 0-3-1-3-2.75 0-.75.25-2 1.25-3C6.125 10 7 10.5 7 10.5c-.375-1.25.5-3.25 2-3.5-.179 1-.25 2 1 3 .625.5 1 1.364 1 2.25C11 14 9.657 15 8 15z"/>
                 </svg>
               </div>
               <div className="text-center text-[#FF6723] text-base font-bold">0</div>
-            </div>
+            </button>
 
             {/* Level */}
-            <div className="min-w-8 h-9 max-sm:h-7 p-2 cursor-pointer bg-blue-100 rounded-full border border-yellow-500/20 justify-start items-center gap-1.5 inline-flex" title="Level 0: 30/60 XP">
+            <Link href="/my-stats" className="min-w-8 h-9 max-sm:h-7 p-2 cursor-pointer bg-blue-100 rounded-full border border-yellow-500/20 justify-start items-center gap-1.5 inline-flex" title="Level 0: 30/60 XP">
               <div className="w-6 h-6 relative">
                 <div className="shrink-0 self-start w-4 aspect-square absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2">
                   <svg className="w-full h-full" viewBox="0 0 16 16" fill="#FFC107">
@@ -75,10 +82,10 @@ export function TopNavWithTabs() {
                 </svg>
               </div>
               <div className="text-center text-blue-600 text-base font-bold whitespace-nowrap">Lvl 0</div>
-            </div>
+            </Link>
 
             {/* Coins */}
-            <div className="min-w-8 h-9 max-sm:h-7 p-2 cursor-pointer bg-yellow-100 rounded-full border border-yellow-500/20 justify-start items-center gap-1.5 inline-flex">
+            <Link href="/redeem-rewards" className="min-w-8 h-9 max-sm:h-7 p-2 cursor-pointer bg-yellow-100 hover:bg-yellow-200 rounded-full border border-yellow-500/20 justify-start items-center gap-1.5 inline-flex transition-colors" title="Redeem coins for Robux">
               <div className="w-4 h-4 relative">
                 <svg className="w-full h-full" viewBox="0 0 16 16" fill="#FFC107">
                   <circle cx="8" cy="8" r="7" />
@@ -86,7 +93,7 @@ export function TopNavWithTabs() {
                 </svg>
               </div>
               <div className="text-center text-yellow-600 text-base font-bold">867</div>
-            </div>
+            </Link>
 
             {/* Notification Bell */}
             <div className="relative">
@@ -122,6 +129,14 @@ export function TopNavWithTabs() {
           </div>
         </div>
       </div>
+
+      {/* Streak Modal */}
+      {showStreakModal && (
+        <StreakModal onClose={() => {
+          localStorage.setItem('hasSeenStreakModal', 'true')
+          setShowStreakModal(false)
+        }} />
+      )}
     </nav>
   )
 }
