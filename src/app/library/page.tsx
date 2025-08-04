@@ -272,15 +272,15 @@ export default function LibraryPage() {
     <div className="min-h-screen bg-gray-100">
       <TopNavWithTabs />
       
-      <div className="p-6 space-y-12">
+      <div className="px-32 py-6 space-y-12">
         {/* Section 1: Pick an Area of Interest - Always Visible */}
-        <div>
+        <div className="bg-white rounded-3xl p-8 shadow-sm border border-gray-100 w-fit mx-auto">
           <div className="text-center mb-8">
             <h1 className="text-3xl font-bold text-gray-800 mb-2">Pick an Area of Interest</h1>
             <p className="text-gray-600">Each world holds endless possibilities. Which one speaks to your imagination?</p>
           </div>
           
-          <div className="max-w-7xl mx-auto">
+          <div>
             {/* Split into rows of 4 items each */}
             {(() => {
               const areas = Object.entries(libraryData);
@@ -291,19 +291,19 @@ export default function LibraryPage() {
               return rows.map((row, rowIndex) => (
                 <div key={rowIndex} className="flex justify-center gap-4 mb-4">
                   {row.map(([areaName, areaData]) => (
-                <div
-                  key={areaName}
-                  className="cursor-pointer group w-60"
-                  onClick={() => toggleArea(areaName)}
-                >
-                                      <div className={`bg-white rounded-2xl overflow-hidden shadow-lg hover:shadow-lg transition-all duration-200 relative ${
+                                  <div
+                    key={areaName}
+                    className="cursor-pointer group w-60"
+                    onClick={() => toggleArea(areaName)}
+                  >
+                                      <div className={`bg-white rounded-2xl overflow-hidden shadow-md hover:shadow-lg transition-all duration-200 relative ${
                       expandedArea === areaName 
-                        ? 'border-4 border-blue-600 ring-2 ring-blue-300' 
-                        : 'border-3 border-gray-200 hover:border-blue-400'
+                        ? 'border-2 border-blue-500 shadow-xl' 
+                        : 'border border-gray-300 hover:border-blue-400'
                     }`}>
-                      <div className="absolute inset-0 bg-black opacity-0 hover:opacity-5 transition-opacity duration-200 rounded-2xl"></div>
-                    <div className="relative aspect-[2.25] overflow-hidden p-3">
-                      <div className="relative w-full h-full rounded-lg overflow-hidden">
+                      <div className="absolute inset-0 bg-black opacity-0 hover:opacity-10 transition-opacity duration-200 rounded-2xl"></div>
+                    <div className="relative aspect-[2.25] overflow-hidden p-1.5">
+                      <div className="relative w-full h-full rounded overflow-hidden">
                         <Image
                           src={areaData.image}
                           alt={areaName}
@@ -312,7 +312,7 @@ export default function LibraryPage() {
                         />
                       </div>
                     </div>
-                    <div className="p-4 relative z-10">
+                    <div className="p-3 relative z-10">
                       <h3 className="font-bold text-gray-800 text-center text-sm">{areaName}</h3>
                     </div>
                     </div>
@@ -326,12 +326,12 @@ export default function LibraryPage() {
 
         {/* Section 2: Pick Again - Only visible when area is selected */}
         {expandedArea && (
-          <div>
+          <div className="bg-white rounded-3xl p-8 shadow-sm border border-gray-100 w-fit mx-auto">
             <div className="text-center mb-8">
               <h2 className="text-3xl font-bold text-gray-800 mb-2">Pick Again</h2>
             </div>
             
-            <div className="max-w-7xl mx-auto">
+            <div>
               {/* Split into rows of 4 items each */}
               {(() => {
                 const categories = Object.entries(libraryData[expandedArea as keyof typeof libraryData].categories);
@@ -342,19 +342,19 @@ export default function LibraryPage() {
                 return rows.map((row, rowIndex) => (
                   <div key={rowIndex} className="flex justify-center gap-4 mb-4">
                     {row.map(([categoryName, categoryData]) => (
-                  <div
-                    key={categoryName}
-                    className="cursor-pointer group w-60"
-                    onClick={() => toggleCategory(expandedArea, categoryName)}
-                  >
-                    <div className={`bg-white rounded-2xl overflow-hidden shadow-lg hover:shadow-lg transition-all duration-200 relative ${
+                                      <div
+                      key={categoryName}
+                      className="cursor-pointer group w-60"
+                      onClick={() => toggleCategory(expandedArea, categoryName)}
+                    >
+                    <div className={`bg-white rounded-2xl overflow-hidden shadow-md hover:shadow-lg transition-all duration-200 relative ${
                       expandedCategory === `${expandedArea}:${categoryName}`
-                        ? 'border-4 border-blue-600 ring-2 ring-blue-300'
-                        : 'border-3 border-gray-200 hover:border-blue-400'
+                        ? 'border-2 border-blue-500 shadow-xl'
+                        : 'border border-gray-300 hover:border-blue-400'
                     }`}>
-                      <div className="absolute inset-0 bg-black opacity-0 hover:opacity-5 transition-opacity duration-200 rounded-2xl"></div>
-                      <div className="relative aspect-[2.25] overflow-hidden p-3">
-                        <div className="relative w-full h-full rounded-lg overflow-hidden">
+                      <div className="absolute inset-0 bg-black opacity-0 hover:opacity-10 transition-opacity duration-200 rounded-2xl"></div>
+                      <div className="relative aspect-[2.25] overflow-hidden p-1.5">
+                        <div className="relative w-full h-full rounded overflow-hidden">
                           <Image
                             src={categoryData.image}
                             alt={categoryName}
@@ -363,7 +363,7 @@ export default function LibraryPage() {
                           />
                         </div>
                       </div>
-                      <div className="p-4 relative z-10">
+                      <div className="p-3 relative z-10">
                         <h4 className="font-bold text-gray-800 text-center text-sm">{categoryName}</h4>
                       </div>
                     </div>
@@ -378,12 +378,12 @@ export default function LibraryPage() {
 
         {/* Section 3: Last Choice - Only visible when category is selected */}
         {expandedCategory && expandedArea && (
-          <div>
+          <div className="bg-white rounded-3xl p-8 shadow-sm border border-gray-100 w-fit mx-auto">
             <div className="text-center mb-8">
               <h3 className="text-3xl font-bold text-gray-800 mb-2">Last Choice</h3>
             </div>
             
-            <div className="max-w-7xl mx-auto">
+            <div>
               {/* Split into rows of 4 items each */}
               {(() => {
                 const categoryName = expandedCategory.split(':')[1]
@@ -401,10 +401,10 @@ export default function LibraryPage() {
                       className="cursor-pointer group w-60"
                       onClick={() => handleItemClick(item.name)}
                     >
-                      <div className="bg-white rounded-2xl overflow-hidden shadow-lg hover:shadow-lg transition-all duration-200 border-3 border-gray-200 hover:border-blue-400 relative">
-                        <div className="absolute inset-0 bg-black opacity-0 hover:opacity-5 transition-opacity duration-200 rounded-2xl"></div>
-                        <div className="relative aspect-[2.25] overflow-hidden p-3">
-                          <div className="relative w-full h-full rounded-lg overflow-hidden">
+                      <div className="bg-white rounded-2xl overflow-hidden shadow-md hover:shadow-lg transition-all duration-200 border border-gray-300 hover:border-blue-400 relative">
+                        <div className="absolute inset-0 bg-black opacity-0 hover:opacity-10 transition-opacity duration-200 rounded-2xl"></div>
+                        <div className="relative aspect-[2.25] overflow-hidden p-1.5">
+                          <div className="relative w-full h-full rounded overflow-hidden">
                             <Image
                               src={item.image}
                               alt={item.name}
@@ -413,7 +413,7 @@ export default function LibraryPage() {
                             />
                           </div>
                         </div>
-                        <div className="p-4 relative z-10">
+                        <div className="p-3 relative z-10">
                           <h5 className="font-bold text-gray-800 text-center text-sm">{item.name}</h5>
                         </div>
                       </div>
