@@ -70,7 +70,7 @@ export const getMockUserXP = (): XPLevel => {
   return {
     ...levelConfig,
     currentXP,
-    hoursToNext: Math.ceil((levelConfig.maxXP - currentXP) / 60) // Assuming 1 XP per minute of reading
+    hoursToNext: 1 // Match the HTML exactly
   }
 }
 
@@ -140,12 +140,14 @@ export const getMockUserBadges = (): Badge[] => {
 
 // Utility functions
 export const formatReadingTime = (minutes: number): string => {
-  if (minutes < 60) {
-    return `${minutes}m`
-  }
   const hours = Math.floor(minutes / 60)
   const remainingMinutes = minutes % 60
-  return remainingMinutes > 0 ? `${hours}h ${remainingMinutes}m` : `${hours}h`
+  
+  if (hours === 0) {
+    return `0h ${remainingMinutes}m`
+  }
+  
+  return remainingMinutes > 0 ? `${hours}h ${remainingMinutes}m` : `${hours}h 0m`
 }
 
 export const formatTrend = (trend: number): { text: string; isPositive: boolean } => {
