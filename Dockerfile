@@ -24,9 +24,13 @@ COPY . .
 # Disable telemetry during the build.
 ENV NEXT_TELEMETRY_DISABLED=1
 
-# Add placeholder environment variables for build
-ENV NEXT_PUBLIC_SUPABASE_URL=placeholder_supabase_url
-ENV NEXT_PUBLIC_SUPABASE_ANON_KEY=placeholder_supabase_anon_key
+# Build arguments for environment variables
+ARG NEXT_PUBLIC_SUPABASE_URL
+ARG NEXT_PUBLIC_SUPABASE_ANON_KEY
+
+# Set environment variables from build args
+ENV NEXT_PUBLIC_SUPABASE_URL=${NEXT_PUBLIC_SUPABASE_URL:-placeholder_supabase_url}
+ENV NEXT_PUBLIC_SUPABASE_ANON_KEY=${NEXT_PUBLIC_SUPABASE_ANON_KEY:-placeholder_supabase_anon_key}
 
 RUN npm run build
 

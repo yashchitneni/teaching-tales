@@ -4,6 +4,7 @@ Dockerfile
 .git
 README.md
 .env*.local
+.env.docker
 node_modules
 npm-debug.log*
 yarn-debug.log*

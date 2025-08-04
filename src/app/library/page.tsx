@@ -8,228 +8,228 @@ import Image from 'next/image'
 // Define our data structure based on the Library Tree with HTML.txt
 const libraryData = {
   'Sports': {
-    image: 'https://d3dp0uoydvg1je.cloudfront.net/interests/sports_1024x585.webp',
+    image: 'https://teaching-tales-duff-teachingtalesbucketbucket-zwfotuof.s3.amazonaws.com/images/sports.webp',
     categories: {
       'Team Sports': {
-        image: 'https://d3dp0uoydvg1je.cloudfront.net/interests/team_sports_1024x585.webp',
+        image: 'https://teaching-tales-duff-teachingtalesbucketbucket-zwfotuof.s3.amazonaws.com/images/team_sports.webp',
         items: [
-          { name: 'Soccer', image: 'https://d3dp0uoydvg1je.cloudfront.net/interests/soccer_1024x585.webp' },
-          { name: 'Basketball', image: 'https://d3dp0uoydvg1je.cloudfront.net/interests/basketball_1024x585.webp' },
-          { name: 'Baseball', image: 'https://d3dp0uoydvg1je.cloudfront.net/interests/baseball_1024x585.webp' },
-          { name: 'Volleyball', image: 'https://d3dp0uoydvg1je.cloudfront.net/interests/volleyball_1024x585.webp' },
-          { name: 'Football', image: 'https://d3dp0uoydvg1je.cloudfront.net/interests/football_1024x585.webp' },
-          { name: 'Hockey', image: 'https://d3dp0uoydvg1je.cloudfront.net/interests/hockey_1024x585.webp' },
-          { name: 'Rugby', image: 'https://d3dp0uoydvg1je.cloudfront.net/interests/rugby_1024x585.webp' }
+          { name: 'Soccer', image: 'https://teaching-tales-duff-teachingtalesbucketbucket-zwfotuof.s3.amazonaws.com/images/soccer.webp' },
+          { name: 'Basketball', image: 'https://teaching-tales-duff-teachingtalesbucketbucket-zwfotuof.s3.amazonaws.com/images/basketball.webp' },
+          { name: 'Baseball', image: 'https://teaching-tales-duff-teachingtalesbucketbucket-zwfotuof.s3.amazonaws.com/images/baseball.webp' },
+          { name: 'Volleyball', image: 'https://teaching-tales-duff-teachingtalesbucketbucket-zwfotuof.s3.amazonaws.com/images/volleyball.webp' },
+          { name: 'Football', image: 'https://teaching-tales-duff-teachingtalesbucketbucket-zwfotuof.s3.amazonaws.com/images/football.webp' },
+          { name: 'Hockey', image: 'https://teaching-tales-duff-teachingtalesbucketbucket-zwfotuof.s3.amazonaws.com/images/hockey.webp' },
+          { name: 'Rugby', image: 'https://teaching-tales-duff-teachingtalesbucketbucket-zwfotuof.s3.amazonaws.com/images/rugby.webp' }
         ]
       },
       'Individual Sports': {
-        image: 'https://d3dp0uoydvg1je.cloudfront.net/interests/individual_sports_1024x585.webp',
+        image: 'https://teaching-tales-duff-teachingtalesbucketbucket-zwfotuof.s3.amazonaws.com/images/individual_sports.webp',
         items: [
-          { name: 'Tennis', image: 'https://d3dp0uoydvg1je.cloudfront.net/interests/tennis_1024x585.webp' },
-          { name: 'Gymnastics', image: 'https://d3dp0uoydvg1je.cloudfront.net/interests/gymnastics_1024x585.webp' },
-          { name: 'Martial Arts', image: 'https://d3dp0uoydvg1je.cloudfront.net/interests/martial_arts_1024x585.webp' },
-          { name: 'Track and Field', image: 'https://d3dp0uoydvg1je.cloudfront.net/interests/track_field_1024x585.webp' }
+          { name: 'Tennis', image: 'https://teaching-tales-duff-teachingtalesbucketbucket-zwfotuof.s3.amazonaws.com/images/tennis.webp' },
+          { name: 'Gymnastics', image: 'https://teaching-tales-duff-teachingtalesbucketbucket-zwfotuof.s3.amazonaws.com/images/gymnastics.webp' },
+          { name: 'Martial Arts', image: 'https://teaching-tales-duff-teachingtalesbucketbucket-zwfotuof.s3.amazonaws.com/images/martial_arts.webp' },
+          { name: 'Track and Field', image: 'https://teaching-tales-duff-teachingtalesbucketbucket-zwfotuof.s3.amazonaws.com/images/track_and_field.webp' }
         ]
       },
       'Adventure Sports': {
-        image: 'https://d3dp0uoydvg1je.cloudfront.net/interests/adventure_sports_1024x585.webp',
+        image: 'https://teaching-tales-duff-teachingtalesbucketbucket-zwfotuof.s3.amazonaws.com/images/adventure_sports.webp',
         items: [
-          { name: 'Climbing', image: 'https://d3dp0uoydvg1je.cloudfront.net/interests/climbing_1024x585.webp' },
-          { name: 'Hiking', image: 'https://d3dp0uoydvg1je.cloudfront.net/interests/hiking_1024x585.webp' },
-          { name: 'Skateboarding', image: 'https://d3dp0uoydvg1je.cloudfront.net/interests/skateboarding_1024x585.webp' }
+          { name: 'Climbing', image: 'https://teaching-tales-duff-teachingtalesbucketbucket-zwfotuof.s3.amazonaws.com/images/climbing.webp' },
+          { name: 'Hiking', image: 'https://teaching-tales-duff-teachingtalesbucketbucket-zwfotuof.s3.amazonaws.com/images/hiking.webp' },
+          { name: 'Skateboarding', image: 'https://teaching-tales-duff-teachingtalesbucketbucket-zwfotuof.s3.amazonaws.com/images/skateboarding.webp' }
         ]
       },
       'Water Sports': {
-        image: 'https://d3dp0uoydvg1je.cloudfront.net/interests/water_sports_1024x585.webp',
+        image: 'https://teaching-tales-duff-teachingtalesbucketbucket-zwfotuof.s3.amazonaws.com/images/water_sports.webp',
         items: [
-          { name: 'Swimming', image: 'https://d3dp0uoydvg1je.cloudfront.net/interests/swimming_1024x585.webp' },
-          { name: 'Diving', image: 'https://d3dp0uoydvg1je.cloudfront.net/interests/diving_1024x585.webp' },
-          { name: 'Sailing', image: 'https://d3dp0uoydvg1je.cloudfront.net/interests/sailing_1024x585.webp' }
+          { name: 'Swimming', image: 'https://teaching-tales-duff-teachingtalesbucketbucket-zwfotuof.s3.amazonaws.com/images/swimming.webp' },
+          { name: 'Diving', image: 'https://teaching-tales-duff-teachingtalesbucketbucket-zwfotuof.s3.amazonaws.com/images/diving.webp' },
+          { name: 'Sailing', image: 'https://teaching-tales-duff-teachingtalesbucketbucket-zwfotuof.s3.amazonaws.com/images/sailing.webp' }
         ]
       },
       'Winter Sports': {
-        image: 'https://d3dp0uoydvg1je.cloudfront.net/interests/winter_sports_1024x585.webp',
+        image: 'https://teaching-tales-duff-teachingtalesbucketbucket-zwfotuof.s3.amazonaws.com/images/winter_sports.webp',
         items: [
-          { name: 'Skiing', image: 'https://d3dp0uoydvg1je.cloudfront.net/interests/skiing_1024x585.webp' },
-          { name: 'Snowboarding', image: 'https://d3dp0uoydvg1je.cloudfront.net/interests/snowboarding_1024x585.webp' },
-          { name: 'Ice Skating', image: 'https://d3dp0uoydvg1je.cloudfront.net/interests/ice_skating_1024x585.webp' }
+          { name: 'Skiing', image: 'https://teaching-tales-duff-teachingtalesbucketbucket-zwfotuof.s3.amazonaws.com/images/skiing.webp' },
+          { name: 'Snowboarding', image: 'https://teaching-tales-duff-teachingtalesbucketbucket-zwfotuof.s3.amazonaws.com/images/snowboarding.webp' },
+          { name: 'Ice Skating', image: 'https://teaching-tales-duff-teachingtalesbucketbucket-zwfotuof.s3.amazonaws.com/images/ice_skating.webp' }
         ]
       },
       'Athletics': {
-        image: 'https://d3dp0uoydvg1je.cloudfront.net/interests/athletics_1024x585.webp',
+        image: 'https://teaching-tales-duff-teachingtalesbucketbucket-zwfotuof.s3.amazonaws.com/images/athletics.webp',
         items: [
-          { name: 'Track and Field', image: 'https://d3dp0uoydvg1je.cloudfront.net/interests/track_field_1024x585.webp' },
-          { name: 'Road Races', image: 'https://d3dp0uoydvg1je.cloudfront.net/interests/road_races_1024x585.webp' }
+          { name: 'Track and Field', image: 'https://teaching-tales-duff-teachingtalesbucketbucket-zwfotuof.s3.amazonaws.com/images/track_and_field.webp' },
+          { name: 'Road Races', image: 'https://teaching-tales-duff-teachingtalesbucketbucket-zwfotuof.s3.amazonaws.com/images/road_races.webp' }
         ]
       },
       'Mind Sports': {
-        image: 'https://d3dp0uoydvg1je.cloudfront.net/interests/mind_sports_1024x585.webp',
+        image: 'https://teaching-tales-duff-teachingtalesbucketbucket-zwfotuof.s3.amazonaws.com/images/mind_sports.webp',
         items: [
-          { name: 'Chess', image: 'https://d3dp0uoydvg1je.cloudfront.net/interests/chess_1024x585.webp' },
-          { name: 'Puzzle Competitions', image: 'https://d3dp0uoydvg1je.cloudfront.net/interests/puzzle_competitions_1024x585.webp' }
+          { name: 'Chess', image: 'https://teaching-tales-duff-teachingtalesbucketbucket-zwfotuof.s3.amazonaws.com/images/chess.webp' },
+          { name: 'Puzzle Competitions', image: 'https://teaching-tales-duff-teachingtalesbucketbucket-zwfotuof.s3.amazonaws.com/images/puzzle_competitions.webp' }
         ]
       }
     }
   },
   'Animals': {
-    image: 'https://d3dp0uoydvg1je.cloudfront.net/interests/animals_1024x585.webp',
+    image: 'https://teaching-tales-duff-teachingtalesbucketbucket-zwfotuof.s3.amazonaws.com/images/animals.webp',
     categories: {
       'Wildlife': {
-        image: 'https://d3dp0uoydvg1je.cloudfront.net/interests/wildlife_1024x585.webp',
+        image: 'https://teaching-tales-duff-teachingtalesbucketbucket-zwfotuof.s3.amazonaws.com/images/wildlife.webp',
         items: [
-          { name: 'Mammals', image: 'https://d3dp0uoydvg1je.cloudfront.net/interests/mammals_1024x585.webp' },
-          { name: 'Birds', image: 'https://d3dp0uoydvg1je.cloudfront.net/interests/birds_1024x585.webp' },
-          { name: 'Reptiles', image: 'https://d3dp0uoydvg1je.cloudfront.net/interests/reptiles_1024x585.webp' }
+          { name: 'Mammals', image: 'https://teaching-tales-duff-teachingtalesbucketbucket-zwfotuof.s3.amazonaws.com/images/mammals.webp' },
+          { name: 'Frogs', image: 'https://teaching-tales-duff-teachingtalesbucketbucket-zwfotuof.s3.amazonaws.com/images/frogs.webp' },
+          { name: 'Reptiles', image: 'https://teaching-tales-duff-teachingtalesbucketbucket-zwfotuof.s3.amazonaws.com/images/reptiles.webp' }
         ]
       },
       'Pets': {
-        image: 'https://d3dp0uoydvg1je.cloudfront.net/interests/pets_1024x585.webp',
+        image: 'https://teaching-tales-duff-teachingtalesbucketbucket-zwfotuof.s3.amazonaws.com/images/pets.webp',
         items: [
-          { name: 'Dogs', image: 'https://d3dp0uoydvg1je.cloudfront.net/interests/dogs_1024x585.webp' },
-          { name: 'Cats', image: 'https://d3dp0uoydvg1je.cloudfront.net/interests/cats_1024x585.webp' },
-          { name: 'Small Pets', image: 'https://d3dp0uoydvg1je.cloudfront.net/interests/small_pets_1024x585.webp' }
+          { name: 'Dogs', image: 'https://teaching-tales-duff-teachingtalesbucketbucket-zwfotuof.s3.amazonaws.com/images/dogs.webp' },
+          { name: 'Hamsters', image: 'https://teaching-tales-duff-teachingtalesbucketbucket-zwfotuof.s3.amazonaws.com/images/hamsters.webp' },
+          { name: 'Small Pets', image: 'https://teaching-tales-duff-teachingtalesbucketbucket-zwfotuof.s3.amazonaws.com/images/small_pets.webp' }
         ]
       },
       'Marine Life': {
-        image: 'https://d3dp0uoydvg1je.cloudfront.net/interests/marine_life_1024x585.webp',
+        image: 'https://teaching-tales-duff-teachingtalesbucketbucket-zwfotuof.s3.amazonaws.com/images/marine_life.webp',
         items: [
-          { name: 'Fish', image: 'https://d3dp0uoydvg1je.cloudfront.net/interests/fish_1024x585.webp' },
-          { name: 'Ocean Creatures', image: 'https://d3dp0uoydvg1je.cloudfront.net/interests/ocean_creatures_1024x585.webp' },
-          { name: 'Coral Reefs', image: 'https://d3dp0uoydvg1je.cloudfront.net/interests/coral_reefs_1024x585.webp' }
+          { name: 'Fish', image: 'https://teaching-tales-duff-teachingtalesbucketbucket-zwfotuof.s3.amazonaws.com/images/fish.webp' },
+          { name: 'Ocean Creatures', image: 'https://teaching-tales-duff-teachingtalesbucketbucket-zwfotuof.s3.amazonaws.com/images/ocean_creatures.webp' },
+          { name: 'Coral Reefs', image: 'https://teaching-tales-duff-teachingtalesbucketbucket-zwfotuof.s3.amazonaws.com/images/coral_reefs.webp' }
         ]
       }
     }
   },
   'Science & Nature': {
-    image: 'https://d3dp0uoydvg1je.cloudfront.net/interests/science_nature_1024x585.webp',
+    image: 'https://teaching-tales-duff-teachingtalesbucketbucket-zwfotuof.s3.amazonaws.com/images/science_and_nature.webp',
     categories: {
       'Physical Sciences': {
-        image: 'https://d3dp0uoydvg1je.cloudfront.net/interests/physical_sciences_1024x585.webp',
+        image: 'https://teaching-tales-duff-teachingtalesbucketbucket-zwfotuof.s3.amazonaws.com/images/physical_sciences.webp',
         items: [
-          { name: 'Physics', image: 'https://d3dp0uoydvg1je.cloudfront.net/interests/physics_1024x585.webp' },
-          { name: 'Chemistry', image: 'https://d3dp0uoydvg1je.cloudfront.net/interests/chemistry_1024x585.webp' }
+          { name: 'Physics', image: 'https://teaching-tales-duff-teachingtalesbucketbucket-zwfotuof.s3.amazonaws.com/images/physics.webp' },
+          { name: 'Chemistry', image: 'https://teaching-tales-duff-teachingtalesbucketbucket-zwfotuof.s3.amazonaws.com/images/chemistry.webp' }
         ]
       },
       'Life Sciences': {
-        image: 'https://d3dp0uoydvg1je.cloudfront.net/interests/life_sciences_1024x585.webp',
+        image: 'https://teaching-tales-duff-teachingtalesbucketbucket-zwfotuof.s3.amazonaws.com/images/life_sciences.webp',
         items: [
-          { name: 'Biology', image: 'https://d3dp0uoydvg1je.cloudfront.net/interests/biology_1024x585.webp' },
-          { name: 'Environmental Science', image: 'https://d3dp0uoydvg1je.cloudfront.net/interests/environmental_science_1024x585.webp' }
+          { name: 'Biology', image: 'https://teaching-tales-duff-teachingtalesbucketbucket-zwfotuof.s3.amazonaws.com/images/biology.webp' },
+          { name: 'Environmental Science', image: 'https://teaching-tales-duff-teachingtalesbucketbucket-zwfotuof.s3.amazonaws.com/images/environmental_science.webp' }
         ]
       },
       'Earth & Space': {
-        image: 'https://d3dp0uoydvg1je.cloudfront.net/interests/earth_space_1024x585.webp',
+        image: 'https://teaching-tales-duff-teachingtalesbucketbucket-zwfotuof.s3.amazonaws.com/images/earth_and_space.webp',
         items: [
-          { name: 'Astronomy', image: 'https://d3dp0uoydvg1je.cloudfront.net/interests/astronomy_1024x585.webp' },
-          { name: 'Geology', image: 'https://d3dp0uoydvg1je.cloudfront.net/interests/geology_1024x585.webp' }
+          { name: 'Astronomy', image: 'https://teaching-tales-duff-teachingtalesbucketbucket-zwfotuof.s3.amazonaws.com/images/astronomy.webp' },
+          { name: 'Geology', image: 'https://teaching-tales-duff-teachingtalesbucketbucket-zwfotuof.s3.amazonaws.com/images/geology.webp' }
         ]
       }
     }
   },
   'History & Culture': {
-    image: 'https://d3dp0uoydvg1je.cloudfront.net/interests/history_culture_1024x585.webp',
+    image: 'https://teaching-tales-duff-teachingtalesbucketbucket-zwfotuof.s3.amazonaws.com/images/history_and_culture.webp',
     categories: {
       'Ancient Civilizations': {
-        image: 'https://d3dp0uoydvg1je.cloudfront.net/interests/ancient_civilizations_1024x585.webp',
+        image: 'https://teaching-tales-duff-teachingtalesbucketbucket-zwfotuof.s3.amazonaws.com/images/ancient_civilizations.webp',
         items: [
-          { name: 'Egypt', image: 'https://d3dp0uoydvg1je.cloudfront.net/interests/egypt_1024x585.webp' },
-          { name: 'Rome', image: 'https://d3dp0uoydvg1je.cloudfront.net/interests/rome_1024x585.webp' }
+          { name: 'Egypt', image: 'https://teaching-tales-duff-teachingtalesbucketbucket-zwfotuof.s3.amazonaws.com/images/egypt.webp' },
+          { name: 'Rome', image: 'https://teaching-tales-duff-teachingtalesbucketbucket-zwfotuof.s3.amazonaws.com/images/rome.webp' }
         ]
       },
       'World History': {
-        image: 'https://d3dp0uoydvg1je.cloudfront.net/interests/world_history_1024x585.webp',
+        image: 'https://teaching-tales-duff-teachingtalesbucketbucket-zwfotuof.s3.amazonaws.com/images/world_history.webp',
         items: [
-          { name: 'Medieval Times', image: 'https://d3dp0uoydvg1je.cloudfront.net/interests/medieval_times_1024x585.webp' },
-          { name: 'Modern History', image: 'https://d3dp0uoydvg1je.cloudfront.net/interests/modern_history_1024x585.webp' }
+          { name: 'Medieval Times', image: 'https://teaching-tales-duff-teachingtalesbucketbucket-zwfotuof.s3.amazonaws.com/images/medieval_times.webp' },
+          { name: 'Modern History', image: 'https://teaching-tales-duff-teachingtalesbucketbucket-zwfotuof.s3.amazonaws.com/images/modern_history.webp' }
         ]
       },
       'Cultures Around the World': {
-        image: 'https://d3dp0uoydvg1je.cloudfront.net/interests/cultures_around_world_1024x585.webp',
+        image: 'https://teaching-tales-duff-teachingtalesbucketbucket-zwfotuof.s3.amazonaws.com/images/cultures_around_the_world.webp',
         items: [
-          { name: 'Traditions', image: 'https://d3dp0uoydvg1je.cloudfront.net/interests/traditions_1024x585.webp' },
-          { name: 'Languages', image: 'https://d3dp0uoydvg1je.cloudfront.net/interests/languages_1024x585.webp' }
+          { name: 'Traditions', image: 'https://teaching-tales-duff-teachingtalesbucketbucket-zwfotuof.s3.amazonaws.com/images/traditions.webp' },
+          { name: 'Languages', image: 'https://teaching-tales-duff-teachingtalesbucketbucket-zwfotuof.s3.amazonaws.com/images/languages.webp' }
         ]
       }
     }
   },
   'Arts & Crafts': {
-    image: 'https://d3dp0uoydvg1je.cloudfront.net/interests/arts_crafts_1024x585.webp',
+    image: 'https://teaching-tales-duff-teachingtalesbucketbucket-zwfotuof.s3.amazonaws.com/images/arts_and_crafts.webp',
     categories: {
       'Visual Arts': {
-        image: 'https://d3dp0uoydvg1je.cloudfront.net/interests/visual_arts_1024x585.webp',
+        image: 'https://teaching-tales-duff-teachingtalesbucketbucket-zwfotuof.s3.amazonaws.com/images/visual_arts.webp',
         items: [
-          { name: 'Drawing', image: 'https://d3dp0uoydvg1je.cloudfront.net/interests/drawing_1024x585.webp' },
-          { name: 'Painting', image: 'https://d3dp0uoydvg1je.cloudfront.net/interests/painting_1024x585.webp' }
+          { name: 'Drawing', image: 'https://teaching-tales-duff-teachingtalesbucketbucket-zwfotuof.s3.amazonaws.com/images/drawing.webp' },
+          { name: 'Painting', image: 'https://teaching-tales-duff-teachingtalesbucketbucket-zwfotuof.s3.amazonaws.com/images/painting.webp' }
         ]
       },
       'Performing Arts': {
-        image: 'https://d3dp0uoydvg1je.cloudfront.net/interests/performing_arts_1024x585.webp',
+        image: 'https://teaching-tales-duff-teachingtalesbucketbucket-zwfotuof.s3.amazonaws.com/images/performing_arts.webp',
         items: [
-          { name: 'Dance', image: 'https://d3dp0uoydvg1je.cloudfront.net/interests/dance_1024x585.webp' }
+          { name: 'Dance', image: 'https://teaching-tales-duff-teachingtalesbucketbucket-zwfotuof.s3.amazonaws.com/images/dance.webp' }
         ]
       },
       'Crafts': {
-        image: 'https://d3dp0uoydvg1je.cloudfront.net/interests/crafts_1024x585.webp',
+        image: 'https://teaching-tales-duff-teachingtalesbucketbucket-zwfotuof.s3.amazonaws.com/images/crafts.webp',
         items: [
-          { name: 'DIY Projects', image: 'https://d3dp0uoydvg1je.cloudfront.net/interests/diy_projects_1024x585.webp' },
-          { name: 'Recycling Crafts', image: 'https://d3dp0uoydvg1je.cloudfront.net/interests/recycling_crafts_1024x585.webp' }
+          { name: 'DIY Projects', image: 'https://teaching-tales-duff-teachingtalesbucketbucket-zwfotuof.s3.amazonaws.com/images/diy_projects.webp' },
+          { name: 'Recycling Crafts', image: 'https://teaching-tales-duff-teachingtalesbucketbucket-zwfotuof.s3.amazonaws.com/images/recycling_crafts.webp' }
         ]
       }
     }
   },
   'Technology & Innovation': {
-    image: 'https://d3dp0uoydvg1je.cloudfront.net/interests/technology_innovation_1024x585.webp',
+    image: 'https://teaching-tales-duff-teachingtalesbucketbucket-zwfotuof.s3.amazonaws.com/images/technology_and_innovation.webp',
     categories: {
       'Computing': {
-        image: 'https://d3dp0uoydvg1je.cloudfront.net/interests/computing_1024x585.webp',
+        image: 'https://teaching-tales-duff-teachingtalesbucketbucket-zwfotuof.s3.amazonaws.com/images/computing.webp',
         items: [
-          { name: 'Computers', image: 'https://d3dp0uoydvg1je.cloudfront.net/interests/computers_1024x585.webp' },
-          { name: 'Internet', image: 'https://d3dp0uoydvg1je.cloudfront.net/interests/internet_1024x585.webp' }
+          { name: 'Computers', image: 'https://teaching-tales-duff-teachingtalesbucketbucket-zwfotuof.s3.amazonaws.com/images/computers.webp' },
+          { name: 'Internet', image: 'https://teaching-tales-duff-teachingtalesbucketbucket-zwfotuof.s3.amazonaws.com/images/internet.webp' }
         ]
       },
       'Inventions': {
-        image: 'https://d3dp0uoydvg1je.cloudfront.net/interests/inventions_1024x585.webp',
+        image: 'https://teaching-tales-duff-teachingtalesbucketbucket-zwfotuof.s3.amazonaws.com/images/inventions.webp',
         items: [
-          { name: 'Historical Inventions', image: 'https://d3dp0uoydvg1je.cloudfront.net/interests/historical_inventions_1024x585.webp' },
-          { name: 'Modern Innovations', image: 'https://d3dp0uoydvg1je.cloudfront.net/interests/modern_innovations_1024x585.webp' }
+          { name: 'Historical Inventions', image: 'https://teaching-tales-duff-teachingtalesbucketbucket-zwfotuof.s3.amazonaws.com/images/historical_inventions.webp' },
+          { name: 'Modern Innovations', image: 'https://teaching-tales-duff-teachingtalesbucketbucket-zwfotuof.s3.amazonaws.com/images/modern_innovations.webp' }
         ]
       }
     }
   },
   'Literature & Stories': {
-    image: 'https://d3dp0uoydvg1je.cloudfront.net/interests/literature_stories_1024x585.webp',
+    image: 'https://teaching-tales-duff-teachingtalesbucketbucket-zwfotuof.s3.amazonaws.com/images/literature_and_stories.webp',
     categories: {
       'Fairy Tales': {
-        image: 'https://d3dp0uoydvg1je.cloudfront.net/interests/fairy_tales_1024x585.webp',
+        image: 'https://teaching-tales-duff-teachingtalesbucketbucket-zwfotuof.s3.amazonaws.com/images/fairy_tales.webp',
         items: [
-          { name: 'Classic Tales', image: 'https://d3dp0uoydvg1je.cloudfront.net/interests/classic_tales_1024x585.webp' },
-          { name: 'Folk Tales', image: 'https://d3dp0uoydvg1je.cloudfront.net/interests/folk_tales_1024x585.webp' }
+          { name: 'Classic Tales', image: 'https://teaching-tales-duff-teachingtalesbucketbucket-zwfotuof.s3.amazonaws.com/images/classic_tales.webp' },
+          { name: 'Folk Tales', image: 'https://teaching-tales-duff-teachingtalesbucketbucket-zwfotuof.s3.amazonaws.com/images/folk_tales.webp' }
         ]
       },
       'Popular Children\'s Stories': {
-        image: 'https://d3dp0uoydvg1je.cloudfront.net/interests/popular_childrens_stories_1024x585.webp',
+        image: 'https://teaching-tales-duff-teachingtalesbucketbucket-zwfotuof.s3.amazonaws.com/images/popular_childrens_stories.webp',
         items: [
-          { name: 'Modern Favorites', image: 'https://d3dp0uoydvg1je.cloudfront.net/interests/modern_favorites_1024x585.webp' },
-          { name: 'Author Spotlights', image: 'https://d3dp0uoydvg1je.cloudfront.net/interests/author_spotlights_1024x585.webp' }
+          { name: 'Modern Favorites', image: 'https://teaching-tales-duff-teachingtalesbucketbucket-zwfotuof.s3.amazonaws.com/images/modern_favorites.webp' },
+          { name: 'Author Spotlights', image: 'https://teaching-tales-duff-teachingtalesbucketbucket-zwfotuof.s3.amazonaws.com/images/author_spotlights.webp' }
         ]
       }
     }
   },
   'Travel & Geography': {
-    image: 'https://d3dp0uoydvg1je.cloudfront.net/interests/travel_geography_1024x585.webp',
+    image: 'https://teaching-tales-duff-teachingtalesbucketbucket-zwfotuof.s3.amazonaws.com/images/travel_and_geography.webp',
     categories: {
       'Countries': {
-        image: 'https://d3dp0uoydvg1je.cloudfront.net/interests/countries_1024x585.webp',
+        image: 'https://teaching-tales-duff-teachingtalesbucketbucket-zwfotuof.s3.amazonaws.com/images/countries.webp',
         items: [
-          { name: 'USA', image: 'https://d3dp0uoydvg1je.cloudfront.net/interests/usa_1024x585.webp' },
-          { name: 'World', image: 'https://d3dp0uoydvg1je.cloudfront.net/interests/world_1024x585.webp' }
+          { name: 'USA', image: 'https://teaching-tales-duff-teachingtalesbucketbucket-zwfotuof.s3.amazonaws.com/images/usa.webp' },
+          { name: 'World', image: 'https://teaching-tales-duff-teachingtalesbucketbucket-zwfotuof.s3.amazonaws.com/images/world.webp' }
         ]
       },
       'Geography': {
-        image: 'https://d3dp0uoydvg1je.cloudfront.net/interests/geography_1024x585.webp',
+        image: 'https://teaching-tales-duff-teachingtalesbucketbucket-zwfotuof.s3.amazonaws.com/images/geography.webp',
         items: [
-          { name: 'Maps', image: 'https://d3dp0uoydvg1je.cloudfront.net/interests/maps_1024x585.webp' },
-          { name: 'Physical Geography', image: 'https://d3dp0uoydvg1je.cloudfront.net/interests/physical_geography_1024x585.webp' }
+          { name: 'Maps', image: 'https://teaching-tales-duff-teachingtalesbucketbucket-zwfotuof.s3.amazonaws.com/images/maps.webp' },
+          { name: 'Physical Geography', image: 'https://teaching-tales-duff-teachingtalesbucketbucket-zwfotuof.s3.amazonaws.com/images/maps.webp' }
         ]
       }
     }
