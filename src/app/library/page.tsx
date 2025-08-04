@@ -239,16 +239,19 @@ export default function LibraryPage() {
   // Track which single area and category are currently expanded (single-path navigation)
   const [expandedArea, setExpandedArea] = useState<string | null>(null)
   const [expandedCategory, setExpandedCategory] = useState<string | null>(null)
+  const [selectedLastChoice, setSelectedLastChoice] = useState<string | null>(null)
 
   const toggleArea = (areaName: string) => {
     if (expandedArea === areaName) {
       // Clicking the same area closes it
       setExpandedArea(null)
       setExpandedCategory(null) // Also close any expanded category
+      setSelectedLastChoice(null) // Reset last choice selection
     } else {
       // Clicking a different area opens it and closes others
       setExpandedArea(areaName)
       setExpandedCategory(null) // Reset category when switching areas
+      setSelectedLastChoice(null) // Reset last choice selection
     }
   }
 
@@ -257,15 +260,16 @@ export default function LibraryPage() {
     if (expandedCategory === categoryKey) {
       // Clicking the same category closes it
       setExpandedCategory(null)
+      setSelectedLastChoice(null) // Reset last choice selection
     } else {
       // Clicking a different category opens it and closes others
       setExpandedCategory(categoryKey)
+      setSelectedLastChoice(null) // Reset last choice selection when switching categories
     }
   }
 
   const handleItemClick = (itemName: string) => {
-    // TODO: Navigate to stories for this topic
-    console.log('Navigate to stories for:', itemName)
+    setSelectedLastChoice(selectedLastChoice === itemName ? null : itemName)
   }
 
   return (
@@ -389,7 +393,11 @@ export default function LibraryPage() {
                       className="group w-60"
                       onClick={() => handleItemClick(item.name)}
                     >
-                      <div className="bg-white hover:bg-gray-200 border border-gray-300 rounded-md overflow-hidden shadow-md hover:shadow-lg transition-all duration-200 flex flex-col p-3 cursor-pointer">
+                      <div className={`border rounded-md overflow-hidden shadow-md hover:shadow-lg transition-all duration-200 flex flex-col p-3 cursor-pointer ${
+                        selectedLastChoice === item.name
+                          ? 'border-blue-600 bg-blue-600 bg-opacity-10'
+                          : 'bg-white hover:bg-gray-200 border-gray-300'
+                      }`}>
                         <Image
                           src={item.image}
                           alt={item.name}
@@ -405,6 +413,21 @@ export default function LibraryPage() {
                 ));
               })()}
             </div>
+            
+            {/* Start Reading Button - Only visible when Last Choice is selected */}
+            {selectedLastChoice && (
+              <div className="flex justify-center mt-8">
+                <button 
+                  className="bg-blue-600 hover:bg-blue-700 text-white font-semibold py-3 px-8 rounded-lg transition-colors duration-200"
+                  onClick={() => {
+                    console.log('Start reading:', selectedLastChoice)
+                    // TODO: Navigate to reading page
+                  }}
+                >
+                  Start Reading
+                </button>
+              </div>
+            )}
           </div>
         )}
       </div>
