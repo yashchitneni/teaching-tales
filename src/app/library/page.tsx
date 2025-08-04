@@ -1,6 +1,7 @@
 'use client'
 
 import { useState } from 'react'
+import { useRouter } from 'next/navigation'
 import { TopNavWithTabs } from '@/components/TopNavWithTabs'
 import Image from 'next/image'
 
@@ -236,6 +237,8 @@ const libraryData = {
 }
 
 export default function LibraryPage() {
+  const router = useRouter()
+  
   // Track which single area and category are currently expanded (single-path navigation)
   const [expandedArea, setExpandedArea] = useState<string | null>(null)
   const [expandedCategory, setExpandedCategory] = useState<string | null>(null)
@@ -420,8 +423,7 @@ export default function LibraryPage() {
                 <button 
                   className="bg-blue-600 hover:bg-blue-700 text-white font-semibold py-3 px-8 rounded-lg transition-colors duration-200"
                   onClick={() => {
-                    console.log('Start reading:', selectedLastChoice)
-                    // TODO: Navigate to reading page
+                    router.push(`/stories?topic=${encodeURIComponent(selectedLastChoice!)}`)
                   }}
                 >
                   Start Reading
