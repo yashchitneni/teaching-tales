@@ -2,147 +2,896 @@
   "master": {
     "tasks": [
       {
-        "id": "1",
-        "title": "Set up authentication system with Google OAuth",
-        "description": "Implement Google OAuth authentication for parent accounts",
-        "details": "Set up NextAuth.js with Google provider, create authentication pages for sign in/sign up, implement session management, and create protected routes. Ensure proper error handling and user feedback.",
+        "id": 1,
+        "title": "Implement Authentication Integration",
+        "description": "Connect existing login UI to API authentication endpoints and implement OneRoster user creation",
+        "details": "1. Add API client with axios/fetch for POST /api/auth/login\n2. Implement secure JWT token storage using HttpOnly cookies\n3. Create OneRoster User with 'parent' role on successful auth\n4. Add auth context provider with login/logout methods\n5. Implement token refresh mechanism\n6. Add error handling for failed auth attempts",
+        "testStrategy": "1. Unit tests for auth context methods\n2. Integration tests for login flow\n3. Test JWT storage security\n4. Verify OneRoster user creation\n5. Test error scenarios and token refresh",
         "priority": "high",
+        "dependencies": [],
         "status": "pending",
-        "dependencies": []
+        "subtasks": [
+          {
+            "id": 1,
+            "title": "API Client Setup",
+            "description": "Configure an API client (e.g., axios or fetch) to interact with authentication endpoints, including POST /api/auth/login and OneRoster endpoints.",
+            "dependencies": [],
+            "details": "Set up base URL, request/response interceptors, and ensure secure transmission of credentials. Prepare for integration with OneRoster endpoints for user creation and management.",
+            "status": "pending",
+            "testStrategy": ""
+          },
+          {
+            "id": 2,
+            "title": "Secure JWT Storage",
+            "description": "Implement secure storage of JWT tokens using HttpOnly cookies to prevent XSS attacks and ensure session security.",
+            "dependencies": [
+              "1.1"
+            ],
+            "details": "Configure server to set HttpOnly, Secure, and SameSite cookie attributes. Ensure client-side code does not access JWT directly and validate cookie handling in all environments.",
+            "status": "pending",
+            "testStrategy": ""
+          },
+          {
+            "id": 3,
+            "title": "OneRoster User Creation",
+            "description": "Create OneRoster user with 'parent' role upon successful authentication, ensuring compliance with OneRoster v1.1+ specifications.",
+            "dependencies": [
+              "1.1",
+              "1.2"
+            ],
+            "details": "Invoke POST /api/ims/oneroster/v1p1/users with appropriate payload. Assign 'parent' role and handle userProfile, credentials, and agent relationships as required by OneRoster standards.",
+            "status": "pending",
+            "testStrategy": ""
+          },
+          {
+            "id": 4,
+            "title": "Auth Context Provider",
+            "description": "Develop an authentication context provider to manage auth state, expose login/logout methods, and propagate user/session info throughout the app.",
+            "dependencies": [
+              "1.1",
+              "1.2"
+            ],
+            "details": "Implement React context or equivalent, encapsulating login, logout, and session state. Ensure context updates on token changes and user creation.",
+            "status": "pending",
+            "testStrategy": ""
+          },
+          {
+            "id": 5,
+            "title": "Login/Logout Flows",
+            "description": "Implement user login and logout flows, integrating with the API client and auth context provider.",
+            "dependencies": [
+              "1.4"
+            ],
+            "details": "Handle form submission, API calls, state updates, and UI feedback. Ensure logout clears session and cookies securely.",
+            "status": "pending",
+            "testStrategy": ""
+          },
+          {
+            "id": 6,
+            "title": "Token Refresh Mechanism",
+            "description": "Implement automatic JWT token refresh to maintain session validity without user interruption.",
+            "dependencies": [
+              "1.2",
+              "1.4"
+            ],
+            "details": "Set up refresh endpoint, schedule refresh before token expiry, and update auth context state on refresh. Handle refresh failures gracefully.",
+            "status": "pending",
+            "testStrategy": ""
+          },
+          {
+            "id": 7,
+            "title": "Error Handling",
+            "description": "Add robust error handling for authentication failures, token issues, and OneRoster user creation errors.",
+            "dependencies": [
+              "1.3",
+              "1.5",
+              "1.6"
+            ],
+            "details": "Display user-friendly error messages, log errors for diagnostics, and handle edge cases such as network failures and invalid credentials.",
+            "status": "pending",
+            "testStrategy": ""
+          },
+          {
+            "id": 8,
+            "title": "Comprehensive Testing (Unit/Integration/Security)",
+            "description": "Develop and execute unit, integration, and security tests for all authentication flows and OneRoster integration.",
+            "dependencies": [
+              "1.3",
+              "1.4",
+              "1.5",
+              "1.6",
+              "1.7"
+            ],
+            "details": "Write tests for auth context methods, login/logout, JWT storage, OneRoster user creation, error scenarios, and token refresh. Include security tests for cookie handling and session management.",
+            "status": "pending",
+            "testStrategy": ""
+          }
+        ]
       },
       {
-        "id": "2", 
-        "title": "Create database schema and models",
-        "description": "Design and implement database schema for users, children, stories, and progress tracking",
-        "details": "Create models for: Parent users, Child profiles (linked to parents), Generated stories, Reading progress, Quiz results, and Story preferences. Set up PostgreSQL with Prisma ORM.",
+        "id": 2,
+        "title": "Implement OneRoster User Management",
+        "description": "Create child accounts and manage parent-child relationships using OneRoster agents",
+        "details": "1. Implement POST /api/ims/oneroster/v1p1/users for child creation\n2. Set up proper agent relationships in both directions\n3. Implement GET /api/ims/oneroster/v1p1/users with agent filtering\n4. Update CreateChildModal.tsx to handle API integration\n5. Add loading states and error handling",
+        "testStrategy": "1. Test child user creation\n2. Verify bidirectional agent relationships\n3. Test dashboard child listing\n4. Validate error handling",
         "priority": "high",
+        "dependencies": [
+          1
+        ],
         "status": "pending",
-        "dependencies": []
+        "subtasks": [
+          {
+            "id": 1,
+            "title": "Implement Child User Creation API",
+            "description": "Develop the backend logic for creating child users via POST /api/ims/oneroster/v1p1/users, ensuring compliance with OneRoster 1.2 specifications.",
+            "dependencies": [],
+            "details": "Ensure the API accepts required user fields, assigns the correct role, and returns the created user object. Validate input and handle errors according to OneRoster standards.",
+            "status": "pending",
+            "testStrategy": ""
+          },
+          {
+            "id": 2,
+            "title": "Set Up Agent Relationship Logic (Parent-Child, Bidirectional)",
+            "description": "Implement logic to establish and maintain parent-child agent relationships, ensuring bidirectional linkage as per OneRoster requirements.",
+            "dependencies": [
+              "2.1"
+            ],
+            "details": "Update user records to reflect both parent-to-child and child-to-parent relationships using the appropriate OneRoster fields (e.g., 'relationships', 'guardian', 'relationshipType').",
+            "status": "pending",
+            "testStrategy": ""
+          },
+          {
+            "id": 3,
+            "title": "Implement User Listing API with Filtering",
+            "description": "Develop GET /api/ims/oneroster/v1p1/users endpoint with support for filtering by agent relationships and other relevant criteria.",
+            "dependencies": [
+              "2.1",
+              "2.2"
+            ],
+            "details": "Support query parameters for filtering users by role, relationship, and status. Ensure efficient querying and correct response formatting.",
+            "status": "pending",
+            "testStrategy": ""
+          },
+          {
+            "id": 4,
+            "title": "Integrate API with CreateChildModal UI Component",
+            "description": "Connect the CreateChildModal.tsx UI component to the child user creation API and agent relationship logic.",
+            "dependencies": [
+              "2.1",
+              "2.2",
+              "2.3"
+            ],
+            "details": "Implement form submission, API calls, and state updates in the modal. Display success or error feedback to the user.",
+            "status": "pending",
+            "testStrategy": ""
+          },
+          {
+            "id": 5,
+            "title": "Implement Loading and Error States in UI",
+            "description": "Add robust loading indicators and error handling to all user management UI flows, including CreateChildModal and user listing.",
+            "dependencies": [
+              "2.4"
+            ],
+            "details": "Ensure users receive clear feedback during API calls and when errors occur. Handle edge cases such as network failures and validation errors.",
+            "status": "pending",
+            "testStrategy": ""
+          },
+          {
+            "id": 6,
+            "title": "Update Dashboard to Reflect User and Relationship Changes",
+            "description": "Modify the dashboard to display updated user lists and agent relationships in real time after creation or modification events.",
+            "dependencies": [
+              "2.3",
+              "2.4",
+              "2.5"
+            ],
+            "details": "Ensure the dashboard refreshes or updates its state to show new child users and relationship changes without requiring a full page reload.",
+            "status": "pending",
+            "testStrategy": ""
+          },
+          {
+            "id": 7,
+            "title": "Add Comprehensive Test Coverage for All User Management Flows",
+            "description": "Write and execute tests for child user creation, agent relationship setup, user listing/filtering, UI integration, and error/loading states.",
+            "dependencies": [
+              "2.1",
+              "2.2",
+              "2.3",
+              "2.4",
+              "2.5",
+              "2.6"
+            ],
+            "details": "Include unit, integration, and end-to-end tests to validate all critical paths and edge cases. Ensure high coverage and reliability.",
+            "status": "pending",
+            "testStrategy": ""
+          }
+        ]
       },
       {
-        "id": "3",
-        "title": "Build child account creation flow",
-        "description": "Implement the interface for parents to create child profiles",
-        "details": "Create form for child details (first name, last name, grade, email), implement validation, connect to database, and show onboarding modal after account creation. Include streak initialization.",
+        "id": 3,
+        "title": "Set Up Google Gemini Pro Integration",
+        "description": "Implement AI story generation service using Google Gemini Pro API",
+        "details": "1. Set up Google Gemini Pro API client\n2. Implement structured prompt template\n3. Create story generation service\n4. Add retry mechanism with exponential backoff\n5. Implement response validation",
+        "testStrategy": "1. Test prompt construction\n2. Verify API integration\n3. Test retry mechanism\n4. Validate response format\n5. Test error scenarios",
         "priority": "high",
+        "dependencies": [],
         "status": "pending",
-        "dependencies": ["1", "2"]
+        "subtasks": [
+          {
+            "id": 1,
+            "title": "API Client Setup",
+            "description": "Install the Google GenAI SDK, obtain and securely configure the Gemini Pro API key, and initialize the API client for your chosen language.",
+            "dependencies": [],
+            "details": "Follow official documentation to install the SDK (e.g., `pip install -q -U google-genai` for Python or `npm install @google/genai` for Node.js). Retrieve the API key from Google AI Studio and configure it securely, avoiding hard-coding in production environments. Initialize the client using the SDK and API key.",
+            "status": "pending",
+            "testStrategy": ""
+          },
+          {
+            "id": 2,
+            "title": "Prompt Templating",
+            "description": "Design and implement structured prompt templates for story generation, ensuring flexibility and clarity for different story parameters.",
+            "dependencies": [
+              "3.1"
+            ],
+            "details": "Define prompt templates that accept variables such as genre, characters, and plot points. Ensure templates are easily maintainable and support localization or customization as needed.",
+            "status": "pending",
+            "testStrategy": ""
+          },
+          {
+            "id": 3,
+            "title": "Story Generation Service",
+            "description": "Develop a service layer that constructs prompts using templates and sends requests to the Gemini Pro API to generate stories.",
+            "dependencies": [
+              "3.1",
+              "3.2"
+            ],
+            "details": "Implement a function or class that takes user input, applies the prompt template, and calls the Gemini Pro API using the initialized client. Handle asynchronous or streaming responses if supported.",
+            "status": "pending",
+            "testStrategy": ""
+          },
+          {
+            "id": 4,
+            "title": "Retry and Backoff Logic",
+            "description": "Integrate retry mechanisms with exponential backoff to handle transient API errors and rate limits during story generation requests.",
+            "dependencies": [
+              "3.3"
+            ],
+            "details": "Implement logic to automatically retry failed API requests due to network issues or rate limiting, using exponential backoff strategies to avoid overwhelming the API.",
+            "status": "pending",
+            "testStrategy": ""
+          },
+          {
+            "id": 5,
+            "title": "Response Validation",
+            "description": "Validate the structure and content of API responses to ensure they meet the expected format and quality criteria for generated stories.",
+            "dependencies": [
+              "3.3",
+              "3.4"
+            ],
+            "details": "Check that responses contain all required fields, adhere to schema, and meet content guidelines (e.g., non-empty, appropriate length). Handle and log invalid or incomplete responses.",
+            "status": "pending",
+            "testStrategy": ""
+          },
+          {
+            "id": 6,
+            "title": "Error Handling and Testing",
+            "description": "Implement comprehensive error handling and develop tests for all integration points, including prompt construction, API calls, retries, and response validation.",
+            "dependencies": [
+              "3.2",
+              "3.3",
+              "3.4",
+              "3.5"
+            ],
+            "details": "Add error handling for all failure scenarios, such as invalid input, API errors, and validation failures. Write unit and integration tests to cover prompt templating, API integration, retry logic, and response validation.",
+            "status": "pending",
+            "testStrategy": ""
+          }
+        ]
       },
       {
-        "id": "4",
-        "title": "Design and implement main dashboard",
-        "description": "Create the main dashboard showing child profiles and book library",
-        "details": "Build dashboard layout with navigation, display child account switcher, show book library/history, implement 'Create New Book' CTA, and display reading streak information.",
+        "id": 4,
+        "title": "Implement QTI 3.0 Package Generation",
+        "description": "Transform AI-generated content into valid QTI 3.0 assessment packages",
+        "details": "1. Create QTI 3.0 XML template\n2. Implement transformation logic for AI response to QTI\n3. Add section and question mapping\n4. Implement branchRule conditions\n5. Add QTI schema validation",
+        "testStrategy": "1. Validate QTI schema compliance\n2. Test transformation accuracy\n3. Verify branchRule logic\n4. Test edge cases",
+        "priority": "high",
+        "dependencies": [
+          3
+        ],
+        "status": "pending",
+        "subtasks": [
+          {
+            "id": 1,
+            "title": "Create QTI 3.0 XML Templates",
+            "description": "Develop reusable XML templates for QTI 3.0 assessment items, sections, and tests, ensuring correct namespaces, required attributes, and structure.",
+            "dependencies": [],
+            "details": "Reference the QTI 3.0 Beginner's Guide and Best Practices to define the XML skeletons for items, sections, and tests, including qti-assessment-item, qti-section, and qti-test nodes with proper schema locations and metadata.",
+            "status": "pending",
+            "testStrategy": ""
+          },
+          {
+            "id": 2,
+            "title": "Implement AI-to-QTI Transformation Logic",
+            "description": "Develop logic to convert AI-generated assessment content into QTI 3.0-compliant XML using the defined templates.",
+            "dependencies": [
+              "4.1"
+            ],
+            "details": "Map AI output fields (questions, choices, answers, metadata) to QTI XML elements, handling text, multimedia, and interaction types as per QTI 3.0 specification.",
+            "status": "pending",
+            "testStrategy": ""
+          },
+          {
+            "id": 3,
+            "title": "Map Sections and Questions",
+            "description": "Implement mapping of AI-generated sections and questions to QTI 3.0 section and item structures, supporting nested hierarchies.",
+            "dependencies": [
+              "4.2"
+            ],
+            "details": "Ensure each section and question is represented as a QTI section or item, with correct identifiers, ordering, and parent-child relationships in the XML.",
+            "status": "pending",
+            "testStrategy": ""
+          },
+          {
+            "id": 4,
+            "title": "Implement branchRule Logic",
+            "description": "Add support for QTI 3.0 branchRule elements to enable conditional navigation between sections or items based on responses.",
+            "dependencies": [
+              "4.3"
+            ],
+            "details": "Translate AI-defined branching logic into QTI branchRule XML, ensuring correct referencing of identifiers and outcome conditions.",
+            "status": "pending",
+            "testStrategy": ""
+          },
+          {
+            "id": 5,
+            "title": "Integrate QTI Schema Validation",
+            "description": "Set up automated validation of generated QTI XML against the official QTI 3.0 XSDs to ensure standards compliance.",
+            "dependencies": [
+              "4.4"
+            ],
+            "details": "Use the QTI-specific and packaging-related XSDs to validate all generated XML files, including imsmanifest.xml and assessment items.",
+            "status": "pending",
+            "testStrategy": ""
+          },
+          {
+            "id": 6,
+            "title": "Handle Edge Cases and Error Reporting",
+            "description": "Identify and handle edge cases in AI output and transformation logic, such as missing fields, unsupported question types, or invalid branching.",
+            "dependencies": [
+              "4.5"
+            ],
+            "details": "Implement robust error handling and reporting for transformation failures, schema validation errors, and unsupported scenarios.",
+            "status": "pending",
+            "testStrategy": ""
+          },
+          {
+            "id": 7,
+            "title": "Develop Integration and Compliance Tests",
+            "description": "Create automated tests to verify transformation accuracy, schema compliance, branchRule logic, and edge case handling.",
+            "dependencies": [
+              "4.6"
+            ],
+            "details": "Test with a variety of AI-generated inputs, including complex branching and nested sections, and validate output using QTI validators.",
+            "status": "pending",
+            "testStrategy": ""
+          },
+          {
+            "id": 8,
+            "title": "Write Developer and User Documentation",
+            "description": "Document the QTI package generation process, transformation logic, configuration options, and troubleshooting steps.",
+            "dependencies": [
+              "4.7"
+            ],
+            "details": "Provide clear guides for developers and users, including example AI inputs, expected QTI outputs, and instructions for running validation and tests.",
+            "status": "pending",
+            "testStrategy": ""
+          }
+        ]
+      },
+      {
+        "id": 5,
+        "title": "Implement Story Generation Flow",
+        "description": "Connect book creation UI to AI generation and QTI storage",
+        "details": "1. Store universe/character/spark selections\n2. Implement loading page logic\n3. Connect to AI generation service\n4. Store QTI package via POST /api/qti/v3/assessments\n5. Create OneRoster Class and LineItem\n6. Handle student enrollment",
+        "testStrategy": "1. Test end-to-end flow\n2. Verify QTI storage\n3. Test OneRoster class creation\n4. Validate enrollment process",
+        "priority": "high",
+        "dependencies": [
+          2,
+          3,
+          4
+        ],
+        "status": "pending",
+        "subtasks": [
+          {
+            "id": 1,
+            "title": "Implement UI State Management for Story Generation",
+            "description": "Design and implement UI state management to handle user selections (universe, character, spark), loading states, and error handling throughout the story generation flow.",
+            "dependencies": [],
+            "details": "Ensure that the UI accurately reflects the current step in the story generation process, stores user selections, and transitions smoothly between states such as idle, loading, success, and error.",
+            "status": "pending",
+            "testStrategy": ""
+          },
+          {
+            "id": 2,
+            "title": "Develop Loading Logic and User Feedback",
+            "description": "Implement loading indicators and feedback mechanisms to inform users of progress during asynchronous operations in the story generation flow.",
+            "dependencies": [
+              "5.1"
+            ],
+            "details": "Display loading spinners or progress bars during AI generation, QTI storage, and OneRoster operations. Handle and display errors gracefully if any step fails.",
+            "status": "pending",
+            "testStrategy": ""
+          },
+          {
+            "id": 3,
+            "title": "Integrate AI Service for Story Generation",
+            "description": "Connect the UI to the AI story generation service, sending user selections and receiving generated story content.",
+            "dependencies": [
+              "5.1",
+              "5.2"
+            ],
+            "details": "Implement API calls to the AI service, handle responses, and update the UI state with the generated story or error messages as appropriate.",
+            "status": "pending",
+            "testStrategy": ""
+          },
+          {
+            "id": 4,
+            "title": "Store QTI Package via API",
+            "description": "Implement logic to store the generated QTI package using the POST /api/qti/v3/assessments endpoint after successful story generation.",
+            "dependencies": [
+              "5.3"
+            ],
+            "details": "Format the generated story and associated assessment data into a valid QTI package and persist it using the designated API endpoint. Handle API responses and errors.",
+            "status": "pending",
+            "testStrategy": ""
+          },
+          {
+            "id": 5,
+            "title": "Create OneRoster Class and Line Item",
+            "description": "Create a new OneRoster class and associated line item for the generated story and assessment using the appropriate OneRoster API endpoints.",
+            "dependencies": [
+              "5.4"
+            ],
+            "details": "Use the OneRoster API to create a class representing the story session and a line item for the assessment, ensuring correct data mapping and transactional integrity.",
+            "status": "pending",
+            "testStrategy": ""
+          },
+          {
+            "id": 6,
+            "title": "Handle Student Enrollment in OneRoster Class",
+            "description": "Enroll students into the newly created OneRoster class to ensure they have access to the generated story and assessment.",
+            "dependencies": [
+              "5.5"
+            ],
+            "details": "Implement enrollment logic using OneRoster endpoints, verify enrollment status, and update the UI or backend state as needed.",
+            "status": "pending",
+            "testStrategy": ""
+          },
+          {
+            "id": 7,
+            "title": "Implement End-to-End Testing for Story Generation Flow",
+            "description": "Develop and execute end-to-end tests to validate the entire story generation flow, including UI state, AI integration, QTI storage, OneRoster class/line item creation, and student enrollment.",
+            "dependencies": [
+              "5.6"
+            ],
+            "details": "Write automated tests that simulate user actions and verify that each subsystem (UI, AI, QTI, OneRoster) interacts correctly and that the overall flow is robust and reliable.",
+            "status": "pending",
+            "testStrategy": ""
+          }
+        ]
+      },
+      {
+        "id": 6,
+        "title": "Implement Reading Interface QTI Integration",
+        "description": "Connect reading interface to QTI assessment loading and display",
+        "details": "1. Implement GET /api/qti/v3/assessments/{id}\n2. Parse QTI sections and questions\n3. Display current section content\n4. Implement section blurring/unlocking\n5. Add QTI state management",
+        "testStrategy": "1. Test QTI loading\n2. Verify section parsing\n3. Test display logic\n4. Validate section unlocking",
+        "priority": "high",
+        "dependencies": [
+          4,
+          5
+        ],
+        "status": "pending",
+        "subtasks": [
+          {
+            "id": 1,
+            "title": "Implement QTI Assessment Loading",
+            "description": "Develop functionality to load QTI assessments via the GET /api/qti/v3/assessments/{id} endpoint and handle the retrieval of assessment XML or content packages.",
+            "dependencies": [],
+            "details": "Ensure the API client can fetch QTI assessment data, handle errors, and support asynchronous loading states.",
+            "status": "pending",
+            "testStrategy": ""
+          },
+          {
+            "id": 2,
+            "title": "Parse QTI Sections and Questions",
+            "description": "Parse the loaded QTI XML to extract sections and questions, mapping them to internal data structures for rendering and interaction.",
+            "dependencies": [
+              "6.1"
+            ],
+            "details": "Implement XML parsing logic to identify <section> and <item> elements, extract metadata, and prepare question content for display.",
+            "status": "pending",
+            "testStrategy": ""
+          },
+          {
+            "id": 3,
+            "title": "Display Section and Question Content",
+            "description": "Render the parsed QTI section and question content in the reading interface, supporting QTI-specific formatting and media.",
+            "dependencies": [
+              "6.2"
+            ],
+            "details": "Develop UI components to display section instructions, question prompts, and any associated media or rubric as defined by QTI.",
+            "status": "pending",
+            "testStrategy": ""
+          },
+          {
+            "id": 4,
+            "title": "Implement Section Blurring and Unlocking Logic",
+            "description": "Add logic to blur or lock sections until unlocking conditions are met, updating the UI based on user progress and QTI rules.",
+            "dependencies": [
+              "6.3"
+            ],
+            "details": "Integrate stateful UI updates to blur locked sections and unlock them upon completion of required actions or responses.",
+            "status": "pending",
+            "testStrategy": ""
+          },
+          {
+            "id": 5,
+            "title": "Integrate QTI State Management",
+            "description": "Manage assessment state, including current section, answered questions, and unlocking status, ensuring persistence and consistency.",
+            "dependencies": [
+              "6.4"
+            ],
+            "details": "Implement state management (e.g., using React context or Redux) to track user progress, section unlocks, and synchronize with backend if needed.",
+            "status": "pending",
+            "testStrategy": ""
+          },
+          {
+            "id": 6,
+            "title": "Conduct UI/UX and Functional Testing",
+            "description": "Test the reading interface integration for QTI loading, parsing, display, section unlocking, and state management to ensure correctness and usability.",
+            "dependencies": [
+              "6.5"
+            ],
+            "details": "Develop and execute test cases for QTI assessment loading, section/question parsing, display logic, section unlocking, and state transitions. Gather user feedback for UI/UX improvements.",
+            "status": "pending",
+            "testStrategy": ""
+          }
+        ]
+      },
+      {
+        "id": 7,
+        "title": "Implement Question Response Handling",
+        "description": "Process QTI responses and manage section unlocking",
+        "details": "1. Implement QTI responseProcessing\n2. Handle answer submission\n3. Implement section unlocking logic\n4. Store responses via POST /api/qti/v3/responses\n5. Update OneRoster results",
+        "testStrategy": "1. Test response processing\n2. Verify unlocking conditions\n3. Test response storage\n4. Validate OneRoster updates",
+        "priority": "high",
+        "dependencies": [
+          6
+        ],
+        "status": "pending",
+        "subtasks": [
+          {
+            "id": 1,
+            "title": "Implement QTI Response Processing",
+            "description": "Develop logic to process QTI responses, including evaluating correctness, computing scores, and handling feedback as defined by QTI responseProcessing rules.",
+            "dependencies": [],
+            "details": "Parse QTI response identifiers, bind them to response declarations, and execute responseProcessing logic to determine outcomes and scores according to QTI 3.0 standards.",
+            "status": "pending",
+            "testStrategy": ""
+          },
+          {
+            "id": 2,
+            "title": "Handle Answer Submission",
+            "description": "Create mechanisms for users to submit answers, triggering QTI response processing and capturing submission metadata.",
+            "dependencies": [
+              "7.1"
+            ],
+            "details": "Integrate UI and backend to accept user answers, invoke response processing, and ensure submission status and timestamps are recorded.",
+            "status": "pending",
+            "testStrategy": ""
+          },
+          {
+            "id": 3,
+            "title": "Implement Section Unlocking Logic",
+            "description": "Develop logic to unlock subsequent test sections based on response outcomes and defined unlocking criteria.",
+            "dependencies": [
+              "7.2"
+            ],
+            "details": "Check unlocking conditions after answer submission and update test state to allow access to new sections as appropriate.",
+            "status": "pending",
+            "testStrategy": ""
+          },
+          {
+            "id": 4,
+            "title": "Integrate Response Storage API",
+            "description": "Store processed responses using the POST /api/qti/v3/responses endpoint, ensuring data integrity and traceability.",
+            "dependencies": [
+              "7.2"
+            ],
+            "details": "Format and send response data to the API, handle API responses, and manage error scenarios for reliable storage.",
+            "status": "pending",
+            "testStrategy": ""
+          },
+          {
+            "id": 5,
+            "title": "Update OneRoster Results",
+            "description": "Sync processed results and scores with the OneRoster system to maintain up-to-date learner records.",
+            "dependencies": [
+              "7.1",
+              "7.4"
+            ],
+            "details": "Map QTI outcomes to OneRoster result fields and update via the appropriate API endpoints, ensuring compliance with OneRoster specifications.",
+            "status": "pending",
+            "testStrategy": ""
+          },
+          {
+            "id": 6,
+            "title": "Develop Test Coverage for All Flows",
+            "description": "Design and implement comprehensive tests for response processing, answer submission, section unlocking, response storage, and OneRoster updates.",
+            "dependencies": [
+              "7.1",
+              "7.2",
+              "7.3",
+              "7.4",
+              "7.5"
+            ],
+            "details": "Create unit and integration tests to verify correctness, edge cases, and error handling across all response handling flows.",
+            "status": "pending",
+            "testStrategy": ""
+          }
+        ]
+      },
+      {
+        "id": 8,
+        "title": "Implement Multi-Chapter Story Generation",
+        "description": "Handle chapter choices and continuous story generation",
+        "details": "1. Store chapter selection\n2. Pass context to AI generator\n3. Maintain story continuity\n4. Create new QTI package\n5. Update OneRoster LineItems",
+        "testStrategy": "1. Test chapter selection\n2. Verify context passing\n3. Test story continuity\n4. Validate LineItem creation",
         "priority": "medium",
+        "dependencies": [
+          5,
+          7
+        ],
         "status": "pending",
-        "dependencies": ["3"]
+        "subtasks": [
+          {
+            "id": 1,
+            "title": "Implement Chapter Selection Storage",
+            "description": "Design and implement a mechanism to store user chapter selections, ensuring selections are persistently tracked for each story session.",
+            "dependencies": [],
+            "details": "This includes database schema updates or in-memory structures to record which chapters have been selected, and APIs or services to retrieve and update this information as the user progresses.",
+            "status": "pending",
+            "testStrategy": ""
+          },
+          {
+            "id": 2,
+            "title": "Develop Context Passing to AI Generator",
+            "description": "Create logic to assemble and pass relevant story context—including previous chapters and user choices—to the AI story generation engine for each new chapter.",
+            "dependencies": [
+              "8.1"
+            ],
+            "details": "Ensure the AI receives all necessary narrative history and user decisions to generate coherent and contextually appropriate next chapters.",
+            "status": "pending",
+            "testStrategy": ""
+          },
+          {
+            "id": 3,
+            "title": "Implement Story Continuity Management",
+            "description": "Develop mechanisms to maintain narrative consistency and continuity across chapters, leveraging stored selections and AI outputs.",
+            "dependencies": [
+              "8.1",
+              "8.2"
+            ],
+            "details": "This may involve validating AI outputs for logical progression, tracking character arcs, and ensuring plot coherence throughout the multi-chapter story.",
+            "status": "pending",
+            "testStrategy": ""
+          },
+          {
+            "id": 4,
+            "title": "Create QTI Package for Each Chapter",
+            "description": "Generate a new QTI (Question and Test Interoperability) package for each chapter, reflecting the current state of the story and user interactions.",
+            "dependencies": [
+              "8.3"
+            ],
+            "details": "This includes formatting chapter content and associated questions into QTI-compliant XML or JSON, and storing or distributing the package as required.",
+            "status": "pending",
+            "testStrategy": ""
+          },
+          {
+            "id": 5,
+            "title": "Update OneRoster Line Items",
+            "description": "Implement logic to update OneRoster LineItems to reflect user progress and assessment results for each generated chapter.",
+            "dependencies": [
+              "8.4"
+            ],
+            "details": "This involves mapping chapter completions and quiz results to OneRoster data structures and ensuring updates are correctly synchronized with the OneRoster system.",
+            "status": "pending",
+            "testStrategy": ""
+          },
+          {
+            "id": 6,
+            "title": "Conduct Integration Testing of Multi-Chapter Generation",
+            "description": "Perform end-to-end integration testing to verify that chapter selection, context passing, story continuity, QTI packaging, and OneRoster updates function together as intended.",
+            "dependencies": [
+              "8.1",
+              "8.2",
+              "8.3",
+              "8.4",
+              "8.5"
+            ],
+            "details": "Develop and execute test cases covering typical and edge-case user flows, validating data integrity and system interoperability across all components.",
+            "status": "pending",
+            "testStrategy": ""
+          }
+        ]
       },
       {
-        "id": "5",
-        "title": "Create book creation wizard - Universe selection",
-        "description": "Build the first step of book creation for selecting story universe",
-        "details": "Create card-based selection UI for universes (Pokemon, Mario, etc.), implement visual selection states, add navigation controls (Next button), and store selection in state.",
-        "priority": "high",
-        "status": "pending",
-        "dependencies": ["4"]
-      },
-      {
-        "id": "6",
-        "title": "Create book creation wizard - Character selection",
-        "description": "Build the character selection step of book creation",
-        "details": "Display characters based on selected universe, implement card selection UI with character images, maintain selection state, and enable progression to next step.",
-        "priority": "high",
-        "status": "pending",
-        "dependencies": ["5"]
-      },
-      {
-        "id": "7",
-        "title": "Create book creation wizard - Story spark selection",
-        "description": "Build the story prompt selection interface",
-        "details": "Create cards with story spark options, implement selection mechanism, add 'Create Book' final action button, and prepare data for story generation API call.",
-        "priority": "high",
-        "status": "pending",
-        "dependencies": ["6"]
-      },
-      {
-        "id": "8",
-        "title": "Integrate AI story generation service",
-        "description": "Connect to AI service for generating personalized stories",
-        "details": "Set up API integration with story generation service (OpenAI/Claude API), implement prompt engineering based on selections, handle story generation requests, and implement error handling and loading states.",
-        "priority": "high",
-        "status": "pending",
-        "dependencies": ["7"]
-      },
-      {
-        "id": "9",
-        "title": "Build interactive reading interface",
-        "description": "Create the dual-pane reading interface with story and questions",
-        "details": "Implement two-column layout (story left, questions right), add text highlighting for nouns/adjectives, implement progressive content reveal with blur effect, and create smooth scrolling behavior.",
-        "priority": "high",
-        "status": "pending",
-        "dependencies": ["8"]
-      },
-      {
-        "id": "10",
-        "title": "Implement question-answer system",
-        "description": "Build the interactive Q&A functionality that unlocks content",
-        "details": "Generate contextual questions based on story content, implement multiple choice UI, validate answers with visual feedback, unlock next story section on correct answer, and handle incorrect answer attempts.",
-        "priority": "high",
-        "status": "pending",
-        "dependencies": ["9"]
-      },
-      {
-        "id": "11",
-        "title": "Create chapter quiz functionality",
-        "description": "Build end-of-chapter quiz system",
-        "details": "Design quiz interface with multiple questions, implement answer tracking and scoring, create quiz completion flow, and transition to reading summary screen.",
+        "id": 9,
+        "title": "Implement Progress Tracking",
+        "description": "Track and display reading progress using OneRoster results",
+        "details": "1. Calculate QTI scores\n2. Update OneRoster results\n3. Implement progress display\n4. Add progress caching\n5. Handle offline updates",
+        "testStrategy": "1. Test score calculation\n2. Verify result updates\n3. Test progress display\n4. Validate offline handling",
         "priority": "medium",
+        "dependencies": [
+          7
+        ],
         "status": "pending",
-        "dependencies": ["10"]
+        "subtasks": [
+          {
+            "id": 1,
+            "title": "Implement QTI Score Calculation",
+            "description": "Develop logic to calculate scores for QTI-based assessments, supporting both per-question and per-response evaluation, and mapping responses to outcome variables as defined in QTI specifications.",
+            "dependencies": [],
+            "details": "Parse QTI response and outcome declarations, apply response processing rules, and compute scores using mapping and condition variables. Ensure compatibility with QTI 3.0 features such as multiple attempts and item-level scoring.",
+            "status": "pending",
+            "testStrategy": ""
+          },
+          {
+            "id": 2,
+            "title": "Update OneRoster Results with Progress",
+            "description": "Integrate progress and score updates into the OneRoster results endpoint, ensuring that calculated QTI scores and progress metrics are synchronized with the OneRoster system.",
+            "dependencies": [],
+            "details": "Map internal progress and score data to OneRoster result objects, handle result creation and updates, and ensure compliance with OneRoster data model and API requirements.",
+            "status": "pending",
+            "testStrategy": ""
+          },
+          {
+            "id": 3,
+            "title": "Develop Progress Display UI",
+            "description": "Design and implement a user interface component to visually display reading and assessment progress, including scores and completion status.",
+            "dependencies": [],
+            "details": "Create UI elements such as progress bars, score summaries, and completion indicators. Ensure real-time updates based on OneRoster result changes and support for multiple assessment attempts.",
+            "status": "pending",
+            "testStrategy": ""
+          },
+          {
+            "id": 4,
+            "title": "Implement Progress Caching Mechanism",
+            "description": "Add a caching layer to locally store progress and score data, reducing API calls and improving performance, especially for repeated access to progress information.",
+            "dependencies": [],
+            "details": "Use local storage or indexedDB to cache progress data, implement cache invalidation strategies, and ensure consistency with server-side OneRoster results.",
+            "status": "pending",
+            "testStrategy": ""
+          },
+          {
+            "id": 5,
+            "title": "Handle Offline Progress Updates",
+            "description": "Enable offline support for progress tracking by queuing updates when offline and synchronizing them with the server when connectivity is restored.",
+            "dependencies": [],
+            "details": "Detect offline status, queue progress and score updates locally, and implement a synchronization mechanism to update OneRoster results and UI once the device is back online.",
+            "status": "pending",
+            "testStrategy": ""
+          }
+        ]
       },
       {
-        "id": "12",
-        "title": "Build reading summary and analytics",
-        "description": "Create performance tracking and summary screens",
-        "details": "Calculate and display reading speed metrics, show quiz performance results, track overall progress, and store analytics data for parent review.",
+        "id": 10,
+        "title": "Implement Assessment Results Panel",
+        "description": "Display quiz results and metrics using OneRoster data",
+        "details": "1. Calculate assessment scores\n2. Format OneRoster results\n3. Implement results display\n4. Add progress visualization\n5. Handle result updates",
+        "testStrategy": "1. Test score display\n2. Verify metric calculation\n3. Test UI updates\n4. Validate data formatting",
         "priority": "medium",
+        "dependencies": [
+          9
+        ],
         "status": "pending",
-        "dependencies": ["11"]
+        "subtasks": [
+          {
+            "id": 1,
+            "title": "Implement Score Calculation Logic",
+            "description": "Develop the logic to calculate assessment scores from raw assessment data, ensuring alignment with OneRoster grading standards.",
+            "dependencies": [],
+            "details": "Define algorithms for score aggregation, handle partial credit, and ensure compatibility with OneRoster's Gradebook Service requirements.",
+            "status": "pending",
+            "testStrategy": ""
+          },
+          {
+            "id": 2,
+            "title": "Format Results for OneRoster",
+            "description": "Transform calculated scores and assessment results into the OneRoster-compliant format for interoperability.",
+            "dependencies": [
+              "10.1"
+            ],
+            "details": "Map internal result data to OneRoster's assessment results schema, including lineItems and score-scales, and serialize as required (e.g., JSON or CSV).",
+            "status": "pending",
+            "testStrategy": ""
+          },
+          {
+            "id": 3,
+            "title": "Develop Results Display UI",
+            "description": "Design and implement the user interface for displaying assessment results and metrics to users.",
+            "dependencies": [
+              "10.2"
+            ],
+            "details": "Create UI components to present scores, metrics, and relevant details, ensuring accessibility and clarity for end users.",
+            "status": "pending",
+            "testStrategy": ""
+          },
+          {
+            "id": 4,
+            "title": "Add Progress Visualization",
+            "description": "Integrate visual elements that represent user progress based on assessment results.",
+            "dependencies": [
+              "10.3"
+            ],
+            "details": "Implement progress bars, charts, or other visual indicators that reflect assessment completion and performance trends.",
+            "status": "pending",
+            "testStrategy": ""
+          },
+          {
+            "id": 5,
+            "title": "Handle Result Update Logic",
+            "description": "Implement mechanisms to update the results panel in response to new or changed assessment data.",
+            "dependencies": [
+              "10.4"
+            ],
+            "details": "Ensure the UI and underlying data refresh automatically or on demand when results are updated, supporting both real-time and batch update scenarios.",
+            "status": "pending",
+            "testStrategy": ""
+          }
+        ]
       },
       {
-        "id": "13",
-        "title": "Implement story path selection",
-        "description": "Build the 'What happens next?' branching story feature",
-        "details": "Create UI for displaying path options at chapter end, implement selection mechanism, integrate with story generation for next chapter, and maintain story continuity.",
+        "id": 11,
+        "title": "Implement Error Handling System",
+        "description": "Add comprehensive error handling across all integration points",
+        "details": "1. Add network error handling\n2. Implement QTI fallback mode\n3. Add OneRoster sync queue\n4. Handle auth expiry\n5. Add AI generation retries",
+        "testStrategy": "1. Test network failures\n2. Verify fallback behavior\n3. Test sync recovery\n4. Validate retry logic",
         "priority": "medium",
+        "dependencies": [
+          1,
+          2,
+          3,
+          4,
+          5,
+          6,
+          7
+        ],
         "status": "pending",
-        "dependencies": ["11"]
+        "subtasks": []
       },
       {
-        "id": "14",
-        "title": "Add progress tracking and streaks",
-        "description": "Implement reading streak and progress tracking features",
-        "details": "Create streak calculation logic, build streak display UI, implement daily reading reminders, track books completed and questions answered, and create progress visualization.",
-        "priority": "low",
+        "id": 12,
+        "title": "Implement State Management and Caching",
+        "description": "Add state management and caching for optimal performance",
+        "details": "1. Implement QTI context provider\n2. Add OneRoster data caching\n3. Implement progress persistence\n4. Add story context management\n5. Optimize API calls",
+        "testStrategy": "1. Test state persistence\n2. Verify cache behavior\n3. Test performance\n4. Validate data consistency",
+        "priority": "medium",
+        "dependencies": [
+          6,
+          7,
+          8,
+          9
+        ],
         "status": "pending",
-        "dependencies": ["12"]
-      },
-      {
-        "id": "15",
-        "title": "Polish UI/UX and responsive design",
-        "description": "Refine the user interface and ensure mobile responsiveness",
-        "details": "Implement purple/violet color scheme consistently, ensure tablet and mobile responsiveness, add smooth transitions and animations, optimize loading states, and conduct usability testing.",
-        "priority": "low",
-        "status": "pending",
-        "dependencies": ["14"]
+        "subtasks": []
       }
     ],
     "metadata": {
-      "name": "TeachTales Clone Development",
-      "description": "Building an educational story platform for children with AI-generated content",
-      "projectRoot": "/Users/yashchitneni/Development/Cursor Projects/current-projects/teaching-tales",
-      "createdAt": "2025-07-29",
-      "lastUpdated": "2025-07-29"
+      "created": "2025-08-04T04:57:11.794Z",
+      "updated": "2025-08-04T04:57:11.795Z",
+      "description": "Tasks for master context"
     }
   }
 }

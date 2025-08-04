@@ -1,0 +1,248 @@
+Project: TeachTales - QTI 3.0 & OneRoster 1.1 Integration with Existing UI
+
+OVERALL DESCRIPTION:
+TeachTales integrates QTI 3.0 assessment standards and OneRoster 1.1 user management into the already-built frontend UI. The system transforms AI-generated stories into QTI assessment packages with adaptive section unlocking, while managing users and progress through OneRoster standards. All UI screens are complete and functional - this project focuses on connecting them to the standards-based API running on localhost:8080.
+
+EXISTING UI COMPONENTS AND THEIR INTEGRATION:
+
+1. AUTHENTICATION PAGE (src/app/login - UF-001)
+   Current State: Google OAuth button, clean layout
+   Integration:
+   - Connect to API endpoint: POST /api/auth/login
+   - On successful auth, create OneRoster User with role "parent"
+   - Store JWT token for subsequent API calls
+   - Redirect to dashboard
+
+2. DASHBOARD PAGE WITH CREATE CHILD MODAL (src/app/dashboard/page.tsx + src/components/CreateChildModal.tsx - UF-002)
+   Current State: Dashboard shows after login, modal opens when clicking "Create Your Child's Account"
+   Integration:
+   - POST /api/ims/oneroster/v1p1/users to create child as OneRoster User (role: "student")
+   - Use OneRoster 'agents' attribute to link parent-child relationships:
+     * Child user has agents: [{sourcedId: parentId, type: "parent"}]
+     * Parent user has agents: [{sourcedId: childId, type: "student"}]
+   - GET /api/ims/oneroster/v1p1/users to fetch children via agents relationship
+   - Display child profiles on dashboard
+
+3. BOOK CREATION FLOW - UNIVERSE SELECTION (src/app/create-book/universe/page.tsx - UF-003 Step 1)
+   Current State: Grid of universe cards, search, modals
+   Integration:
+   - No API calls needed - store selection in session
+   - Universe metadata will be included in QTI package generation
+
+4. BOOK CREATION FLOW - CHARACTER SELECTION (src/app/create-book/character/page.tsx - UF-003 Step 2)
+   Current State: Character grid, progress bar (2/4)
+   Integration:
+   - No API calls needed - store selection in session
+   - Character data will be part of AI prompt
+
+5. BOOK CREATION FLOW - SPARK SELECTION (src/app/create-book/spark/page.tsx - UF-003 Step 3)
+   Current State: Event cards, "Create Book" button
+   Integration:
+   - On "Create Book" click, prepare data for AI generation
+   - Navigate to loading page for processing
+
+6. STORY GENERATION LOADING WITH AI AGENT (src/app/create-book/loading/page.tsx)
+   Current State: Animated loading with progress messages
+   AI Story Generation Agent:
+   - Service: Google Gemini Pro API
+   - Prompt includes: universe, character, spark, child's grade level, chapter context (if continuing story)
+   - Response format: JSON with title, 5 sections, 4 questions
+   Integration Flow:
+   - Call AI Agent with structured prompt
+   - Transform AI JSON response to QTI 3.0 AssessmentTest format
+   - POST /api/qti/v3/assessments to store QTI package
+   - POST /api/ims/oneroster/v1p1/classes to create book as OneRoster Class
+   - POST /api/ims/oneroster/v1p1/enrollments to enroll student in class
+   - POST /api/ims/oneroster/v1p1/lineItems for chapter as gradeable unit
+   - Redirect to reading interface with bookId and chapterId
+
+7. READING INTERFACE (src/app/book/[bookId]/chapter/[chapterId]/page.tsx - UF-004)
+   Current State: Two-column layout, story left, questions right
+   Integration:
+   - GET /api/qti/v3/assessments/{id} to fetch QTI AssessmentTest
+   - Parse QTI to extract sections and questions
+   - Display first section and first QTI AssessmentItem
+   - Sections 2-5 remain blurred until unlocked
+
+8. GUIDING QUESTIONS COMPONENT (src/components/GuidingQuestions.tsx)
+   Current State: Multiple choice questions in right sidebar
+   Integration:
+   - Display current QTI AssessmentItem (choiceInteraction)
+   - On answer selection:
+     * Process response via QTI responseProcessing rules
+     * If correct: unlock next section (QTI precondition satisfied)
+     * If incorrect: show feedback, allow retry
+   - POST /api/qti/v3/responses to store attempt
+   - Update progress: PUT /api/ims/oneroster/v1p1/results
+
+9. CHAPTER CHOICES COMPONENT (src/components/ChapterChoices.tsx)
+   Current State: "What happens next?" with path options
+   Integration for Next Chapter Generation:
+   - User selects story path (e.g., "Search for treasure" vs "Follow the map")
+   - Store selected path and current story context
+   - Trigger new AI generation with:
+     * Previous chapter summary
+     * Selected story path
+     * Maintain character/universe continuity
+   - Generate new chapter following same QTI process
+   - Create new LineItem for the new chapter
+   - Maintain story arc in QTI metadata
+
+10. ASSESSMENT RESULTS PANEL (src/components/AssessmentResults.tsx)
+    Current State: Shows quiz results and metrics
+    Integration:
+    - Calculate scores from QTI responses
+    - POST /api/ims/oneroster/v1p1/results with:
+      * Score (percentage correct)
+      * Status (completed)
+      * DateLastModified
+    - Update OneRoster LineItem with results
+
+AI STORY GENERATION AGENT:
+
+Purpose: Generate educational stories with integrated comprehension questions
+Technology: Google Gemini Pro API
+Input Structure:
+```json
+{
+  "universe": "Pokemon",
+  "character": "Luigi",
+  "spark": "A mysterious egg appears",
+  "gradeLevel": "4th Grade",
+  "previousChapter": null, // or summary if continuing
+  "selectedPath": null // or chosen path if continuing
+}
+```
+
+Prompt Template:
+"Generate a children's story chapter with these requirements:
+1. Universe: {universe}, Main Character: {character}
+2. Story premise: {spark} [or continue from: {previousChapter} following path: {selectedPath}]
+3. Reading level: {gradeLevel}
+4. Structure: Exactly 5 sections, approximately 150 words each
+5. Questions: 4 comprehension questions, one per section (not for section 5)
+6. Return as JSON with title, sections array, and questions array"
+
+Output Transformation to QTI:
+- Each section becomes QTI assessmentSection with unique identifier
+- Questions become QTI assessmentItems with choiceInteraction
+- Correct answers stored in responseDeclaration
+- Section unlocking via branchRule conditions
+
+MULTI-CHAPTER STORY FLOW:
+
+1. First Chapter:
+   - Generated from universe + character + spark
+   - Establishes story setting and conflict
+   - Ends with choice for next direction
+
+2. Subsequent Chapters:
+   - AI Agent receives previous chapter context
+   - Maintains character development and plot continuity
+   - Selected path influences story direction
+   - Each chapter ends with new choices
+
+3. Story Continuity Management:
+   - Store chapter summaries in database
+   - Pass context to AI for coherent narrative
+   - Track story arc in QTI metadata
+   - Maximum 10 chapters per book (configurable)
+
+ONEROSTER RELATIONSHIPS:
+
+Parent-Child Relationship via Agents:
+- Parent User:
+  ```json
+  {
+    "sourcedId": "parent-123",
+    "role": "parent",
+    "agents": [
+      {"sourcedId": "child-456", "type": "student"},
+      {"sourcedId": "child-789", "type": "student"}
+    ]
+  }
+  ```
+- Child User:
+  ```json
+  {
+    "sourcedId": "child-456",
+    "role": "student",
+    "agents": [
+      {"sourcedId": "parent-123", "type": "parent"}
+    ]
+  }
+  ```
+
+Student-Class Relationship via Enrollments:
+- Enrollment connects student to class (book)
+- NOT used for parent-child relationships
+- Used for tracking which books a child is reading
+
+QTI 3.0 ASSESSMENT STRUCTURE:
+```xml
+<assessmentTest>
+  <testPart>
+    <assessmentSection identifier="section-1">
+      <assessmentItemRef identifier="question-1"/>
+      <branchRule target="section-2">
+        <correct identifier="question-1"/>
+      </branchRule>
+    </assessmentSection>
+    <!-- Sections 2-5 with similar structure -->
+  </testPart>
+</assessmentTest>
+```
+
+STATE MANAGEMENT:
+- Store current QTI assessment in React context
+- Track unlocked sections in component state
+- Cache OneRoster data to minimize API calls
+- Persist reading progress to API on each answer
+- Maintain story context for multi-chapter books
+
+ERROR HANDLING:
+- Network failures: Show retry button, preserve user input
+- Invalid QTI: Fallback to basic display mode
+- OneRoster sync issues: Queue updates for later
+- Auth expiry: Redirect to login with return URL
+- AI generation failures: Retry with exponential backoff
+
+IMPLEMENTATION PRIORITIES:
+1. Auth Integration (Day 1)
+   - Connect login page to API auth
+   - Store JWT tokens securely
+   - Implement auth context/hooks
+
+2. User Management with Agents (Day 2)
+   - Create OneRoster users with proper parent-child agents
+   - Implement bidirectional agent relationships
+   - Connect dashboard to display children
+
+3. AI Agent & QTI Pipeline (Day 3-4)
+   - Integrate Google Gemini Pro
+   - Build structured prompts
+   - Transform AI response to QTI format
+   - Store QTI packages via API
+
+4. Reading Interface Integration (Day 5-6)
+   - Load QTI assessments
+   - Implement adaptive unlocking
+   - Process responses correctly
+
+5. Multi-Chapter Support (Day 7)
+   - Implement chapter choice selection
+   - Pass context to AI for continuation
+   - Maintain story coherence
+
+6. Progress Tracking (Day 8)
+   - Submit OneRoster Results
+   - Update LineItems per chapter
+   - Display progress in dashboard
+
+SUCCESS METRICS:
+- All API calls return valid responses
+- QTI packages validate against schema
+- OneRoster agents properly link parents and children
+- Multi-chapter stories maintain continuity
+- Section unlocking works as designed
+- Progress persists across sessions
