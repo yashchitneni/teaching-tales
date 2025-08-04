@@ -236,36 +236,31 @@ const libraryData = {
 }
 
 export default function LibraryPage() {
-  // Track which areas and categories are expanded
-  const [expandedAreas, setExpandedAreas] = useState<Set<string>>(new Set())
-  const [expandedCategories, setExpandedCategories] = useState<Set<string>>(new Set())
+  // Track which single area and category are currently expanded (single-path navigation)
+  const [expandedArea, setExpandedArea] = useState<string | null>(null)
+  const [expandedCategory, setExpandedCategory] = useState<string | null>(null)
 
   const toggleArea = (areaName: string) => {
-    const newExpandedAreas = new Set(expandedAreas)
-    if (newExpandedAreas.has(areaName)) {
-      newExpandedAreas.delete(areaName)
-      // Also collapse all categories within this area
-      const newExpandedCategories = new Set(expandedCategories)
-      const areaData = libraryData[areaName as keyof typeof libraryData]
-      Object.keys(areaData.categories).forEach(categoryName => {
-        newExpandedCategories.delete(`${areaName}:${categoryName}`)
-      })
-      setExpandedCategories(newExpandedCategories)
+    if (expandedArea === areaName) {
+      // Clicking the same area closes it
+      setExpandedArea(null)
+      setExpandedCategory(null) // Also close any expanded category
     } else {
-      newExpandedAreas.add(areaName)
+      // Clicking a different area opens it and closes others
+      setExpandedArea(areaName)
+      setExpandedCategory(null) // Reset category when switching areas
     }
-    setExpandedAreas(newExpandedAreas)
   }
 
   const toggleCategory = (areaName: string, categoryName: string) => {
     const categoryKey = `${areaName}:${categoryName}`
-    const newExpandedCategories = new Set(expandedCategories)
-    if (newExpandedCategories.has(categoryKey)) {
-      newExpandedCategories.delete(categoryKey)
+    if (expandedCategory === categoryKey) {
+      // Clicking the same category closes it
+      setExpandedCategory(null)
     } else {
-      newExpandedCategories.add(categoryKey)
+      // Clicking a different category opens it and closes others
+      setExpandedCategory(categoryKey)
     }
-    setExpandedCategories(newExpandedCategories)
   }
 
   const handleItemClick = (itemName: string) => {
@@ -277,23 +272,27 @@ export default function LibraryPage() {
     <div className="min-h-screen bg-gray-100">
       <TopNavWithTabs />
       
-      <div className="p-6">
-        <div className="text-center mb-8">
-          <h1 className="text-3xl font-bold text-gray-800 mb-2">Pick an Area of Interest</h1>
-          <p className="text-gray-600">Each world holds endless possibilities. Which one speaks to your imagination?</p>
-        </div>
-        
-        <div className="max-w-7xl mx-auto space-y-6">
-          {/* Areas of Interest - Always Visible */}
-          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
-            {Object.entries(libraryData).map(([areaName, areaData]) => (
-              <div key={areaName} className="space-y-4">
-                {/* Area Card */}
+      <div className="p-6 space-y-12">
+        {/* Section 1: Pick an Area of Interest - Always Visible */}
+        <div>
+          <div className="text-center mb-8">
+            <h1 className="text-3xl font-bold text-gray-800 mb-2">Pick an Area of Interest</h1>
+            <p className="text-gray-600">Each world holds endless possibilities. Which one speaks to your imagination?</p>
+          </div>
+          
+          <div className="max-w-7xl mx-auto">
+            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+              {Object.entries(libraryData).map(([areaName, areaData]) => (
                 <div
+                  key={areaName}
                   className="cursor-pointer group"
                   onClick={() => toggleArea(areaName)}
                 >
-                  <div className="bg-white rounded-2xl overflow-hidden shadow-lg hover:shadow-xl transform hover:scale-105 transition-all duration-300 border-2 border-transparent hover:border-blue-200">
+                  <div className={`bg-white rounded-2xl overflow-hidden shadow-lg hover:shadow-xl transform hover:scale-105 transition-all duration-300 border-2 ${
+                    expandedArea === areaName 
+                      ? 'border-blue-500 ring-2 ring-blue-200' 
+                      : 'border-transparent hover:border-blue-200'
+                  }`}>
                     <div className="relative aspect-[2.25] overflow-hidden">
                       <Image
                         src={areaData.image}
@@ -307,72 +306,88 @@ export default function LibraryPage() {
                     </div>
                   </div>
                 </div>
-
-                {/* Expanded Categories for this Area */}
-                {expandedAreas.has(areaName) && (
-                  <div className="space-y-4 pl-4">
-                    <h2 className="text-xl font-bold text-gray-700 text-center">Pick Again</h2>
-                    <div className="grid grid-cols-1 gap-3">
-                      {Object.entries(areaData.categories).map(([categoryName, categoryData]) => (
-                        <div key={categoryName} className="space-y-3">
-                          {/* Category Card */}
-                          <div
-                            className="cursor-pointer group"
-                            onClick={() => toggleCategory(areaName, categoryName)}
-                          >
-                            <div className="bg-white rounded-xl overflow-hidden shadow-md hover:shadow-lg transform hover:scale-[1.02] transition-all duration-300 border border-gray-200 hover:border-blue-300">
-                              <div className="relative aspect-[2.25] overflow-hidden">
-                                <Image
-                                  src={categoryData.image}
-                                  alt={categoryName}
-                                  fill
-                                  className="object-cover object-center group-hover:scale-105 transition-transform duration-300"
-                                />
-                              </div>
-                              <div className="p-3">
-                                <h4 className="font-semibold text-gray-800 text-center text-xs">{categoryName}</h4>
-                              </div>
-                            </div>
-                          </div>
-
-                          {/* Expanded Items for this Category */}
-                          {expandedCategories.has(`${areaName}:${categoryName}`) && (
-                            <div className="space-y-2 pl-4">
-                              <h3 className="text-lg font-bold text-gray-600 text-center">Last Choice</h3>
-                              <div className="grid grid-cols-1 gap-2">
-                                {categoryData.items.map((item) => (
-                                  <div
-                                    key={item.name}
-                                    className="cursor-pointer group"
-                                    onClick={() => handleItemClick(item.name)}
-                                  >
-                                    <div className="bg-white rounded-lg overflow-hidden shadow-sm hover:shadow-md transform hover:scale-[1.01] transition-all duration-300 border border-gray-100 hover:border-blue-200">
-                                      <div className="relative aspect-[2.25] overflow-hidden">
-                                        <Image
-                                          src={item.image}
-                                          alt={item.name}
-                                          fill
-                                          className="object-cover object-center group-hover:scale-105 transition-transform duration-300"
-                                        />
-                                      </div>
-                                      <div className="p-2">
-                                        <h5 className="font-medium text-gray-800 text-center text-xs">{item.name}</h5>
-                                      </div>
-                                    </div>
-                                  </div>
-                                ))}
-                              </div>
-                            </div>
-                          )}
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                )}
-              </div>
-            ))}
+              ))}
+            </div>
           </div>
         </div>
+
+        {/* Section 2: Pick Again - Only visible when area is selected */}
+        {expandedArea && (
+          <div>
+            <div className="text-center mb-8">
+              <h2 className="text-3xl font-bold text-gray-800 mb-2">Pick Again</h2>
+            </div>
+            
+            <div className="max-w-7xl mx-auto">
+              <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+                {Object.entries(libraryData[expandedArea as keyof typeof libraryData].categories).map(([categoryName, categoryData]) => (
+                  <div
+                    key={categoryName}
+                    className="cursor-pointer group"
+                    onClick={() => toggleCategory(expandedArea, categoryName)}
+                  >
+                    <div className={`bg-white rounded-2xl overflow-hidden shadow-lg hover:shadow-xl transform hover:scale-105 transition-all duration-300 border-2 ${
+                      expandedCategory === `${expandedArea}:${categoryName}`
+                        ? 'border-blue-500 ring-2 ring-blue-200'
+                        : 'border-transparent hover:border-blue-200'
+                    }`}>
+                      <div className="relative aspect-[2.25] overflow-hidden">
+                        <Image
+                          src={categoryData.image}
+                          alt={categoryName}
+                          fill
+                          className="object-cover object-center group-hover:scale-110 transition-transform duration-300"
+                        />
+                      </div>
+                      <div className="p-4">
+                        <h4 className="font-bold text-gray-800 text-center text-sm">{categoryName}</h4>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Section 3: Last Choice - Only visible when category is selected */}
+        {expandedCategory && expandedArea && (
+          <div>
+            <div className="text-center mb-8">
+              <h3 className="text-3xl font-bold text-gray-800 mb-2">Last Choice</h3>
+            </div>
+            
+            <div className="max-w-7xl mx-auto">
+              <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+                {(() => {
+                  const categoryName = expandedCategory.split(':')[1]
+                  const categoryData = libraryData[expandedArea as keyof typeof libraryData].categories[categoryName as keyof typeof libraryData[keyof typeof libraryData]['categories']]
+                  return categoryData.items.map((item) => (
+                    <div
+                      key={item.name}
+                      className="cursor-pointer group"
+                      onClick={() => handleItemClick(item.name)}
+                    >
+                      <div className="bg-white rounded-2xl overflow-hidden shadow-lg hover:shadow-xl transform hover:scale-105 transition-all duration-300 border-2 border-transparent hover:border-blue-200">
+                        <div className="relative aspect-[2.25] overflow-hidden">
+                          <Image
+                            src={item.image}
+                            alt={item.name}
+                            fill
+                            className="object-cover object-center group-hover:scale-110 transition-transform duration-300"
+                          />
+                        </div>
+                        <div className="p-4">
+                          <h5 className="font-bold text-gray-800 text-center text-sm">{item.name}</h5>
+                        </div>
+                      </div>
+                    </div>
+                  ))
+                })()}
+              </div>
+            </div>
+          </div>
+        )}
       </div>
     </div>
   )
