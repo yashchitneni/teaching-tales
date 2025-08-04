@@ -88,3 +88,9 @@ node_modules/
 
 # Setup script with hardcoded keys
 setup-env.sh 
+
+# sst
+.sst
+
+# open-next
+.open-next

@@ -1,0 +1,26 @@
+Dockerfile
+.dockerignore
+.next
+.git
+README.md
+.env*.local
+node_modules
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+.pnpm-debug.log*
+.DS_Store
+*.tsbuildinfo
+.vscode
+.idea
+coverage
+.nyc_output
+*.log
+out
+dist
+build
+.turbo
+
+
+# sst
+.sst

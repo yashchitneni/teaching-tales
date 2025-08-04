@@ -1,0 +1,51 @@
+# SPORTS → INDIVIDUAL SPORTS IMAGE EXTRACTION
+# Date: 2025-08-04T05:26:46Z
+# Page: Sports Category → Individual Sports Subcategory
+
+## Page Context:
+- URL: https://app.teachtales.com/library
+- Path: Sports → Individual Sports
+- Extraction Method: Browser snapshot + manual navigation
+
+## Status:
+- Duplicate tab closed
+- Single browser tab active
+- User confirmed page navigation to Sports → Individual Sports
+
+## Extracted Images:
+
+### MAIN CATEGORIES ("Pick an Area of Interest"):
+- Sports: [Sport category image with football, basketball, tennis racket]
+- Animals: [Animals category image with elephant, lion, tiger]
+- Science & Nature: [Science category image with atoms, nature elements]
+- History & Culture: [History category image with pyramids, cultural symbols]
+- Arts & Crafts: [Arts category image with colorful art supplies, brushes]
+- Technology & Innovation: [Technology category image with lightbulb, gears]
+- Literature & Stories: [Literature category image with books, castle]
+- Travel & Geography: [Travel category image with globe, landmarks]
+
+### SPORTS SUBCATEGORIES ("Pick Again"):
+- Team Sports: [Team sports image with various team sport equipment]
+- Individual Sports: [Individual sports image with tennis, athletics equipment] **[HIGHLIGHTED/SELECTED]**
+- Adventure Sports: [Adventure sports image with extreme sports gear]
+- Water Sports: [Water sports image with swimming, water activities]
+- Winter Sports: [Winter sports image with skiing, winter equipment]
+- Athletics: [Athletics image with track and field equipment]
+- Mind Sports: [Mind sports image with chess, brain games]
+
+### INDIVIDUAL SPORTS TOPICS ("Last Choice"):
+- Tennis: [Tennis image with rackets, tennis ball, court]
+- Gymnastics: [Gymnastics image with gymnast, equipment]
+- Martial Arts: [Martial arts image with karate/martial arts figures]
+- Track and Field: [Track and field image with running, athletic events]
+
+## Notes:
+- Browser snapshot shows extensive console activity
+- Page appears to be loading/reloading
+- Ready for JavaScript image extraction once page structure is visible
+
+## Next Steps:
+1. Extract visible images from current page state
+2. Navigate through Individual Sports topics (Gymnastics, Tennis, Track & Field, etc.)
+3. Extract images from each topic page
+4. Document all unique image URLs
