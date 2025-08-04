@@ -78,7 +78,7 @@ export function TopNavWithTabs() {
             </Link>
 
             {/* Coins */}
-            <div className="min-w-8 h-9 max-sm:h-7 p-2 cursor-pointer bg-yellow-100 rounded-full border border-yellow-500/20 justify-start items-center gap-1.5 inline-flex">
+            <Link href="/redeem-rewards" className="min-w-8 h-9 max-sm:h-7 p-2 cursor-pointer bg-yellow-100 hover:bg-yellow-200 rounded-full border border-yellow-500/20 justify-start items-center gap-1.5 inline-flex transition-colors" title="Redeem coins for Robux">
               <div className="w-4 h-4 relative">
                 <svg className="w-full h-full" viewBox="0 0 16 16" fill="#FFC107">
                   <circle cx="8" cy="8" r="7" />
@@ -86,7 +86,7 @@ export function TopNavWithTabs() {
                 </svg>
               </div>
               <div className="text-center text-yellow-600 text-base font-bold">867</div>
-            </div>
+            </Link>
 
             {/* Notification Bell */}
             <div className="relative">
