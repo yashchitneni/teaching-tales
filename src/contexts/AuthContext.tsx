@@ -4,80 +4,28 @@ import React, { createContext, useContext, useEffect, useState } from 'react'
 import { apiClient } from '@/lib/api-client'
 import { UserRole } from '@/lib/cognito-auth'
 
-interface OneRosterUserData {
-  sourcedId: string
-  status: 'active' | 'tobedeleted'
-  dateLastModified: string
-  username: string
-  enabledUser: boolean
-  givenName: string
-  familyName: string
-  role: UserRole
-  email: string
-  userIds?: Array<{ type: string; identifier: string }>
-  metadata?: Record<string, unknown>
-}
-
-interface Profile {
-  id: string
-  email: string
-  display_name?: string
-  avatar_url?: string
-  subscription_tier: 'free' | 'premium'
-  created_at: string
-  updated_at: string
-  cognito_id?: string
-  role?: UserRole
-  oneroster_id?: string
-  metadata?: any
-}
-
 interface CognitoUser {
   id: string
   email: string
   cognitoId: string
   role: UserRole
   name?: string
-  profile?: Profile | null
-  oneRosterData?: OneRosterUserData
-  children?: any[] // Children profiles for this parent
 }
 
 interface AuthContextType {
   user: CognitoUser | null
-  profile: Profile | null
   loading: boolean
   signIn: (email: string, password: string) => Promise<void>
   signOut: () => Promise<void>
-  refreshProfile: () => Promise<void>
-  oneRosterData: OneRosterUserData | null
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined)
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<CognitoUser | null>(null)
-  const [profile, setProfile] = useState<Profile | null>(null)
   const [loading, setLoading] = useState(true)
-  const [oneRosterData, setOneRosterData] = useState<OneRosterUserData | null>(null)
   const [refreshInterval, setRefreshInterval] = useState<NodeJS.Timeout | null>(null)
   const [hasCheckedAuth, setHasCheckedAuth] = useState(false)
-
-  const refreshProfile = async () => {
-    if (user) {
-      try {
-        // Get latest user data from API
-        const response = await apiClient.getCurrentUser()
-        if (response.success && response.data?.user) {
-          const userData = response.data.user
-          setProfile(userData.profile)
-          setOneRosterData(userData.oneRosterData)
-        }
-      } catch (error) {
-        console.error('Error fetching profile:', error)
-      }
-    }
-  }
 
   const signIn = async (email: string, password: string) => {
     console.log('[AuthContext] signIn called for:', email)
@@ -99,12 +47,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           cognitoId: userData.cognitoId,
           role: userData.role,
           name: userData.name,
-          profile: userData.profile,
-          oneRosterData: userData.oneRosterData,
         })
-        
-        setProfile(userData.profile)
-        setOneRosterData(userData.oneRosterData)
         
         // Set up token refresh after successful login
         setupTokenRefresh()
@@ -186,13 +129,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
               cognitoId: userData.cognitoId,
               role: userData.role,
               name: userData.name,
-              profile: userData.profile,
-              oneRosterData: userData.oneRosterData,
-              children: userData.relationships?.children,
             })
-            
-            setProfile(userData.profile)
-            setOneRosterData(userData.oneRosterData)
             
             // Set up token refresh after successful authentication
             setupTokenRefresh()
@@ -242,8 +179,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       
       // Clear local state
       setUser(null)
-      setProfile(null)
-      setOneRosterData(null)
     } catch (error) {
       console.error('Error signing out:', error)
     }
@@ -251,12 +186,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const value = {
     user,
-    profile,
     loading,
     signIn,
     signOut,
-    refreshProfile,
-    oneRosterData,
   }
 
   return (

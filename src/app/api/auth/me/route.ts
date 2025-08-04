@@ -1,7 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { cookies } from 'next/headers';
 import { validateTimebackToken } from '@/lib/timeback-auth';
-import { supabase } from '@/lib/supabase';
 
 export async function GET(request: NextRequest) {
   try {
@@ -36,51 +35,16 @@ export async function GET(request: NextRequest) {
 
     const timebackUser = userResponse.data.user;
 
-    // Get user profile from our database
-    const { data: profile, error: profileError } = await supabase
-      .from('profiles')
-      .select('*')
-      .eq('cognito_id', timebackUser.cognitoId)
-      .single();
-
-    if (profileError && profileError.code !== 'PGRST116') {
-      console.error('Profile fetch error:', profileError);
-    }
-
-    // Get children for this parent
-    let children = [];
-    if (profile) {
-      const { data: childrenData } = await supabase
-        .from('children')
-        .select('*')
-        .eq('parent_id', profile.id);
-      
-      children = childrenData || [];
-    }
-
-    // Get OneRoster data from profile or generate it
-    const oneRosterData = profile?.metadata?.oneRoster || {
-      sourcedId: profile?.id || timebackUser.id,
-      role: 'parent',
-      status: 'active',
-      email: timebackUser.email,
-      givenName: profile?.display_name?.split(' ')[0] || 'Parent',
-      familyName: profile?.display_name?.split(' ').slice(1).join(' ') || 'User',
-    };
-
+    // Return user data from Timeback
     return NextResponse.json({
       success: true,
       data: {
         user: {
-          id: profile?.id || timebackUser.id,
+          id: timebackUser.id || timebackUser.cognitoId,
           email: timebackUser.email,
           cognitoId: timebackUser.cognitoId,
-          role: 'parent', // All TeachingTales users are parents
-          name: profile?.display_name,
-          profile: profile || null,
-          oneRosterData: oneRosterData,
-          children: children,
-          timebackRole: timebackUser.role, // Store their Timeback role separately if needed
+          role: timebackUser.role || 'parent',
+          name: timebackUser.name || timebackUser.email.split('@')[0],
         },
         message: 'User information retrieved successfully'
       }

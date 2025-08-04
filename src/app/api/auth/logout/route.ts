@@ -1,12 +1,21 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { cookies } from 'next/headers';
+import { logoutFromTimeback } from '@/lib/timeback-auth';
 
 export async function POST(request: NextRequest) {
   try {
     const cookieStore = await cookies();
 
-    // Clear all Cognito auth cookies
-    cookieStore.set('cognito-access-token', '', {
+    // Call Timeback logout endpoint
+    try {
+      await logoutFromTimeback();
+    } catch (error) {
+      // Continue with local logout even if Timeback logout fails
+      console.error('Timeback logout error:', error);
+    }
+
+    // Clear all Timeback auth cookies
+    cookieStore.set('timeback-access-token', '', {
       httpOnly: true,
       secure: process.env.NODE_ENV === 'production',
       sameSite: 'lax',
@@ -14,7 +23,7 @@ export async function POST(request: NextRequest) {
       path: '/',
     });
 
-    cookieStore.set('cognito-id-token', '', {
+    cookieStore.set('timeback-id-token', '', {
       httpOnly: true,
       secure: process.env.NODE_ENV === 'production',
       sameSite: 'lax',
@@ -22,7 +31,7 @@ export async function POST(request: NextRequest) {
       path: '/',
     });
 
-    cookieStore.set('cognito-refresh-token', '', {
+    cookieStore.set('timeback-refresh-token', '', {
       httpOnly: true,
       secure: process.env.NODE_ENV === 'production',
       sameSite: 'lax',
@@ -32,7 +41,7 @@ export async function POST(request: NextRequest) {
 
     // Clear SSO cookie if domain is set
     if (process.env.SSO_COOKIE_DOMAIN) {
-      cookieStore.set('cognito-sso-token', '', {
+      cookieStore.set('timeback-sso-token', '', {
         httpOnly: true,
         secure: process.env.NODE_ENV === 'production',
         sameSite: 'lax',
@@ -41,11 +50,6 @@ export async function POST(request: NextRequest) {
         path: '/',
       });
     }
-
-    // Note: We don't need to call Cognito to invalidate the session
-    // The tokens will simply expire on their own
-    // If you want to implement token revocation, you would need to
-    // maintain a blacklist or use AWS Cognito's GlobalSignOut
 
     return NextResponse.json({
       success: true,
