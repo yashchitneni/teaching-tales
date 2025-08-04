@@ -43,8 +43,16 @@ export default function UniverseSelectionPage() {
   const router = useRouter()
   const [selectedUniverse, setSelectedUniverse] = useState<string | null>(null)
   const [searchQuery, setSearchQuery] = useState('')
-  const [showStreakModal, setShowStreakModal] = useState(true)
+  const [showStreakModal, setShowStreakModal] = useState(false)
   const [showRewardsModal, setShowRewardsModal] = useState(false)
+
+  // Check if user has seen the streak modal before
+  useEffect(() => {
+    const hasSeenStreakModal = localStorage.getItem('hasSeenStreakModal')
+    if (!hasSeenStreakModal) {
+      setShowStreakModal(true)
+    }
+  }, [])
 
   const handleUniverseSelect = (universeId: string) => {
     if (universeId === 'create-own') return // Locked
@@ -222,6 +230,7 @@ export default function UniverseSelectionPage() {
       {showStreakModal && (
         <StreakModal 
           onClose={() => {
+            localStorage.setItem('hasSeenStreakModal', 'true')
             setShowStreakModal(false)
             setShowRewardsModal(true)
           }} 

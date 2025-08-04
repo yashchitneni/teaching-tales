@@ -132,7 +132,10 @@ export function TopNavWithTabs() {
 
       {/* Streak Modal */}
       {showStreakModal && (
-        <StreakModal onClose={() => setShowStreakModal(false)} />
+        <StreakModal onClose={() => {
+          localStorage.setItem('hasSeenStreakModal', 'true')
+          setShowStreakModal(false)
+        }} />
       )}
     </nav>
   )
