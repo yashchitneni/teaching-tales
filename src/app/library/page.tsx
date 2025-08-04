@@ -1,0 +1,398 @@
+'use client'
+
+import { useState } from 'react'
+import { TopNavWithTabs } from '@/components/TopNavWithTabs'
+import Image from 'next/image'
+
+// Define our data structure based on the Library Tree with HTML.txt
+const libraryData = {
+  'Sports': {
+    image: 'https://d3dp0uoydvg1je.cloudfront.net/interests/sports_1024x585.webp',
+    categories: {
+      'Team Sports': {
+        image: 'https://d3dp0uoydvg1je.cloudfront.net/interests/team_sports_1024x585.webp',
+        items: [
+          { name: 'Soccer', image: 'https://d3dp0uoydvg1je.cloudfront.net/interests/soccer_1024x585.webp' },
+          { name: 'Basketball', image: 'https://d3dp0uoydvg1je.cloudfront.net/interests/basketball_1024x585.webp' },
+          { name: 'Baseball', image: 'https://d3dp0uoydvg1je.cloudfront.net/interests/baseball_1024x585.webp' },
+          { name: 'Volleyball', image: 'https://d3dp0uoydvg1je.cloudfront.net/interests/volleyball_1024x585.webp' },
+          { name: 'Football', image: 'https://d3dp0uoydvg1je.cloudfront.net/interests/football_1024x585.webp' },
+          { name: 'Hockey', image: 'https://d3dp0uoydvg1je.cloudfront.net/interests/hockey_1024x585.webp' },
+          { name: 'Rugby', image: 'https://d3dp0uoydvg1je.cloudfront.net/interests/rugby_1024x585.webp' }
+        ]
+      },
+      'Individual Sports': {
+        image: 'https://d3dp0uoydvg1je.cloudfront.net/interests/individual_sports_1024x585.webp',
+        items: [
+          { name: 'Tennis', image: 'https://d3dp0uoydvg1je.cloudfront.net/interests/tennis_1024x585.webp' },
+          { name: 'Gymnastics', image: 'https://d3dp0uoydvg1je.cloudfront.net/interests/gymnastics_1024x585.webp' },
+          { name: 'Martial Arts', image: 'https://d3dp0uoydvg1je.cloudfront.net/interests/martial_arts_1024x585.webp' },
+          { name: 'Track and Field', image: 'https://d3dp0uoydvg1je.cloudfront.net/interests/track_field_1024x585.webp' }
+        ]
+      },
+      'Adventure Sports': {
+        image: 'https://d3dp0uoydvg1je.cloudfront.net/interests/adventure_sports_1024x585.webp',
+        items: [
+          { name: 'Climbing', image: 'https://d3dp0uoydvg1je.cloudfront.net/interests/climbing_1024x585.webp' },
+          { name: 'Hiking', image: 'https://d3dp0uoydvg1je.cloudfront.net/interests/hiking_1024x585.webp' },
+          { name: 'Skateboarding', image: 'https://d3dp0uoydvg1je.cloudfront.net/interests/skateboarding_1024x585.webp' }
+        ]
+      },
+      'Water Sports': {
+        image: 'https://d3dp0uoydvg1je.cloudfront.net/interests/water_sports_1024x585.webp',
+        items: [
+          { name: 'Swimming', image: 'https://d3dp0uoydvg1je.cloudfront.net/interests/swimming_1024x585.webp' },
+          { name: 'Diving', image: 'https://d3dp0uoydvg1je.cloudfront.net/interests/diving_1024x585.webp' },
+          { name: 'Sailing', image: 'https://d3dp0uoydvg1je.cloudfront.net/interests/sailing_1024x585.webp' }
+        ]
+      },
+      'Winter Sports': {
+        image: 'https://d3dp0uoydvg1je.cloudfront.net/interests/winter_sports_1024x585.webp',
+        items: [
+          { name: 'Skiing', image: 'https://d3dp0uoydvg1je.cloudfront.net/interests/skiing_1024x585.webp' },
+          { name: 'Snowboarding', image: 'https://d3dp0uoydvg1je.cloudfront.net/interests/snowboarding_1024x585.webp' },
+          { name: 'Ice Skating', image: 'https://d3dp0uoydvg1je.cloudfront.net/interests/ice_skating_1024x585.webp' }
+        ]
+      },
+      'Athletics': {
+        image: 'https://d3dp0uoydvg1je.cloudfront.net/interests/athletics_1024x585.webp',
+        items: [
+          { name: 'Track and Field', image: 'https://d3dp0uoydvg1je.cloudfront.net/interests/track_field_1024x585.webp' },
+          { name: 'Road Races', image: 'https://d3dp0uoydvg1je.cloudfront.net/interests/road_races_1024x585.webp' }
+        ]
+      },
+      'Mind Sports': {
+        image: 'https://d3dp0uoydvg1je.cloudfront.net/interests/mind_sports_1024x585.webp',
+        items: [
+          { name: 'Chess', image: 'https://d3dp0uoydvg1je.cloudfront.net/interests/chess_1024x585.webp' },
+          { name: 'Puzzle Competitions', image: 'https://d3dp0uoydvg1je.cloudfront.net/interests/puzzle_competitions_1024x585.webp' }
+        ]
+      }
+    }
+  },
+  'Animals': {
+    image: 'https://d3dp0uoydvg1je.cloudfront.net/interests/animals_1024x585.webp',
+    categories: {
+      'Wildlife': {
+        image: 'https://d3dp0uoydvg1je.cloudfront.net/interests/wildlife_1024x585.webp',
+        items: [
+          { name: 'Mammals', image: 'https://d3dp0uoydvg1je.cloudfront.net/interests/mammals_1024x585.webp' },
+          { name: 'Birds', image: 'https://d3dp0uoydvg1je.cloudfront.net/interests/birds_1024x585.webp' },
+          { name: 'Reptiles', image: 'https://d3dp0uoydvg1je.cloudfront.net/interests/reptiles_1024x585.webp' }
+        ]
+      },
+      'Pets': {
+        image: 'https://d3dp0uoydvg1je.cloudfront.net/interests/pets_1024x585.webp',
+        items: [
+          { name: 'Dogs', image: 'https://d3dp0uoydvg1je.cloudfront.net/interests/dogs_1024x585.webp' },
+          { name: 'Cats', image: 'https://d3dp0uoydvg1je.cloudfront.net/interests/cats_1024x585.webp' },
+          { name: 'Small Pets', image: 'https://d3dp0uoydvg1je.cloudfront.net/interests/small_pets_1024x585.webp' }
+        ]
+      },
+      'Marine Life': {
+        image: 'https://d3dp0uoydvg1je.cloudfront.net/interests/marine_life_1024x585.webp',
+        items: [
+          { name: 'Fish', image: 'https://d3dp0uoydvg1je.cloudfront.net/interests/fish_1024x585.webp' },
+          { name: 'Ocean Creatures', image: 'https://d3dp0uoydvg1je.cloudfront.net/interests/ocean_creatures_1024x585.webp' },
+          { name: 'Coral Reefs', image: 'https://d3dp0uoydvg1je.cloudfront.net/interests/coral_reefs_1024x585.webp' }
+        ]
+      }
+    }
+  },
+  'Science & Nature': {
+    image: 'https://d3dp0uoydvg1je.cloudfront.net/interests/science_nature_1024x585.webp',
+    categories: {
+      'Physical Sciences': {
+        image: 'https://d3dp0uoydvg1je.cloudfront.net/interests/physical_sciences_1024x585.webp',
+        items: [
+          { name: 'Physics', image: 'https://d3dp0uoydvg1je.cloudfront.net/interests/physics_1024x585.webp' },
+          { name: 'Chemistry', image: 'https://d3dp0uoydvg1je.cloudfront.net/interests/chemistry_1024x585.webp' }
+        ]
+      },
+      'Life Sciences': {
+        image: 'https://d3dp0uoydvg1je.cloudfront.net/interests/life_sciences_1024x585.webp',
+        items: [
+          { name: 'Biology', image: 'https://d3dp0uoydvg1je.cloudfront.net/interests/biology_1024x585.webp' },
+          { name: 'Environmental Science', image: 'https://d3dp0uoydvg1je.cloudfront.net/interests/environmental_science_1024x585.webp' }
+        ]
+      },
+      'Earth & Space': {
+        image: 'https://d3dp0uoydvg1je.cloudfront.net/interests/earth_space_1024x585.webp',
+        items: [
+          { name: 'Astronomy', image: 'https://d3dp0uoydvg1je.cloudfront.net/interests/astronomy_1024x585.webp' },
+          { name: 'Geology', image: 'https://d3dp0uoydvg1je.cloudfront.net/interests/geology_1024x585.webp' }
+        ]
+      }
+    }
+  },
+  'History & Culture': {
+    image: 'https://d3dp0uoydvg1je.cloudfront.net/interests/history_culture_1024x585.webp',
+    categories: {
+      'Ancient Civilizations': {
+        image: 'https://d3dp0uoydvg1je.cloudfront.net/interests/ancient_civilizations_1024x585.webp',
+        items: [
+          { name: 'Egypt', image: 'https://d3dp0uoydvg1je.cloudfront.net/interests/egypt_1024x585.webp' },
+          { name: 'Rome', image: 'https://d3dp0uoydvg1je.cloudfront.net/interests/rome_1024x585.webp' }
+        ]
+      },
+      'World History': {
+        image: 'https://d3dp0uoydvg1je.cloudfront.net/interests/world_history_1024x585.webp',
+        items: [
+          { name: 'Medieval Times', image: 'https://d3dp0uoydvg1je.cloudfront.net/interests/medieval_times_1024x585.webp' },
+          { name: 'Modern History', image: 'https://d3dp0uoydvg1je.cloudfront.net/interests/modern_history_1024x585.webp' }
+        ]
+      },
+      'Cultures Around the World': {
+        image: 'https://d3dp0uoydvg1je.cloudfront.net/interests/cultures_around_world_1024x585.webp',
+        items: [
+          { name: 'Traditions', image: 'https://d3dp0uoydvg1je.cloudfront.net/interests/traditions_1024x585.webp' },
+          { name: 'Languages', image: 'https://d3dp0uoydvg1je.cloudfront.net/interests/languages_1024x585.webp' }
+        ]
+      }
+    }
+  },
+  'Arts & Crafts': {
+    image: 'https://d3dp0uoydvg1je.cloudfront.net/interests/arts_crafts_1024x585.webp',
+    categories: {
+      'Visual Arts': {
+        image: 'https://d3dp0uoydvg1je.cloudfront.net/interests/visual_arts_1024x585.webp',
+        items: [
+          { name: 'Drawing', image: 'https://d3dp0uoydvg1je.cloudfront.net/interests/drawing_1024x585.webp' },
+          { name: 'Painting', image: 'https://d3dp0uoydvg1je.cloudfront.net/interests/painting_1024x585.webp' }
+        ]
+      },
+      'Performing Arts': {
+        image: 'https://d3dp0uoydvg1je.cloudfront.net/interests/performing_arts_1024x585.webp',
+        items: [
+          { name: 'Dance', image: 'https://d3dp0uoydvg1je.cloudfront.net/interests/dance_1024x585.webp' }
+        ]
+      },
+      'Crafts': {
+        image: 'https://d3dp0uoydvg1je.cloudfront.net/interests/crafts_1024x585.webp',
+        items: [
+          { name: 'DIY Projects', image: 'https://d3dp0uoydvg1je.cloudfront.net/interests/diy_projects_1024x585.webp' },
+          { name: 'Recycling Crafts', image: 'https://d3dp0uoydvg1je.cloudfront.net/interests/recycling_crafts_1024x585.webp' }
+        ]
+      }
+    }
+  },
+  'Technology & Innovation': {
+    image: 'https://d3dp0uoydvg1je.cloudfront.net/interests/technology_innovation_1024x585.webp',
+    categories: {
+      'Computing': {
+        image: 'https://d3dp0uoydvg1je.cloudfront.net/interests/computing_1024x585.webp',
+        items: [
+          { name: 'Computers', image: 'https://d3dp0uoydvg1je.cloudfront.net/interests/computers_1024x585.webp' },
+          { name: 'Internet', image: 'https://d3dp0uoydvg1je.cloudfront.net/interests/internet_1024x585.webp' }
+        ]
+      },
+      'Inventions': {
+        image: 'https://d3dp0uoydvg1je.cloudfront.net/interests/inventions_1024x585.webp',
+        items: [
+          { name: 'Historical Inventions', image: 'https://d3dp0uoydvg1je.cloudfront.net/interests/historical_inventions_1024x585.webp' },
+          { name: 'Modern Innovations', image: 'https://d3dp0uoydvg1je.cloudfront.net/interests/modern_innovations_1024x585.webp' }
+        ]
+      }
+    }
+  },
+  'Literature & Stories': {
+    image: 'https://d3dp0uoydvg1je.cloudfront.net/interests/literature_stories_1024x585.webp',
+    categories: {
+      'Fairy Tales': {
+        image: 'https://d3dp0uoydvg1je.cloudfront.net/interests/fairy_tales_1024x585.webp',
+        items: [
+          { name: 'Classic Tales', image: 'https://d3dp0uoydvg1je.cloudfront.net/interests/classic_tales_1024x585.webp' },
+          { name: 'Folk Tales', image: 'https://d3dp0uoydvg1je.cloudfront.net/interests/folk_tales_1024x585.webp' }
+        ]
+      },
+      'Popular Children\'s Stories': {
+        image: 'https://d3dp0uoydvg1je.cloudfront.net/interests/popular_childrens_stories_1024x585.webp',
+        items: [
+          { name: 'Modern Favorites', image: 'https://d3dp0uoydvg1je.cloudfront.net/interests/modern_favorites_1024x585.webp' },
+          { name: 'Author Spotlights', image: 'https://d3dp0uoydvg1je.cloudfront.net/interests/author_spotlights_1024x585.webp' }
+        ]
+      }
+    }
+  },
+  'Travel & Geography': {
+    image: 'https://d3dp0uoydvg1je.cloudfront.net/interests/travel_geography_1024x585.webp',
+    categories: {
+      'Countries': {
+        image: 'https://d3dp0uoydvg1je.cloudfront.net/interests/countries_1024x585.webp',
+        items: [
+          { name: 'USA', image: 'https://d3dp0uoydvg1je.cloudfront.net/interests/usa_1024x585.webp' },
+          { name: 'World', image: 'https://d3dp0uoydvg1je.cloudfront.net/interests/world_1024x585.webp' }
+        ]
+      },
+      'Geography': {
+        image: 'https://d3dp0uoydvg1je.cloudfront.net/interests/geography_1024x585.webp',
+        items: [
+          { name: 'Maps', image: 'https://d3dp0uoydvg1je.cloudfront.net/interests/maps_1024x585.webp' },
+          { name: 'Physical Geography', image: 'https://d3dp0uoydvg1je.cloudfront.net/interests/physical_geography_1024x585.webp' }
+        ]
+      }
+    }
+  }
+}
+
+export default function LibraryPage() {
+  const [currentView, setCurrentView] = useState<'areas' | 'categories' | 'items'>('areas')
+  const [selectedArea, setSelectedArea] = useState<string>('')
+  const [selectedCategory, setSelectedCategory] = useState<string>('')
+
+  const handleAreaClick = (areaName: string) => {
+    setSelectedArea(areaName)
+    setCurrentView('categories')
+  }
+
+  const handleCategoryClick = (categoryName: string) => {
+    setSelectedCategory(categoryName)
+    setCurrentView('items')
+  }
+
+  const handleBackClick = () => {
+    if (currentView === 'items') {
+      setCurrentView('categories')
+    } else if (currentView === 'categories') {
+      setCurrentView('areas')
+      setSelectedArea('')
+    }
+  }
+
+  const renderAreasOfInterest = () => (
+    <div className="p-6">
+      <div className="text-center mb-8">
+        <h1 className="text-3xl font-bold text-white mb-2">Pick an Area of Interest</h1>
+        <p className="text-white/70">Each world holds endless possibilities. Which one speaks to your imagination?</p>
+      </div>
+      
+      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 max-w-6xl mx-auto">
+        {Object.entries(libraryData).map(([areaName, areaData]) => (
+          <div
+            key={areaName}
+            className="cursor-pointer group"
+            onClick={() => handleAreaClick(areaName)}
+          >
+            <div className="bg-white rounded-2xl overflow-hidden shadow-lg hover:shadow-xl transform hover:scale-105 transition-all duration-300">
+              <div className="relative aspect-[2.25] overflow-hidden">
+                <Image
+                  src={areaData.image}
+                  alt={areaName}
+                  fill
+                  className="object-cover object-center group-hover:scale-110 transition-transform duration-300"
+                />
+              </div>
+              <div className="p-4">
+                <h3 className="font-bold text-gray-800 text-center text-sm">{areaName}</h3>
+              </div>
+            </div>
+          </div>
+        ))}
+      </div>
+    </div>
+  )
+
+  const renderCategories = () => {
+    const areaData = libraryData[selectedArea as keyof typeof libraryData]
+    if (!areaData) return null
+
+    return (
+      <div className="p-6">
+        <div className="flex items-center mb-6">
+          <button
+            onClick={handleBackClick}
+            className="text-white hover:text-blue-300 mr-4"
+          >
+            <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+            </svg>
+          </button>
+          <h1 className="text-3xl font-bold text-white">Pick Again</h1>
+        </div>
+        
+        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 max-w-6xl mx-auto">
+          {Object.entries(areaData.categories).map(([categoryName, categoryData]) => (
+            <div
+              key={categoryName}
+              className="cursor-pointer group"
+              onClick={() => handleCategoryClick(categoryName)}
+            >
+              <div className="bg-white rounded-2xl overflow-hidden shadow-lg hover:shadow-xl transform hover:scale-105 transition-all duration-300">
+                <div className="relative aspect-[2.25] overflow-hidden">
+                  <Image
+                    src={categoryData.image}
+                    alt={categoryName}
+                    fill
+                    className="object-cover object-center group-hover:scale-110 transition-transform duration-300"
+                  />
+                </div>
+                <div className="p-4">
+                  <h3 className="font-bold text-gray-800 text-center text-sm">{categoryName}</h3>
+                </div>
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+    )
+  }
+
+  const renderItems = () => {
+    const areaData = libraryData[selectedArea as keyof typeof libraryData]
+    const categoryData = areaData?.categories[selectedCategory as keyof typeof areaData.categories]
+    if (!categoryData) return null
+
+    return (
+      <div className="p-6">
+        <div className="flex items-center mb-6">
+          <button
+            onClick={handleBackClick}
+            className="text-white hover:text-blue-300 mr-4"
+          >
+            <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+            </svg>
+          </button>
+          <h1 className="text-3xl font-bold text-white">Last Choice</h1>
+        </div>
+        
+        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 max-w-6xl mx-auto">
+          {categoryData.items.map((item) => (
+            <div
+              key={item.name}
+              className="cursor-pointer group"
+              onClick={() => {
+                // TODO: Navigate to stories for this topic
+                console.log('Navigate to stories for:', item.name)
+              }}
+            >
+              <div className="bg-white rounded-2xl overflow-hidden shadow-lg hover:shadow-xl transform hover:scale-105 transition-all duration-300">
+                <div className="relative aspect-[2.25] overflow-hidden">
+                  <Image
+                    src={item.image}
+                    alt={item.name}
+                    fill
+                    className="object-cover object-center group-hover:scale-110 transition-transform duration-300"
+                  />
+                </div>
+                <div className="p-4">
+                  <h3 className="font-bold text-gray-800 text-center text-sm">{item.name}</h3>
+                </div>
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+    )
+  }
+
+  return (
+    <div className="min-h-screen bg-gradient-to-b from-[#100f2d] via-[#232059] to-[#404081]">
+      <TopNavWithTabs />
+      
+      {currentView === 'areas' && renderAreasOfInterest()}
+      {currentView === 'categories' && renderCategories()}
+      {currentView === 'items' && renderItems()}
+    </div>
+  )
+}
