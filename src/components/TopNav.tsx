@@ -2,9 +2,17 @@
 
 import Link from 'next/link'
 import { useAuth } from '@/contexts/AuthContext'
+import { Button } from '@/components/ui/button'
+import { useRouter } from 'next/navigation'
 
 export function TopNav() {
-  const { user, profile } = useAuth()
+  const { user, profile, signOut } = useAuth()
+  const router = useRouter()
+
+  const handleSignOut = async () => {
+    await signOut()
+    router.push('/login')
+  }
 
   return (
     <nav className="bg-blue-600 text-white">
@@ -35,10 +43,18 @@ export function TopNav() {
 
         {/* User Info */}
         <div className="flex items-center space-x-4">
-          <span className="text-sm">First</span>
+          <span className="text-sm">{profile?.display_name || user?.email?.split('@')[0] || 'User'}</span>
           <div className="w-10 h-10 bg-white/20 rounded-full flex items-center justify-center font-bold">
-            FL
+            {profile?.display_name?.charAt(0).toUpperCase() || user?.email?.charAt(0).toUpperCase() || 'U'}
           </div>
+          <Button
+            onClick={handleSignOut}
+            variant="outline"
+            size="sm"
+            className="bg-white/10 border-white/20 text-white hover:bg-white/20"
+          >
+            Sign Out
+          </Button>
         </div>
       </div>
     </nav>

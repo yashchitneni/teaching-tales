@@ -1,46 +1,150 @@
 'use client'
 
 import React, { createContext, useContext, useEffect, useState } from 'react'
-import { User } from '@supabase/supabase-js'
-import { auth, Profile, db } from '@/lib/supabase'
+import { apiClient } from '@/lib/api-client'
+import { UserRole } from '@/lib/cognito-auth'
+
+interface CognitoUser {
+  id: string
+  email: string
+  cognitoId: string
+  role: UserRole
+  name?: string
+}
 
 interface AuthContextType {
-  user: User | null
-  profile: Profile | null
+  user: CognitoUser | null
   loading: boolean
+  signIn: (email: string, password: string) => Promise<void>
   signOut: () => Promise<void>
-  refreshProfile: () => Promise<void>
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined)
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
-  const [user, setUser] = useState<User | null>(null)
-  const [profile, setProfile] = useState<Profile | null>(null)
+  const [user, setUser] = useState<CognitoUser | null>(null)
   const [loading, setLoading] = useState(true)
+  const [refreshInterval, setRefreshInterval] = useState<NodeJS.Timeout | null>(null)
+  const [hasCheckedAuth, setHasCheckedAuth] = useState(false)
 
-  const refreshProfile = async () => {
-    if (user) {
-      try {
-        const { data, error } = await db.getProfile(user.id)
-        if (!error && data) {
-          setProfile(data)
+  const signIn = async (email: string, password: string) => {
+    console.log('[AuthContext] signIn called for:', email)
+    try {
+      setLoading(true)
+      const response = await apiClient.login(email, password)
+      
+      console.log('[AuthContext] Login response:', response)
+      
+      if (response.success && response.data) {
+        const userData = response.data.user
+        
+        console.log('[AuthContext] Setting user data:', userData)
+        
+        // Set user data
+        setUser({
+          id: userData.id,
+          email: userData.email,
+          cognitoId: userData.cognitoId,
+          role: userData.role,
+          name: userData.name,
+        })
+        
+        // Set up token refresh after successful login
+        setupTokenRefresh()
+        
+        // Store tokens in localStorage for client-side access
+        if (response.data.tokens) {
+          localStorage.setItem('timeback-auth-token', response.data.tokens.accessToken)
         }
-      } catch (error) {
-        console.error('Error fetching profile:', error)
       }
+    } catch (error) {
+      console.error('[AuthContext] Sign in error:', error)
+      throw error
+    } finally {
+      setLoading(false)
     }
   }
 
+  // Set up automatic token refresh
+  const setupTokenRefresh = () => {
+    // Clear any existing interval
+    if (refreshInterval) {
+      clearInterval(refreshInterval)
+    }
+
+    // Set up new interval to refresh token every 45 minutes (before 1-hour expiry)
+    const interval = setInterval(async () => {
+      try {
+        // Only refresh if we have a refresh token
+        const hasRefreshToken = document.cookie.includes('timeback-refresh-token')
+        if (hasRefreshToken) {
+          await apiClient.refreshToken()
+        }
+      } catch (error) {
+        console.error('Token refresh failed:', error)
+        // If refresh fails, sign out the user
+        await signOut()
+      }
+    }, 45 * 60 * 1000) // 45 minutes
+
+    setRefreshInterval(interval)
+  }
+
   useEffect(() => {
+    // Prevent multiple auth checks
+    if (hasCheckedAuth) {
+      console.log('[AuthContext] Already checked auth, skipping')
+      return
+    }
+    
     // Get initial session
     const getInitialSession = async () => {
+      console.log('[AuthContext] Checking for existing session...')
+      setHasCheckedAuth(true)
+      
       try {
-        const currentUser = await auth.getCurrentUser()
-        setUser(currentUser)
+        // Check if we have a token in cookies or localStorage
+        const hasToken = document.cookie.includes('timeback-access-token') || 
+                        localStorage.getItem('timeback-auth-token')
         
-        if (currentUser) {
-          await refreshProfile()
+        console.log('[AuthContext] Has token:', hasToken)
+        console.log('[AuthContext] Cookies:', document.cookie)
+        
+        if (!hasToken) {
+          console.log('[AuthContext] No token found, user not logged in')
+          setLoading(false)
+          return
+        }
+        
+        // Try to get current user from API
+        try {
+          const apiUser = await apiClient.getCurrentUser()
+          if (apiUser.success && apiUser.data?.user) {
+            const userData = apiUser.data.user
+            console.log('[AuthContext] User data retrieved:', userData)
+            
+            setUser({
+              id: userData.id,
+              email: userData.email,
+              cognitoId: userData.cognitoId,
+              role: userData.role,
+              name: userData.name,
+            })
+            
+            // Set up token refresh after successful authentication
+            setupTokenRefresh()
+          } else {
+            console.log('[AuthContext] No user data in response')
+          }
+        } catch (error: any) {
+          console.error('Error fetching user data:', error)
+          // Clear invalid tokens
+          localStorage.removeItem('timeback-auth-token')
+          
+          // If it's a network error, log more details
+          if (error.message?.includes('401')) {
+            console.log('Authentication failed - tokens may be invalid or expired')
+          }
         }
       } catch (error) {
         console.error('Error getting initial session:', error)
@@ -51,27 +155,30 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
     getInitialSession()
 
-    // Listen for auth changes
-    const { data: { subscription } } = auth.onAuthStateChange(async (event, session) => {
-      setUser(session?.user ?? null)
-      
-      if (session?.user) {
-        await refreshProfile()
-      } else {
-        setProfile(null)
+    return () => {
+      // Clear refresh interval on unmount
+      if (refreshInterval) {
+        clearInterval(refreshInterval)
       }
-      
-      setLoading(false)
-    })
-
-    return () => subscription.unsubscribe()
+    }
   }, [])
 
   const signOut = async () => {
     try {
-      await auth.signOut()
+      // Clear token refresh interval
+      if (refreshInterval) {
+        clearInterval(refreshInterval)
+        setRefreshInterval(null)
+      }
+      
+      // Call API logout endpoint
+      await apiClient.logout()
+      
+      // Clear local storage
+      localStorage.removeItem('timeback-auth-token')
+      
+      // Clear local state
       setUser(null)
-      setProfile(null)
     } catch (error) {
       console.error('Error signing out:', error)
     }
@@ -79,10 +186,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const value = {
     user,
-    profile,
     loading,
+    signIn,
     signOut,
-    refreshProfile,
   }
 
   return (
@@ -98,4 +204,4 @@ export function useAuth() {
     throw new Error('useAuth must be used within an AuthProvider')
   }
   return context
-} 
+}

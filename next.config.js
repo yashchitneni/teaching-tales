@@ -1,5 +1,7 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
+  // output: 'export', // Disabled to support API routes
+  // distDir: 'out',
   // Remove 'standalone' output for SST NextJS component
   // output: 'standalone',
   eslint: {
