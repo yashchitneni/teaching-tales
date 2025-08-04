@@ -3,7 +3,7 @@
 
 const testCases = [
   {
-    name: "Create Child User with Agent Relationship",
+    name: "Create Child User with Agent Relationship (Enhanced)",
     method: "POST",
     url: "/api/ims/oneroster/v1p1/users",
     payload: {
@@ -29,8 +29,10 @@ const testCases = [
       checks: [
         "response.user.sourcedId should exist",
         "response.user.role should be 'student'",
-        "response.user.agents should contain parent",
-        "response.user.metadata.childId should exist"
+        "response.user.agents should contain bidirectional relationships",
+        "response.user.metadata.childId should exist",
+        "response.user.metadata.parentId should exist",
+        "response.user.metadata.relationshipEstablished should be true"
       ]
     }
   },
@@ -66,7 +68,89 @@ console.log("OneRoster Agent Relationship Test Cases");
 console.log("=====================================");
 console.log("");
 
+// Enhanced validation test cases
+const validationTestCases = [
+  {
+    name: "Validation: Missing Grade Level",
+    method: "POST", 
+    url: "/api/ims/oneroster/v1p1/users",
+    payload: {
+      role: "student",
+      givenName: "John",
+      familyName: "Test",
+      email: "john.test@example.com",
+      agents: [{ sourcedId: "PARENT_ID_HERE", agentSourcedId: "PARENT_ID_HERE" }],
+      metadata: { age: 8 }
+      // Missing grades field
+    },
+    expectedResponse: {
+      status: 400,
+      checks: ["Should return error about missing grade level"]
+    }
+  },
+  {
+    name: "Validation: Missing Age",
+    method: "POST",
+    url: "/api/ims/oneroster/v1p1/users", 
+    payload: {
+      role: "student",
+      givenName: "Jane",
+      familyName: "Test",
+      email: "jane.test@example.com",
+      grades: ["2nd Grade"],
+      agents: [{ sourcedId: "PARENT_ID_HERE", agentSourcedId: "PARENT_ID_HERE" }],
+      metadata: { readingLevel: "beginner" }
+      // Missing age field
+    },
+    expectedResponse: {
+      status: 400,
+      checks: ["Should return error about missing age"]
+    }
+  },
+  {
+    name: "Validation: Missing Agent Relationship",
+    method: "POST",
+    url: "/api/ims/oneroster/v1p1/users",
+    payload: {
+      role: "student", 
+      givenName: "Bob",
+      familyName: "Test",
+      email: "bob.test@example.com",
+      grades: ["1st Grade"],
+      metadata: { age: 6 }
+      // Missing agents field
+    },
+    expectedResponse: {
+      status: 400,
+      checks: ["Should return error about missing parent agent relationship"]
+    }
+  }
+];
+
+console.log("✅ MAIN TEST CASES:");
+console.log("=================");
 testCases.forEach((testCase, index) => {
+  console.log(`${index + 1}. ${testCase.name}`);
+  console.log(`   Method: ${testCase.method}`);
+  console.log(`   URL: ${testCase.url}`);
+  
+  if (testCase.payload) {
+    console.log(`   Payload:`);
+    console.log(`   ${JSON.stringify(testCase.payload, null, 4)}`);
+  }
+  
+  console.log(`   Expected Status: ${testCase.expectedResponse.status}`);
+  console.log(`   Validation Checks:`);
+  testCase.expectedResponse.checks.forEach(check => {
+    console.log(`   - ${check}`);
+  });
+  console.log("");
+});
+
+console.log("");
+console.log("🔍 VALIDATION TEST CASES:");
+console.log("========================");
+validationTestCases.forEach((testCase, index) => {
   console.log(`${index + 1}. ${testCase.name}`);
   console.log(`   Method: ${testCase.method}`);
   console.log(`   URL: ${testCase.url}`);

@@ -7,7 +7,10 @@
     "dev": "next dev -H 0.0.0.0 --turbopack",
     "format": "bunx biome format --write",
     "lint": "bunx tsc --noEmit && next lint",
-    "start": "next start"
+    "start": "next start",
+    "test:api": "node automated-test.js",
+    "test:interactive": "node test-runner.js",
+    "test:cases": "node test-agent-relationships.js"
   },
   "dependencies": {
     "@aws-sdk/client-cognito-identity-provider": "^3.859.0",

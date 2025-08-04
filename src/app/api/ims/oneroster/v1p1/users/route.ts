@@ -3,6 +3,7 @@ import { cookies } from 'next/headers';
 import { createClient } from '@supabase/supabase-js';
 import { randomUUID } from 'crypto';
 import type { SupabaseClient } from '@supabase/supabase-js';
+import { validateTimebackToken } from '@/lib/timeback-auth';
 
 // Initialize Supabase client
 const supabase = createClient(
@@ -205,19 +206,29 @@ async function validateAgentRelationships(
 // Helper to verify authentication
 async function verifyAuth(request: NextRequest) {
   const cookieStore = await cookies();
-  const accessToken = cookieStore.get('access-token')?.value;
+  const accessToken = cookieStore.get('timeback-access-token')?.value;
 
   if (!accessToken) {
     return null;
   }
 
-  const { data: { user }, error } = await supabase.auth.getUser(accessToken);
-  
-  if (error || !user) {
+  // Validate token with Timeback API (like /api/auth/me does)
+  const userResponse = await validateTimebackToken(accessToken);
+
+  if (!userResponse.success || !userResponse.data) {
     return null;
   }
 
-  return user;
+  const timebackUser = userResponse.data.user;
+
+  // Return user in the format expected by the rest of the code
+  return {
+    id: timebackUser.id || timebackUser.cognitoId,
+    email: timebackUser.email,
+    cognitoId: timebackUser.cognitoId,
+    role: timebackUser.role || 'parent',
+    name: timebackUser.name || timebackUser.email?.split('@')[0],
+  };
 }
 
 // GET /api/ims/oneroster/v1p1/users
@@ -355,6 +366,42 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    // Enhanced validation for child users (students)
+    if (body.role === 'student') {
+      // Validate parent agent relationship exists
+      if (!body.agents || body.agents.length === 0) {
+        return NextResponse.json(
+          { success: false, error: { message: 'Student users must have at least one parent agent relationship' } },
+          { status: 400 }
+        );
+      }
+
+      // Validate parent agent has correct structure
+      const parentAgent = body.agents.find(agent => agent.agentSourcedId === user.id);
+      if (!parentAgent) {
+        return NextResponse.json(
+          { success: false, error: { message: 'Student must have agent relationship with authenticated parent' } },
+          { status: 400 }
+        );
+      }
+
+      // Validate grade level is provided
+      if (!body.grades || body.grades.length === 0) {
+        return NextResponse.json(
+          { success: false, error: { message: 'Grade level is required for student users' } },
+          { status: 400 }
+        );
+      }
+
+      // Validate metadata fields for children
+      if (!body.metadata?.age || typeof body.metadata.age !== 'number') {
+        return NextResponse.json(
+          { success: false, error: { message: 'Age is required for student users and must be a number' } },
+          { status: 400 }
+        );
+      }
+    }
+
     // Generate sourcedId if not provided
     const sourcedId = body.sourcedId || randomUUID();
 
@@ -385,56 +432,76 @@ export async function POST(request: NextRequest) {
     };
 
     // If this is a child user (student role), create in children table
-    if (body.role === 'student' && body.agents?.length) {
-      const parentAgent = body.agents.find(agent => agent.agentSourcedId === user.id);
+    if (body.role === 'student') {
+      // At this point, validation has ensured agents exist and are valid
+      const parentAgent = body.agents.find(agent => agent.agentSourcedId === user.id)!;
       
-      if (parentAgent) {
-        const { data: child, error: childError } = await supabase
-          .from('children')
-          .insert({
-            id: sourcedId,
-            parent_id: user.id,
-            name: `${body.givenName} ${body.familyName}`.trim(),
-            age: body.metadata?.age || null,
-            grade_level: body.grades?.[0] || null,
-            interests: body.metadata?.interests || [],
-            reading_level: body.metadata?.readingLevel || null,
-            preferences: body.metadata?.preferences || {}
-          })
-          .select()
-          .single();
+      const { data: child, error: childError } = await supabase
+        .from('children')
+        .insert({
+          id: sourcedId,
+          parent_id: user.id,
+          name: `${body.givenName} ${body.familyName}`.trim(),
+          age: body.metadata?.age || null,
+          grade_level: body.grades?.[0] || null,
+          interests: body.metadata?.interests || [],
+          reading_level: body.metadata?.readingLevel || null,
+          preferences: body.metadata?.preferences || {}
+        })
+        .select()
+        .single();
 
-        if (childError) {
-          console.error('Error creating child:', childError);
-          return NextResponse.json(
-            { success: false, error: { message: 'Failed to create child user' } },
-            { status: 500 }
-          );
-        }
-
-        // Create bidirectional agent relationship
-        const relationshipResult = await createBidirectionalAgentRelationship(
-          user.id,
-          sourcedId,
-          supabase
+      if (childError) {
+        console.error('Error creating child:', childError);
+        return NextResponse.json(
+          { success: false, error: { message: 'Failed to create child user' } },
+          { status: 500 }
         );
-
-        if (!relationshipResult.success) {
-          console.error('Error creating agent relationship:', relationshipResult.error);
-          // Note: We don't fail the request since the child was created successfully
-          // The relationship can be fixed later
-        }
-
-        return NextResponse.json({
-          user: {
-            ...oneRosterUser,
-            metadata: {
-              ...oneRosterUser.metadata,
-              childId: child.id
-            }
-          }
-        }, { status: 201 });
       }
+
+      // Create bidirectional agent relationship
+      const relationshipResult = await createBidirectionalAgentRelationship(
+        user.id,
+        sourcedId,
+        supabase
+      );
+
+      if (!relationshipResult.success) {
+        console.error('Error creating agent relationship:', relationshipResult.error);
+        
+        // Clean up the child record since relationship creation failed
+        await supabase
+          .from('children')
+          .delete()
+          .eq('id', sourcedId);
+          
+        return NextResponse.json(
+          { 
+            success: false, 
+            error: { 
+              message: 'Failed to establish parent-child relationship. Please try again.',
+              details: relationshipResult.error 
+            } 
+          },
+          { status: 500 }
+        );
+      }
+
+      // Get updated agent relationships after bidirectional creation
+      const updatedAgents = await getUserAgentRelationships(sourcedId, supabase);
+      
+      return NextResponse.json({
+        user: {
+          ...oneRosterUser,
+          agents: updatedAgents, // Include the bidirectional agent relationships
+          metadata: {
+            ...oneRosterUser.metadata,
+            childId: child.id,
+            parentId: user.id,
+            relationshipEstablished: true
+          }
+        }
+      }, { status: 201 });
     }
 
     // For parent users, update profile with OneRoster metadata
