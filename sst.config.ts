@@ -22,6 +22,11 @@ export default $config({
       access: "public"
     });
 
+    // Get Supabase configuration from environment or secrets
+    const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || $secret("NEXT_PUBLIC_SUPABASE_URL");
+    const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || $secret("NEXT_PUBLIC_SUPABASE_ANON_KEY");
+    const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY || "";
+
     // Create the containerized service
     const service = new sst.aws.Service("TeachingTalesService", {
       cluster,
@@ -32,6 +37,17 @@ export default $config({
         command: "npm run dev",
       },
       link: [bucket],
+      environment: {
+        NEXT_PUBLIC_SUPABASE_URL: supabaseUrl,
+        NEXT_PUBLIC_SUPABASE_ANON_KEY: supabaseAnonKey,
+        SUPABASE_SERVICE_ROLE_KEY: supabaseServiceKey,
+      },
+      build: {
+        buildArgs: {
+          NEXT_PUBLIC_SUPABASE_URL: supabaseUrl,
+          NEXT_PUBLIC_SUPABASE_ANON_KEY: supabaseAnonKey,
+        },
+      },
     });
 
     return {
