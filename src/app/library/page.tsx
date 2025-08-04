@@ -296,10 +296,10 @@ export default function LibraryPage() {
                     className="group w-60"
                     onClick={() => toggleArea(areaName)}
                   >
-                                      <div className={`bg-white hover:bg-gray-200 border border-gray-300 rounded-md overflow-hidden shadow-md hover:shadow-lg transition-all duration-200 flex flex-col p-3 cursor-pointer ${
+                                      <div className={`border rounded-md overflow-hidden shadow-md hover:shadow-lg transition-all duration-200 flex flex-col p-3 cursor-pointer ${
                       expandedArea === areaName 
-                        ? 'border-2 border-blue-500 shadow-xl' 
-                        : ''
+                        ? 'border-blue-600 bg-blue-600 bg-opacity-10' 
+                        : 'bg-white hover:bg-gray-200 border-gray-300'
                     }`}>
                       <Image
                         src={areaData.image}
@@ -341,10 +341,10 @@ export default function LibraryPage() {
                       className="group w-60"
                       onClick={() => toggleCategory(expandedArea, categoryName)}
                     >
-                    <div className={`bg-white hover:bg-gray-200 border border-gray-300 rounded-md overflow-hidden shadow-md hover:shadow-lg transition-all duration-200 flex flex-col p-3 cursor-pointer ${
+                    <div className={`border rounded-md overflow-hidden shadow-md hover:shadow-lg transition-all duration-200 flex flex-col p-3 cursor-pointer ${
                       expandedCategory === `${expandedArea}:${categoryName}`
-                        ? 'border-2 border-blue-500 shadow-xl'
-                        : ''
+                        ? 'border-blue-600 bg-blue-600 bg-opacity-10'
+                        : 'bg-white hover:bg-gray-200 border-gray-300'
                     }`}>
                       <Image
                         src={categoryData.image}
