@@ -58,7 +58,50 @@ const testCases = [
       checks: [
         "response.users should be array of children",
         "Each child should have role 'student'",
-        "Each child should have parent in agents array"
+        "Each child should have parent in agents array",
+        "response.totalCount should exist",
+        "response.hasMore should be boolean",
+        "response.filters should contain parsed filters"
+      ]
+    }
+  },
+  {
+    name: "Get Children with Combined Filter (Role + Agent)",
+    method: "GET",
+    url: "/api/ims/oneroster/v1p1/users?filter=agents.agentSourcedId='PARENT_ID_HERE'&role='student'",
+    expectedResponse: {
+      status: 200,
+      checks: [
+        "response.users should be array of student children",
+        "All users should have role 'student'",
+        "response.filters should include both agent and role filters"
+      ]
+    }
+  },
+  {
+    name: "Get Children with Sorting",
+    method: "GET", 
+    url: "/api/ims/oneroster/v1p1/users?filter=agents.agentSourcedId='PARENT_ID_HERE'&sort=name&order=asc",
+    expectedResponse: {
+      status: 200,
+      checks: [
+        "response.users should be sorted by name ascending",
+        "response.sort should be 'name'",
+        "response.order should be 'asc'"
+      ]
+    }
+  },
+  {
+    name: "Get Children with Pagination",
+    method: "GET",
+    url: "/api/ims/oneroster/v1p1/users?filter=agents.agentSourcedId='PARENT_ID_HERE'&limit=2&offset=0",
+    expectedResponse: {
+      status: 200,
+      checks: [
+        "response.limit should be 2",
+        "response.offset should be 0", 
+        "response.hasMore should indicate if more results exist",
+        "response.totalCount should show total children count"
       ]
     }
   }

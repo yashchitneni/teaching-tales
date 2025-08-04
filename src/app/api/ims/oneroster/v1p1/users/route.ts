@@ -231,6 +231,59 @@ async function verifyAuth(request: NextRequest) {
   };
 }
 
+// Helper function to parse OneRoster filter queries
+function parseOneRosterFilter(filterString: string): {
+  agentSourcedId?: string;
+  role?: string;
+  status?: string;
+} {
+  const filters: any = {};
+  
+  if (!filterString) return filters;
+  
+  // Parse agents.agentSourcedId='value'
+  const agentMatch = filterString.match(/agents\.agentSourcedId='([^']+)'/);
+  if (agentMatch) {
+    filters.agentSourcedId = agentMatch[1];
+  }
+  
+  // Parse role='value'
+  const roleMatch = filterString.match(/role='([^']+)'/);
+  if (roleMatch) {
+    filters.role = roleMatch[1];
+  }
+  
+  // Parse status='value'
+  const statusMatch = filterString.match(/status='([^']+)'/);
+  if (statusMatch) {
+    filters.status = statusMatch[1];
+  }
+  
+  return filters;
+}
+
+// Helper function to apply sorting to Supabase query
+function applySorting(query: any, sort: string | null, order: string): any {
+  if (!sort) return query;
+  
+  const ascending = order.toLowerCase() === 'asc';
+  
+  switch (sort) {
+    case 'name':
+      return query.order('name', { ascending });
+    case 'dateLastModified':
+    case 'created_at':
+      return query.order('created_at', { ascending });
+    case 'grade':
+    case 'grade_level':
+      return query.order('grade_level', { ascending });
+    case 'age':
+      return query.order('age', { ascending });
+    default:
+      return query.order('created_at', { ascending: false }); // Default sort
+  }
+}
+
 // GET /api/ims/oneroster/v1p1/users
 export async function GET(request: NextRequest) {
   try {
@@ -247,52 +300,89 @@ export async function GET(request: NextRequest) {
     const limit = parseInt(searchParams.get('limit') || '100');
     const offset = parseInt(searchParams.get('offset') || '0');
     const filter = searchParams.get('filter');
+    const sort = searchParams.get('sort'); // e.g., 'name', 'dateLastModified', 'grade'
+    const order = searchParams.get('order') || 'asc'; // 'asc' or 'desc'
 
-    // Handle agent relationship filtering
-    if (filter && filter.includes('agents.agentSourcedId')) {
-      // Extract parent ID from filter like "agents.agentSourcedId='parent-id'"
-      const parentIdMatch = filter.match(/agents\.agentSourcedId='([^']+)'/);
-      if (parentIdMatch && parentIdMatch[1] === user.id) {
-        // Return children of this parent as OneRoster users
-        const { data: children } = await supabase
+    // Parse filters using helper function
+    const filters = parseOneRosterFilter(filter || '');
+    
+    // Handle agent relationship filtering (children of authenticated parent)
+    if (filters.agentSourcedId && filters.agentSourcedId === user.id) {
+      // Build query for children
+      let childQuery = supabase
+        .from('children')
+        .select('*')
+        .eq('parent_id', user.id);
+        
+      // Apply sorting
+      childQuery = applySorting(childQuery, sort, order);
+      
+      // Apply pagination
+      childQuery = childQuery.range(offset, offset + limit - 1);
+      
+      const { data: children, error: childError } = await childQuery;
+      
+      if (childError) {
+        console.error('Error fetching children:', childError);
+        return NextResponse.json(
+          { success: false, error: { message: 'Failed to fetch children' } },
+          { status: 500 }
+        );
+      }
+
+      if (children) {
+        // Filter by role if specified (should be 'student' for children)
+        let filteredChildren = children;
+        if (filters.role && filters.role !== 'student') {
+          filteredChildren = []; // Children are always students
+        }
+        
+        // Get total count for pagination metadata
+        const { count: totalCount } = await supabase
           .from('children')
-          .select('*')
-          .eq('parent_id', user.id)
-          .range(offset, offset + limit - 1);
+          .select('*', { count: 'exact', head: true })
+          .eq('parent_id', user.id);
 
-        if (children) {
-          const childUsers = children.map(child => ({
+        const childUsers = await Promise.all(filteredChildren.map(async (child) => {
+          // Get updated agent relationships for each child
+          const childAgents = await getUserAgentRelationships(child.id, supabase);
+          
+          return {
             sourcedId: child.id,
             status: 'active' as const,
-            dateLastModified: new Date().toISOString(),
-            username: child.name.toLowerCase().replace(' ', '.'),
+            dateLastModified: child.updated_at || child.created_at || new Date().toISOString(),
+            username: child.name.toLowerCase().replace(/\s+/g, '.'),
             enabledUser: true,
             givenName: child.name.split(' ')[0] || '',
             familyName: child.name.split(' ').slice(1).join(' ') || '',
             role: 'student' as const,
-            email: `${child.name.toLowerCase().replace(' ', '.')}@child.local`,
+            email: `${child.name.toLowerCase().replace(/\s+/g, '.')}@child.local`,
             grades: child.grade_level ? [child.grade_level] : [],
-            agents: [{
-              sourcedId: user.id,
-              agentSourcedId: user.id,
-              type: 'parent'
-            }],
+            agents: childAgents,
             metadata: {
               age: child.age,
               readingLevel: child.reading_level,
-              interests: child.interests,
-              preferences: child.preferences,
-              parentId: user.id
+              interests: child.interests || [],
+              preferences: child.preferences || {},
+              parentId: user.id,
+              childId: child.id,
+              createdAt: child.created_at,
+              updatedAt: child.updated_at
             }
-          }));
+          };
+        }));
 
-          return NextResponse.json({
-            users: childUsers,
-            count: childUsers.length,
-            limit,
-            offset
-          });
-        }
+        return NextResponse.json({
+          users: childUsers,
+          count: childUsers.length,
+          totalCount: totalCount || 0,
+          limit,
+          offset,
+          hasMore: (offset + limit) < (totalCount || 0),
+          filters: filters,
+          sort: sort || 'created_at',
+          order
+        });
       }
     }
 
@@ -331,8 +421,13 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({
       users: [oneRosterUser],
       count: 1,
+      totalCount: 1,
       limit,
-      offset
+      offset,
+      hasMore: false,
+      filters: filters,
+      sort: sort || 'dateLastModified',
+      order
     });
 
   } catch (error) {

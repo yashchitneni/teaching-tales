@@ -255,16 +255,95 @@ class OneRosterAPITester {
 
       if (response.status === 200) {
         const children = response.data.users || [];
+        const hasMetadata = response.data.totalCount !== undefined && response.data.hasMore !== undefined;
         console.log('\n✅ SUCCESS! Children data retrieved');
         console.log('🔍 Validation checks:');
         console.log(`- Children count: ${children.length}`);
         console.log(`- All have student role: ${children.every(c => c.role === 'student')}`);
         console.log(`- All have parent agents: ${children.every(c => c.agents?.some(a => a.type === 'parent'))}`);
+        console.log(`- Has enhanced metadata: ${hasMetadata}`);
+        console.log(`- Total count: ${response.data.totalCount}`);
+        console.log(`- Has more: ${response.data.hasMore}`);
       } else {
         console.log('❌ Failed to get children data');
       }
     } catch (error) {
       console.log('❌ Request error:', error.message);
+    }
+  }
+
+  // Step 6: Test Advanced Features (Sorting, Pagination)
+  async testAdvancedFeatures() {
+    console.log('\n⚡ TESTING ADVANCED FEATURES');
+    console.log('===========================');
+
+    // Test sorting
+    console.log('\n🔄 Testing Sorting...');
+    try {
+      const sortQuery = `agents.agentSourcedId='${this.userId}'&sort=name&order=asc`;
+      const response = await axios.get(`${this.baseURL}/api/ims/oneroster/v1p1/users?filter=${encodeURIComponent(sortQuery)}`, {
+        headers: { 'Cookie': this.cookies },
+        validateStatus: () => true
+      });
+
+      console.log(`📥 Sort Status: ${response.status}`);
+      if (response.status === 200) {
+        console.log('✅ Sorting metadata:');
+        console.log(`- Sort field: ${response.data.sort}`);
+        console.log(`- Sort order: ${response.data.order}`);
+        console.log(`- Results count: ${response.data.count}`);
+      } else {
+        console.log('❌ Sorting test failed');
+      }
+    } catch (error) {
+      console.log('❌ Sorting error:', error.message);
+    }
+
+    // Test pagination
+    console.log('\n📄 Testing Pagination...');
+    try {
+      const paginationQuery = `agents.agentSourcedId='${this.userId}'&limit=1&offset=0`;
+      const response = await axios.get(`${this.baseURL}/api/ims/oneroster/v1p1/users?filter=${encodeURIComponent(paginationQuery)}`, {
+        headers: { 'Cookie': this.cookies },
+        validateStatus: () => true
+      });
+
+      console.log(`📥 Pagination Status: ${response.status}`);
+      if (response.status === 200) {
+        console.log('✅ Pagination metadata:');
+        console.log(`- Limit: ${response.data.limit}`);
+        console.log(`- Offset: ${response.data.offset}`);
+        console.log(`- Total count: ${response.data.totalCount}`);
+        console.log(`- Has more: ${response.data.hasMore}`);
+        console.log(`- Current page results: ${response.data.count}`);
+      } else {
+        console.log('❌ Pagination test failed');
+      }
+    } catch (error) {
+      console.log('❌ Pagination error:', error.message);
+    }
+
+    // Test combined filters
+    console.log('\n🔗 Testing Combined Filters...');
+    try {
+      const combinedQuery = `agents.agentSourcedId='${this.userId}'&role='student'&sort=name&order=desc&limit=5`;
+      const response = await axios.get(`${this.baseURL}/api/ims/oneroster/v1p1/users?filter=${encodeURIComponent(combinedQuery)}`, {
+        headers: { 'Cookie': this.cookies },
+        validateStatus: () => true
+      });
+
+      console.log(`📥 Combined Status: ${response.status}`);
+      if (response.status === 200) {
+        console.log('✅ Combined filters working:');
+        console.log(`- Agent filter: ${response.data.filters?.agentSourcedId === this.userId}`);
+        console.log(`- Role filter: ${response.data.filters?.role === 'student'}`);
+        console.log(`- Sorting: ${response.data.sort} ${response.data.order}`);
+        console.log(`- Limit applied: ${response.data.limit}`);
+      } else {
+        console.log('❌ Combined filters test failed');
+      }
+    } catch (error) {
+      console.log('❌ Combined filters error:', error.message);
     }
   }
 
@@ -288,9 +367,10 @@ class OneRosterAPITester {
     console.log('2. Test Validation Errors');
     console.log('3. Get Parent with Children');
     console.log('4. Get Children (Filtered)');
-    console.log('5. Run All Tests');
+    console.log('5. Test Advanced Features (Sorting, Pagination)');
+    console.log('6. Run All Tests');
     
-    const choice = await this.prompt('\nWhich test would you like to run? (1-5): ');
+    const choice = await this.prompt('\nWhich test would you like to run? (1-6): ');
 
     switch (choice) {
       case '1':
@@ -306,10 +386,14 @@ class OneRosterAPITester {
         await this.testGetChildrenFiltered();
         break;
       case '5':
+        await this.testAdvancedFeatures();
+        break;
+      case '6':
         await this.testCreateChild();
         await this.testValidationErrors();
         await this.testGetParentWithChildren();
         await this.testGetChildrenFiltered();
+        await this.testAdvancedFeatures();
         break;
       default:
         console.log('Invalid choice');

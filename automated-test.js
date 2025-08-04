@@ -219,15 +219,62 @@ class AutomatedAPITester {
         const children = response.data.users || [];
         const allStudents = children.every(c => c.role === 'student');
         const allHaveParentAgents = children.every(c => c.agents?.some(a => a.type === 'parent'));
-        const passed = response.status === 200 && allStudents;
+        const hasMetadata = response.data.totalCount !== undefined && 
+                           response.data.hasMore !== undefined;
+        const passed = response.status === 200 && allStudents && hasMetadata;
         
         this.recordTest('Get Children (Filtered)', passed, 
-          `Count: ${children.length}, All students: ${allStudents}, All have parent agents: ${allHaveParentAgents}`);
+          `Count: ${children.length}, All students: ${allStudents}, Has metadata: ${hasMetadata}`);
       } else {
         this.recordTest('Get Children (Filtered)', false, `Status: ${response.status}`);
       }
     } catch (error) {
       this.recordTest('Get Children (Filtered)', false, error.message);
+    }
+  }
+
+  // Test advanced filtering and sorting
+  async testAdvancedFeatures() {
+    console.log('\n⚡ Testing Advanced Features (Sorting, Pagination)...');
+    
+    // Test sorting
+    try {
+      const sortQuery = `agents.agentSourcedId='${this.userId}'&sort=name&order=asc`;
+      const response = await axios.get(`${this.baseURL}/api/ims/oneroster/v1p1/users?filter=${encodeURIComponent(sortQuery)}`, {
+        headers: { 'Cookie': this.cookies },
+        validateStatus: () => true
+      });
+
+      if (response.status === 200) {
+        const hasSortMetadata = response.data.sort === 'name' && response.data.order === 'asc';
+        this.recordTest('Sorting (name asc)', hasSortMetadata, 
+          `Sort: ${response.data.sort}, Order: ${response.data.order}`);
+      } else {
+        this.recordTest('Sorting (name asc)', false, `Status: ${response.status}`);
+      }
+    } catch (error) {
+      this.recordTest('Sorting (name asc)', false, error.message);
+    }
+
+    // Test pagination
+    try {
+      const paginationQuery = `agents.agentSourcedId='${this.userId}'&limit=1&offset=0`;
+      const response = await axios.get(`${this.baseURL}/api/ims/oneroster/v1p1/users?filter=${encodeURIComponent(paginationQuery)}`, {
+        headers: { 'Cookie': this.cookies },
+        validateStatus: () => true
+      });
+
+      if (response.status === 200) {
+        const hasPaginationMetadata = response.data.limit === 1 && 
+                                     response.data.offset === 0 &&
+                                     typeof response.data.hasMore === 'boolean';
+        this.recordTest('Pagination', hasPaginationMetadata, 
+          `Limit: ${response.data.limit}, Offset: ${response.data.offset}, HasMore: ${response.data.hasMore}`);
+      } else {
+        this.recordTest('Pagination', false, `Status: ${response.status}`);
+      }
+    } catch (error) {
+      this.recordTest('Pagination', false, error.message);
     }
   }
 
@@ -274,6 +321,7 @@ class AutomatedAPITester {
     await this.testValidationErrors();
     await this.testGetParentWithChildren();
     await this.testGetChildrenFiltered();
+    await this.testAdvancedFeatures();
     
     // Print summary
     return this.printSummary();
