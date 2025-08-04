@@ -293,28 +293,22 @@ export default function LibraryPage() {
                   {row.map(([areaName, areaData]) => (
                                   <div
                     key={areaName}
-                    className="cursor-pointer group w-60"
+                    className="group w-60"
                     onClick={() => toggleArea(areaName)}
                   >
-                                      <div className={`bg-white rounded-2xl overflow-hidden shadow-md hover:shadow-lg transition-all duration-200 relative ${
+                                      <div className={`bg-white hover:bg-gray-200 border border-gray-300 rounded-md overflow-hidden shadow-md hover:shadow-lg transition-all duration-200 flex flex-col p-3 cursor-pointer ${
                       expandedArea === areaName 
                         ? 'border-2 border-blue-500 shadow-xl' 
-                        : 'border border-gray-300 hover:border-blue-400'
+                        : ''
                     }`}>
-                      <div className="absolute inset-0 bg-black opacity-0 hover:opacity-10 transition-opacity duration-200 rounded-2xl"></div>
-                    <div className="relative aspect-[2.25] overflow-hidden p-1.5">
-                      <div className="relative w-full h-full rounded overflow-hidden">
-                        <Image
-                          src={areaData.image}
-                          alt={areaName}
-                          fill
-                          className="object-cover object-center"
-                        />
-                      </div>
-                    </div>
-                    <div className="p-3 relative z-10">
-                      <h3 className="font-bold text-gray-800 text-center text-sm">{areaName}</h3>
-                    </div>
+                      <Image
+                        src={areaData.image}
+                        alt={areaName}
+                        width={243}
+                        height={108}
+                        className="aspect-[2.25] object-cover object-center w-full"
+                      />
+                      <div className="text-black text-base font-semibold leading-5 mt-1 text-center">{areaName}</div>
                     </div>
                 </div>
                   ))}
@@ -344,28 +338,22 @@ export default function LibraryPage() {
                     {row.map(([categoryName, categoryData]) => (
                                       <div
                       key={categoryName}
-                      className="cursor-pointer group w-60"
+                      className="group w-60"
                       onClick={() => toggleCategory(expandedArea, categoryName)}
                     >
-                    <div className={`bg-white rounded-2xl overflow-hidden shadow-md hover:shadow-lg transition-all duration-200 relative ${
+                    <div className={`bg-white hover:bg-gray-200 border border-gray-300 rounded-md overflow-hidden shadow-md hover:shadow-lg transition-all duration-200 flex flex-col p-3 cursor-pointer ${
                       expandedCategory === `${expandedArea}:${categoryName}`
                         ? 'border-2 border-blue-500 shadow-xl'
-                        : 'border border-gray-300 hover:border-blue-400'
+                        : ''
                     }`}>
-                      <div className="absolute inset-0 bg-black opacity-0 hover:opacity-10 transition-opacity duration-200 rounded-2xl"></div>
-                      <div className="relative aspect-[2.25] overflow-hidden p-1.5">
-                        <div className="relative w-full h-full rounded overflow-hidden">
-                          <Image
-                            src={categoryData.image}
-                            alt={categoryName}
-                            fill
-                            className="object-cover object-center"
-                          />
-                        </div>
-                      </div>
-                      <div className="p-3 relative z-10">
-                        <h4 className="font-bold text-gray-800 text-center text-sm">{categoryName}</h4>
-                      </div>
+                      <Image
+                        src={categoryData.image}
+                        alt={categoryName}
+                        width={243}
+                        height={108}
+                        className="aspect-[2.25] object-cover object-center w-full"
+                      />
+                      <div className="text-black text-base font-semibold leading-5 mt-1 text-center">{categoryName}</div>
                     </div>
                   </div>
                     ))}
@@ -398,24 +386,18 @@ export default function LibraryPage() {
                     {row.map((item) => (
                     <div
                       key={item.name}
-                      className="cursor-pointer group w-60"
+                      className="group w-60"
                       onClick={() => handleItemClick(item.name)}
                     >
-                      <div className="bg-white rounded-2xl overflow-hidden shadow-md hover:shadow-lg transition-all duration-200 border border-gray-300 hover:border-blue-400 relative">
-                        <div className="absolute inset-0 bg-black opacity-0 hover:opacity-10 transition-opacity duration-200 rounded-2xl"></div>
-                        <div className="relative aspect-[2.25] overflow-hidden p-1.5">
-                          <div className="relative w-full h-full rounded overflow-hidden">
-                            <Image
-                              src={item.image}
-                              alt={item.name}
-                              fill
-                              className="object-cover object-center"
-                            />
-                          </div>
-                        </div>
-                        <div className="p-3 relative z-10">
-                          <h5 className="font-bold text-gray-800 text-center text-sm">{item.name}</h5>
-                        </div>
+                      <div className="bg-white hover:bg-gray-200 border border-gray-300 rounded-md overflow-hidden shadow-md hover:shadow-lg transition-all duration-200 flex flex-col p-3 cursor-pointer">
+                        <Image
+                          src={item.image}
+                          alt={item.name}
+                          width={243}
+                          height={108}
+                          className="aspect-[2.25] object-cover object-center w-full"
+                        />
+                        <div className="text-black text-base font-semibold leading-5 mt-1 text-center">{item.name}</div>
                       </div>
                     </div>
                     ))}
