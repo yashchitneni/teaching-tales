@@ -61,6 +61,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [loading, setLoading] = useState(true)
   const [oneRosterData, setOneRosterData] = useState<OneRosterUserData | null>(null)
   const [refreshInterval, setRefreshInterval] = useState<NodeJS.Timeout | null>(null)
+  const [hasCheckedAuth, setHasCheckedAuth] = useState(false)
 
   const refreshProfile = async () => {
     if (user) {
@@ -79,12 +80,17 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }
 
   const signIn = async (email: string, password: string) => {
+    console.log('[AuthContext] signIn called for:', email)
     try {
       setLoading(true)
       const response = await apiClient.login(email, password)
       
+      console.log('[AuthContext] Login response:', response)
+      
       if (response.success && response.data) {
         const userData = response.data.user
+        
+        console.log('[AuthContext] Setting user data:', userData)
         
         // Set user data
         setUser({
@@ -109,7 +115,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         }
       }
     } catch (error) {
-      console.error('Sign in error:', error)
+      console.error('[AuthContext] Sign in error:', error)
       throw error
     } finally {
       setLoading(false)
@@ -142,14 +148,27 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }
 
   useEffect(() => {
+    // Prevent multiple auth checks
+    if (hasCheckedAuth) {
+      console.log('[AuthContext] Already checked auth, skipping')
+      return
+    }
+    
     // Get initial session
     const getInitialSession = async () => {
+      console.log('[AuthContext] Checking for existing session...')
+      setHasCheckedAuth(true)
+      
       try {
         // Check if we have a token in cookies or localStorage
         const hasToken = document.cookie.includes('timeback-access-token') || 
                         localStorage.getItem('timeback-auth-token')
         
+        console.log('[AuthContext] Has token:', hasToken)
+        console.log('[AuthContext] Cookies:', document.cookie)
+        
         if (!hasToken) {
+          console.log('[AuthContext] No token found, user not logged in')
           setLoading(false)
           return
         }
@@ -159,6 +178,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           const apiUser = await apiClient.getCurrentUser()
           if (apiUser.success && apiUser.data?.user) {
             const userData = apiUser.data.user
+            console.log('[AuthContext] User data retrieved:', userData)
             
             setUser({
               id: userData.id,
@@ -176,6 +196,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             
             // Set up token refresh after successful authentication
             setupTokenRefresh()
+          } else {
+            console.log('[AuthContext] No user data in response')
           }
         } catch (error: any) {
           console.error('Error fetching user data:', error)

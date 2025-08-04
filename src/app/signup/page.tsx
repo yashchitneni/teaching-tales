@@ -6,7 +6,8 @@ import { Label } from "@/components/ui/label"
 import { useState, useEffect } from "react"
 import Link from "next/link"
 import { useRouter } from "next/navigation"
-import { auth } from "@/lib/supabase"
+import { useAuth } from "@/contexts/AuthContext"
+import { logNavigation } from "@/lib/debug-navigation"
 
 export default function SignUpPage() {
   const [isLoading, setIsLoading] = useState(false)
@@ -22,28 +23,31 @@ export default function SignUpPage() {
   const [successMessage, setSuccessMessage] = useState("")
   const [showErrors, setShowErrors] = useState(false)
   const router = useRouter()
+  const { user } = useAuth()
+  
+  console.log('[SignUpPage] Component rendered, user:', user)
+  
+  useEffect(() => {
+    logNavigation('/signup')
+  }, [])
 
   // Check if user is already logged in
   useEffect(() => {
-    const checkAuth = async () => {
-      const user = await auth.getCurrentUser()
-      if (user) {
-        router.push('/dashboard')
-      }
+    console.log('[SignUpPage] useEffect triggered, user:', user)
+    if (user) {
+      console.log('[SignUpPage] User already logged in, redirecting to dashboard')
+      router.push('/dashboard')
     }
-    checkAuth()
-  }, [router])
+  }, [user, router])
 
   const handleGoogleSignUp = async () => {
+    console.log('[SignUpPage] Google signup clicked')
     setIsLoading(true)
     setGeneralError("")
     
     try {
-      const { error } = await auth.signInWithGoogle()
-      if (error) {
-        setGeneralError(error.message)
-      }
-      // Note: Redirect is handled by Supabase OAuth flow
+      // TODO: Implement Cognito Google OAuth through Timeback
+      setGeneralError("Google signup coming soon with Cognito integration")
     } catch (err: any) {
       setGeneralError(err.message || "An unexpected error occurred")
     } finally {
@@ -52,15 +56,13 @@ export default function SignUpPage() {
   }
 
   const handleAppleSignUp = async () => {
+    console.log('[SignUpPage] Apple signup clicked')
     setIsLoading(true)
     setGeneralError("")
     
     try {
-      const { error } = await auth.signInWithApple()
-      if (error) {
-        setGeneralError(error.message)
-      }
-      // Note: Redirect is handled by Supabase OAuth flow
+      // TODO: Implement Cognito Apple OAuth through Timeback
+      setGeneralError("Apple signup coming soon with Cognito integration")
     } catch (err: any) {
       setGeneralError(err.message || "An unexpected error occurred")
     } finally {
@@ -120,22 +122,30 @@ export default function SignUpPage() {
     setIsLoading(true)
     
     try {
-      const { data, error } = await auth.signUp(email, password, displayName.trim())
+      console.log('[SignUpPage] Attempting signup with:', { email, displayName })
       
-      if (error) {
+      // Call signup API endpoint
+      const response = await fetch('/api/auth/signup', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email, password, displayName: displayName.trim() }),
+      })
+      
+      const data = await response.json()
+      console.log('[SignUpPage] Signup response:', data)
+      
+      if (!response.ok || !data.success) {
         // Handle specific auth errors
-        if (error.message.includes('User already registered')) {
+        const errorMessage = data.error?.message || 'Signup failed'
+        if (errorMessage.includes('already exists')) {
           setGeneralError("An account with this email already exists. Please sign in instead.")
-        } else if (error.message.includes('Password should be at least')) {
-          setPasswordError("Password must be at least 6 characters long")
         } else {
-          setGeneralError(error.message)
+          setGeneralError(errorMessage)
         }
-      } else if (data.user) {
+      } else {
         // Success - show confirmation message
-        setSuccessMessage(
-          "Account created successfully! Please check your email and click the confirmation link to complete your registration."
-        )
+        const message = data.data?.message || "Account created successfully!"
+        setSuccessMessage(message)
         
         // Clear form
         setEmail("")
@@ -143,8 +153,21 @@ export default function SignUpPage() {
         setConfirmPassword("")
         setDisplayName("")
         setShowErrors(false)
+        
+        // If tokens were returned, we could auto-login the user
+        if (data.data?.tokens) {
+          console.log('[SignUpPage] Tokens received, auto-login possible')
+          // For now, just redirect to login
+        }
+        
+        // Redirect to login after 2 seconds
+        setTimeout(() => {
+          console.log('[SignUpPage] Redirecting to login after successful signup')
+          router.push('/login')
+        }, 2000)
       }
     } catch (err: any) {
+      console.error('[SignUpPage] Signup error:', err)
       setGeneralError(err.message || "An unexpected error occurred")
     } finally {
       setIsLoading(false)

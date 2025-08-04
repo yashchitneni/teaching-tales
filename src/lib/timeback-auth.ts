@@ -1,7 +1,7 @@
 import axios from 'axios';
 
 // Timeback API configuration
-const TIMEBACK_API_URL = process.env.NEXT_PUBLIC_TIMEBACK_API_URL || 'http://localhost:8080';
+const TIMEBACK_API_URL = process.env.NEXT_PUBLIC_TIMEBACK_API_URL || 'https://core.timebackapi.com';
 
 interface TimebackLoginResponse {
   success: boolean;

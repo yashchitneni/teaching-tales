@@ -8,6 +8,7 @@ import Link from "next/link"
 import { useRouter } from "next/navigation"
 // Removed Supabase auth import - using Cognito now
 import { useAuth } from "@/contexts/AuthContext"
+import { logNavigation } from "@/lib/debug-navigation"
 
 export default function LoginPage() {
   const [isLoading, setIsLoading] = useState(false)
@@ -19,10 +20,18 @@ export default function LoginPage() {
   const [showErrors, setShowErrors] = useState(false)
   const router = useRouter()
   const { user, signIn } = useAuth()
+  
+  console.log('[LoginPage] Component rendered, user:', user)
+  
+  useEffect(() => {
+    logNavigation('/login')
+  }, [])
 
   // Check if user is already logged in
   useEffect(() => {
+    console.log('[LoginPage] useEffect triggered, user:', user)
     if (user) {
+      console.log('[LoginPage] User already logged in, redirecting to dashboard')
       router.push('/dashboard')
     }
   }, [user, router])
