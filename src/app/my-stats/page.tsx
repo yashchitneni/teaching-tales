@@ -60,11 +60,11 @@ export default function MyStatsPage() {
                   <select 
                     value={selectedPeriod}
                     onChange={(e) => setSelectedPeriod(e.target.value as TimePeriod)}
-                    className="bg-white border border-gray-300 rounded-md px-3 py-1.5 text-sm"
+                    className="bg-white border border-gray-300 rounded-md px-3 py-1.5 text-sm text-black"
                   >
-                    <option value="This Week">This Week</option>
-                    <option value="This Month">This Month</option>
-                    <option value="All Time">All Time</option>
+                    <option value="This Week" className="text-black">This Week</option>
+                    <option value="This Month" className="text-black">This Month</option>
+                    <option value="All Time" className="text-black">All Time</option>
                   </select>
                 </div>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4 flex-1">
@@ -158,31 +158,37 @@ export default function MyStatsPage() {
         </div>
 
         {/* Badges Section */}
-        <div className="bg-white rounded-2xl p-8 shadow-sm">
-          <h2 className="text-2xl font-bold text-gray-800 mb-6">Badges</h2>
-          
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+        <div className="flex flex-col gap-4">
+          <h2 className="text-2xl text-left font-semibold text-neutral-800">Badges</h2>
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
             {userBadges.map((badge) => (
-              <div key={badge.id} className="bg-white border border-gray-200 rounded-2xl p-6 text-center">
-                <h3 className="font-bold text-gray-800 mb-2">{badge.name}</h3>
-                <p className="text-gray-600 text-sm mb-4">{badge.description}</p>
-                
-                {/* Badge Icon */}
-                <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
-                  <img src="https://app.teachtales.com/static/media/achievement-tier-0.0a63c8b1.svg" alt="Badge Icon" className="w-8 h-8 opacity-50" />
-                </div>
-
-                {/* Progress */}
-                <div className="mb-4">
-                  <div className="w-full bg-gray-200 rounded-full h-2 mb-2">
-                    <div 
-                      className="bg-orange-400 h-2 rounded-full transition-all duration-300"
-                      style={{ width: `${(badge.progress / badge.maxProgress) * 100}%` }}
-                    />
+              <div key={badge.id} className="flex flex-col p-6 bg-white rounded-xl border border-gray-200">
+                <div className="flex flex-col items-center gap-4">
+                  <div className="text-center">
+                    <div className="text-base font-bold text-black">{badge.name}</div>
+                    <div className="text-sm text-gray-600 h-10 line-clamp-2">{badge.description}</div>
                   </div>
-                  <div className="text-sm text-gray-600">
-                    {badge.progress}/{badge.maxProgress} for {badge.tier}
+                  <div className="relative w-16 h-16 flex items-center justify-center">
+                    <img src="https://app.teachtales.com/static/media/achievement-tier-0.0a63c8b1.svg" alt={badge.name} className="w-16 h-16" />
                   </div>
+                  {badge.id === 'rising-reader' ? (
+                    <div className="w-full h-8">
+                      <div className="w-full h-2.5 rounded-full overflow-hidden" style={{ backgroundColor: 'rgba(201, 108, 41, 0.376)' }}>
+                        <div 
+                          className="h-full rounded-full transition-all duration-300" 
+                          style={{ 
+                            width: `${(badge.progress / badge.maxProgress) * 100}%`, 
+                            backgroundColor: 'rgb(201, 108, 41)' 
+                          }}
+                        />
+                      </div>
+                      <div className="text-xs text-gray-600 text-center mt-2">
+                        {badge.progress}/{badge.maxProgress} for {badge.tier}
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="w-full h-8"></div>
+                  )}
                 </div>
               </div>
             ))}
