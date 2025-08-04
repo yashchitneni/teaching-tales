@@ -296,23 +296,26 @@ export default function LibraryPage() {
                   className="cursor-pointer group w-60"
                   onClick={() => toggleArea(areaName)}
                 >
-                  <div className={`bg-white rounded-2xl overflow-hidden shadow-lg hover:shadow-xl transform hover:scale-105 transition-all duration-300 border-2 ${
-                    expandedArea === areaName 
-                      ? 'border-blue-500 ring-2 ring-blue-200' 
-                      : 'border-transparent hover:border-blue-200'
-                  }`}>
-                    <div className="relative aspect-[2.25] overflow-hidden">
-                      <Image
-                        src={areaData.image}
-                        alt={areaName}
-                        fill
-                        className="object-cover object-center group-hover:scale-110 transition-transform duration-300"
-                      />
+                                      <div className={`bg-white rounded-2xl overflow-hidden shadow-lg hover:shadow-lg transition-all duration-200 relative ${
+                      expandedArea === areaName 
+                        ? 'border-4 border-blue-600 ring-2 ring-blue-300' 
+                        : 'border-3 border-gray-200 hover:border-blue-400'
+                    }`}>
+                      <div className="absolute inset-0 bg-black opacity-0 hover:opacity-5 transition-opacity duration-200 rounded-2xl"></div>
+                    <div className="relative aspect-[2.25] overflow-hidden p-3">
+                      <div className="relative w-full h-full rounded-lg overflow-hidden">
+                        <Image
+                          src={areaData.image}
+                          alt={areaName}
+                          fill
+                          className="object-cover object-center"
+                        />
+                      </div>
                     </div>
-                    <div className="p-4">
+                    <div className="p-4 relative z-10">
                       <h3 className="font-bold text-gray-800 text-center text-sm">{areaName}</h3>
                     </div>
-                  </div>
+                    </div>
                 </div>
                   ))}
                 </div>
@@ -344,20 +347,23 @@ export default function LibraryPage() {
                     className="cursor-pointer group w-60"
                     onClick={() => toggleCategory(expandedArea, categoryName)}
                   >
-                    <div className={`bg-white rounded-2xl overflow-hidden shadow-lg hover:shadow-xl transform hover:scale-105 transition-all duration-300 border-2 ${
+                    <div className={`bg-white rounded-2xl overflow-hidden shadow-lg hover:shadow-lg transition-all duration-200 relative ${
                       expandedCategory === `${expandedArea}:${categoryName}`
-                        ? 'border-blue-500 ring-2 ring-blue-200'
-                        : 'border-transparent hover:border-blue-200'
+                        ? 'border-4 border-blue-600 ring-2 ring-blue-300'
+                        : 'border-3 border-gray-200 hover:border-blue-400'
                     }`}>
-                      <div className="relative aspect-[2.25] overflow-hidden">
-                        <Image
-                          src={categoryData.image}
-                          alt={categoryName}
-                          fill
-                          className="object-cover object-center group-hover:scale-110 transition-transform duration-300"
-                        />
+                      <div className="absolute inset-0 bg-black opacity-0 hover:opacity-5 transition-opacity duration-200 rounded-2xl"></div>
+                      <div className="relative aspect-[2.25] overflow-hidden p-3">
+                        <div className="relative w-full h-full rounded-lg overflow-hidden">
+                          <Image
+                            src={categoryData.image}
+                            alt={categoryName}
+                            fill
+                            className="object-cover object-center"
+                          />
+                        </div>
                       </div>
-                      <div className="p-4">
+                      <div className="p-4 relative z-10">
                         <h4 className="font-bold text-gray-800 text-center text-sm">{categoryName}</h4>
                       </div>
                     </div>
@@ -395,16 +401,19 @@ export default function LibraryPage() {
                       className="cursor-pointer group w-60"
                       onClick={() => handleItemClick(item.name)}
                     >
-                      <div className="bg-white rounded-2xl overflow-hidden shadow-lg hover:shadow-xl transform hover:scale-105 transition-all duration-300 border-2 border-transparent hover:border-blue-200">
-                        <div className="relative aspect-[2.25] overflow-hidden">
-                          <Image
-                            src={item.image}
-                            alt={item.name}
-                            fill
-                            className="object-cover object-center group-hover:scale-110 transition-transform duration-300"
-                          />
+                      <div className="bg-white rounded-2xl overflow-hidden shadow-lg hover:shadow-lg transition-all duration-200 border-3 border-gray-200 hover:border-blue-400 relative">
+                        <div className="absolute inset-0 bg-black opacity-0 hover:opacity-5 transition-opacity duration-200 rounded-2xl"></div>
+                        <div className="relative aspect-[2.25] overflow-hidden p-3">
+                          <div className="relative w-full h-full rounded-lg overflow-hidden">
+                            <Image
+                              src={item.image}
+                              alt={item.name}
+                              fill
+                              className="object-cover object-center"
+                            />
+                          </div>
                         </div>
-                        <div className="p-4">
+                        <div className="p-4 relative z-10">
                           <h5 className="font-bold text-gray-800 text-center text-sm">{item.name}</h5>
                         </div>
                       </div>
