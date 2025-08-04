@@ -65,19 +65,21 @@ export function CoinCounter({ value, min, max, step, onChange }: CoinCounterProp
 
       {/* Transfer Icon */}
       <div className="self-stretch my-auto text-xl">
-        <svg className="shrink-0 w-6 h-6 text-gray-600" viewBox="0 0 24 24" fill="currentColor">
-          <path d="M14,12L10,8V11H2V13H10V16M20,18V16H12V14H20V12L24,15L20,18Z" />
-        </svg>
+        <img 
+          src="/static/media/money-bill-transfer.ac98ce0e.png" 
+          alt="Transfer" 
+          className="shrink-0 w-6 h-6"
+        />
       </div>
 
       {/* Robux Display */}
       <div className="flex gap-1.5 self-stretch items-center my-auto font-bold tracking-tight text-center text-black">
         {/* Robux Logo */}
-        <div className="shrink-0 w-12 h-7 bg-gradient-to-r from-blue-500 to-blue-600 rounded flex items-center justify-center">
-          <svg className="w-8 h-4" viewBox="0 0 32 16" fill="white">
-            <path d="M2 2h8v2H6v2h3v2H6v2h4v2H2V2zm10 0h3c1.1 0 2 .9 2 2v6c0 1.1-.9 2-2 2h-3V2zm2 2v6h1V4h-1zm4-2h2l2 3-2 3h-2l2-3-2-3zm6 0h8v2h-4v2h3v2h-3v2h4v2h-8V2z"/>
-          </svg>
-        </div>
+        <img 
+          src="/static/media/roblox.67b615af.png" 
+          alt="Roblox" 
+          className="shrink-0 w-12 h-7"
+        />
         <div>
           <span className="text-2xl">{value}</span>
           <span className="text-base"> Robux</span>

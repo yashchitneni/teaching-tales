@@ -67,7 +67,7 @@ export default function RedeemRewardsPage() {
           <div className="gap-5 flex w-full max-md:flex-col max-md:items-stretch max-md:gap-0">
             <div className="flex flex-col w-full justify-center items-stretch max-md:w-full max-md:ml-0 md:ml-3 xl:ml-5 max-md:mr-0 md:mr-3 xl:mr-5">
               <div className="size-full flex flex-col items-center mt-4 sm:mt-0">
-                <section className="flex flex-col items-center p-6 bg-gray-50 rounded-xl border border-gray-200 border-solid max-w-[608px] max-md:px-5">
+                <section className="flex flex-col items-center p-6 bg-white rounded-xl border border-gray-200 border-solid max-w-[608px] max-md:px-5">
                   {/* Main Heading */}
                   <h3 className="text-3xl font-bold tracking-tight text-center text-black max-md:max-w-full">
                     Redeem Coins for Robux.
@@ -123,13 +123,16 @@ export default function RedeemRewardsPage() {
                       </StepIndicator>
 
                       {/* Submit Button */}
-                      <Button
-                        type="submit"
-                        disabled={isSubmitting || !robloxUsername.trim()}
-                        className="justify-center items-center px-20 py-2 mt-10 text-base leading-6 text-center text-white whitespace-nowrap bg-blue-600 hover:bg-blue-700 rounded-lg border border-blue-600 border-solid max-md:px-5 disabled:opacity-50"
-                      >
-                        {isSubmitting ? 'Processing...' : 'Submit'}
-                      </Button>
+                      <div className="flex justify-center w-full mt-10">
+                        <button
+                          type="submit"
+                          disabled={isSubmitting || !robloxUsername.trim()}
+                          className="px-4 py-2 bg-blue-600 text-white rounded-lg font-medium"
+                          style={{paddingLeft: '80px', paddingRight: '80px'}}
+                        >
+                          {isSubmitting ? 'Processing...' : 'Submit'}
+                        </button>
+                      </div>
                     </form>
                   </div>
 
@@ -149,12 +152,14 @@ export default function RedeemRewardsPage() {
                   </section>
 
                   {/* Already Redeemed Button */}
-                  <Button
-                    onClick={handleAlreadyRedeemed}
-                    className="mt-8 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg"
-                  >
-                    I already redeemed Robux
-                  </Button>
+                  <div className="flex justify-center w-full mt-8">
+                    <button
+                      onClick={handleAlreadyRedeemed}
+                      className="px-4 py-2 bg-blue-600 text-white rounded-lg font-medium"
+                    >
+                      I already redeemed Robux
+                    </button>
+                  </div>
                 </section>
               </div>
             </div>
