@@ -1,0 +1,109 @@
+{
+	"meta": {
+		"generatedAt": "2025-08-04T05:02:01.521Z",
+		"tasksAnalyzed": 12,
+		"totalTasks": 12,
+		"analysisCount": 12,
+		"thresholdScore": 5,
+		"projectName": "Taskmaster",
+		"usedResearch": true
+	},
+	"complexityAnalysis": [
+		{
+			"taskId": 1,
+			"taskTitle": "Implement Authentication Integration",
+			"complexityScore": 8,
+			"recommendedSubtasks": 8,
+			"expansionPrompt": "Break down authentication integration into: API client setup, secure JWT storage, OneRoster user creation, auth context provider, login/logout flows, token refresh, error handling, and comprehensive testing (unit/integration/security).",
+			"reasoning": "This task involves secure authentication flows, integration with external APIs, secure token management (HttpOnly cookies), context provider setup, and OneRoster user provisioning. Each step has security, state, and error handling concerns, requiring careful separation and thorough testing. Industry best practices recommend isolating auth logic, token handling, and user provisioning for maintainability and security."
+		},
+		{
+			"taskId": 2,
+			"taskTitle": "Implement OneRoster User Management",
+			"complexityScore": 7,
+			"recommendedSubtasks": 7,
+			"expansionPrompt": "Expand user management into: child user creation API, agent relationship setup (parent-child, bidirectional), user listing with filtering, UI integration (CreateChildModal), loading/error states, dashboard updates, and test coverage for all flows.",
+			"reasoning": "Managing OneRoster users and agent relationships requires correct API usage, bidirectional relationship logic, UI integration, and robust error handling. Each aspect (API, relationships, UI, error states) is a distinct concern, and best practices suggest modularizing for testability and maintainability."
+		},
+		{
+			"taskId": 3,
+			"taskTitle": "Set Up Google Gemini Pro Integration",
+			"complexityScore": 6,
+			"recommendedSubtasks": 6,
+			"expansionPrompt": "Decompose Gemini Pro integration into: API client setup, prompt templating, story generation service, retry/backoff logic, response validation, and error handling/testing.",
+			"reasoning": "Integrating an external AI API involves client setup, prompt engineering, error/retry logic, and response validation. Each step is a separate responsibility, and industry standards recommend isolating API logic, retries, and validation for reliability and maintainability."
+		},
+		{
+			"taskId": 4,
+			"taskTitle": "Implement QTI 3.0 Package Generation",
+			"complexityScore": 8,
+			"recommendedSubtasks": 8,
+			"expansionPrompt": "Expand QTI package generation into: XML template creation, AI-to-QTI transformation logic, section/question mapping, branchRule implementation, schema validation, edge case handling, integration tests, and documentation.",
+			"reasoning": "Generating standards-compliant QTI 3.0 packages from AI output is complex, requiring deep understanding of the QTI schema, transformation logic, and validation. Each mapping and validation step is non-trivial and should be modularized for correctness and maintainability."
+		},
+		{
+			"taskId": 5,
+			"taskTitle": "Implement Story Generation Flow",
+			"complexityScore": 7,
+			"recommendedSubtasks": 7,
+			"expansionPrompt": "Break down story generation flow into: UI state management, loading logic, AI service integration, QTI storage, OneRoster class/line item creation, student enrollment, and end-to-end testing.",
+			"reasoning": "This task orchestrates multiple subsystems (UI, AI, QTI, OneRoster) and requires robust state management, API integration, and transactional consistency. Each integration point and state transition should be a subtask for clarity and testability."
+		},
+		{
+			"taskId": 6,
+			"taskTitle": "Implement Reading Interface QTI Integration",
+			"complexityScore": 7,
+			"recommendedSubtasks": 6,
+			"expansionPrompt": "Expand reading interface integration into: QTI assessment loading, section/question parsing, content display, section blurring/unlocking, state management, and UI/UX testing.",
+			"reasoning": "Connecting the reading interface to QTI assessments involves parsing, stateful UI updates, and unlocking logic. Each aspect (data loading, parsing, display, state) is a distinct technical concern, and modularization aids maintainability and testing."
+		},
+		{
+			"taskId": 7,
+			"taskTitle": "Implement Question Response Handling",
+			"complexityScore": 7,
+			"recommendedSubtasks": 6,
+			"expansionPrompt": "Decompose response handling into: QTI response processing, answer submission, section unlocking logic, response storage API, OneRoster result updates, and test coverage for all flows.",
+			"reasoning": "Processing QTI responses and managing section unlocking involves business logic, API integration, and state updates. Each step is critical for correctness and should be isolated for clarity, maintainability, and robust testing."
+		},
+		{
+			"taskId": 8,
+			"taskTitle": "Implement Multi-Chapter Story Generation",
+			"complexityScore": 6,
+			"recommendedSubtasks": 6,
+			"expansionPrompt": "Break down multi-chapter generation into: chapter selection storage, context passing to AI, story continuity management, QTI package creation, OneRoster line item updates, and integration testing.",
+			"reasoning": "Handling multi-chapter stories requires stateful context management, AI integration, and QTI/OneRoster updates. Each responsibility is distinct and should be modularized for maintainability and to ensure story continuity."
+		},
+		{
+			"taskId": 9,
+			"taskTitle": "Implement Progress Tracking",
+			"complexityScore": 6,
+			"recommendedSubtasks": 5,
+			"expansionPrompt": "Expand progress tracking into: QTI score calculation, OneRoster result updates, progress display UI, progress caching, and offline update handling.",
+			"reasoning": "Progress tracking involves calculation, data synchronization, UI updates, caching, and offline support. Each is a separate technical concern, and best practices recommend modularization for reliability and user experience."
+		},
+		{
+			"taskId": 10,
+			"taskTitle": "Implement Assessment Results Panel",
+			"complexityScore": 5,
+			"recommendedSubtasks": 5,
+			"expansionPrompt": "Decompose results panel into: score calculation, OneRoster result formatting, results display UI, progress visualization, and result update handling.",
+			"reasoning": "Displaying assessment results is primarily a UI/data formatting task, but involves some logic for score calculation and updates. Each aspect can be a subtask for clarity and maintainability."
+		},
+		{
+			"taskId": 11,
+			"taskTitle": "Implement Error Handling System",
+			"complexityScore": 7,
+			"recommendedSubtasks": 7,
+			"expansionPrompt": "Expand error handling into: network error handling, QTI fallback mode, OneRoster sync queue, auth expiry handling, AI generation retries, global error reporting, and recovery testing.",
+			"reasoning": "Comprehensive error handling across multiple integration points is complex, requiring robust strategies for each subsystem. Each error domain (network, QTI, OneRoster, auth, AI) should be handled separately for reliability and maintainability."
+		},
+		{
+			"taskId": 12,
+			"taskTitle": "Implement State Management and Caching",
+			"complexityScore": 6,
+			"recommendedSubtasks": 6,
+			"expansionPrompt": "Break down state management and caching into: QTI context provider, OneRoster data caching, progress persistence, story context management, API call optimization, and consistency testing.",
+			"reasoning": "State management and caching are cross-cutting concerns that impact performance and reliability. Each context (QTI, OneRoster, progress, story) and optimization should be modularized for maintainability and to ensure data consistency."
+		}
+	]
+}
