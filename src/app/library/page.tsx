@@ -281,11 +281,19 @@ export default function LibraryPage() {
           </div>
           
           <div className="max-w-7xl mx-auto">
-            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
-              {Object.entries(libraryData).map(([areaName, areaData]) => (
+            {/* Split into rows of 4 items each */}
+            {(() => {
+              const areas = Object.entries(libraryData);
+              const rows = [];
+              for (let i = 0; i < areas.length; i += 4) {
+                rows.push(areas.slice(i, i + 4));
+              }
+              return rows.map((row, rowIndex) => (
+                <div key={rowIndex} className="flex justify-center gap-4 mb-4">
+                  {row.map(([areaName, areaData]) => (
                 <div
                   key={areaName}
-                  className="cursor-pointer group"
+                  className="cursor-pointer group w-60"
                   onClick={() => toggleArea(areaName)}
                 >
                   <div className={`bg-white rounded-2xl overflow-hidden shadow-lg hover:shadow-xl transform hover:scale-105 transition-all duration-300 border-2 ${
@@ -306,8 +314,10 @@ export default function LibraryPage() {
                     </div>
                   </div>
                 </div>
-              ))}
-            </div>
+                  ))}
+                </div>
+              ));
+            })()}
           </div>
         </div>
 
@@ -319,11 +329,19 @@ export default function LibraryPage() {
             </div>
             
             <div className="max-w-7xl mx-auto">
-              <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
-                {Object.entries(libraryData[expandedArea as keyof typeof libraryData].categories).map(([categoryName, categoryData]) => (
+              {/* Split into rows of 4 items each */}
+              {(() => {
+                const categories = Object.entries(libraryData[expandedArea as keyof typeof libraryData].categories);
+                const rows = [];
+                for (let i = 0; i < categories.length; i += 4) {
+                  rows.push(categories.slice(i, i + 4));
+                }
+                return rows.map((row, rowIndex) => (
+                  <div key={rowIndex} className="flex justify-center gap-4 mb-4">
+                    {row.map(([categoryName, categoryData]) => (
                   <div
                     key={categoryName}
-                    className="cursor-pointer group"
+                    className="cursor-pointer group w-60"
                     onClick={() => toggleCategory(expandedArea, categoryName)}
                   >
                     <div className={`bg-white rounded-2xl overflow-hidden shadow-lg hover:shadow-xl transform hover:scale-105 transition-all duration-300 border-2 ${
@@ -344,8 +362,10 @@ export default function LibraryPage() {
                       </div>
                     </div>
                   </div>
-                ))}
-              </div>
+                    ))}
+                  </div>
+                ));
+              })()}
             </div>
           </div>
         )}
@@ -358,14 +378,21 @@ export default function LibraryPage() {
             </div>
             
             <div className="max-w-7xl mx-auto">
-              <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
-                {(() => {
-                  const categoryName = expandedCategory.split(':')[1]
-                  const categoryData = libraryData[expandedArea as keyof typeof libraryData].categories[categoryName as keyof typeof libraryData[keyof typeof libraryData]['categories']]
-                  return categoryData.items.map((item) => (
+              {/* Split into rows of 4 items each */}
+              {(() => {
+                const categoryName = expandedCategory.split(':')[1]
+                const categoryData = libraryData[expandedArea as keyof typeof libraryData].categories[categoryName as keyof typeof libraryData[keyof typeof libraryData]['categories']]
+                const items = categoryData.items;
+                const rows = [];
+                for (let i = 0; i < items.length; i += 4) {
+                  rows.push(items.slice(i, i + 4));
+                }
+                return rows.map((row, rowIndex) => (
+                  <div key={rowIndex} className="flex justify-center gap-4 mb-4">
+                    {row.map((item) => (
                     <div
                       key={item.name}
-                      className="cursor-pointer group"
+                      className="cursor-pointer group w-60"
                       onClick={() => handleItemClick(item.name)}
                     >
                       <div className="bg-white rounded-2xl overflow-hidden shadow-lg hover:shadow-xl transform hover:scale-105 transition-all duration-300 border-2 border-transparent hover:border-blue-200">
@@ -382,9 +409,10 @@ export default function LibraryPage() {
                         </div>
                       </div>
                     </div>
-                  ))
-                })()}
-              </div>
+                    ))}
+                  </div>
+                ));
+              })()}
             </div>
           </div>
         )}
