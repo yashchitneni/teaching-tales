@@ -11,13 +11,7 @@ export default $config({
     };
   },
   async run() {
-    // Create VPC for the container infrastructure
-    const vpc = new sst.aws.Vpc("TeachingTalesVpc");
-    
-    // Create ECS Cluster
-    const cluster = new sst.aws.Cluster("TeachingTalesCluster", { vpc });
-
-    // Create S3 bucket for file uploads (optional for this app but good to have)
+    // Create S3 bucket for file uploads
     const bucket = new sst.aws.Bucket("TeachingTalesBucket", {
       access: "public"
     });
@@ -27,31 +21,18 @@ export default $config({
     const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || $secret("NEXT_PUBLIC_SUPABASE_ANON_KEY");
     const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY || "";
 
-    // Create the containerized service
-    const service = new sst.aws.Service("TeachingTalesService", {
-      cluster,
-      loadBalancer: {
-        ports: [{ listen: "80/http", forward: "3000/http" }],
-      },
-      dev: {
-        command: "npm run dev",
-      },
+    // Create the Next.js app
+    const site = new sst.aws.Nextjs("TeachingTalesApp", {
       link: [bucket],
       environment: {
         NEXT_PUBLIC_SUPABASE_URL: supabaseUrl,
         NEXT_PUBLIC_SUPABASE_ANON_KEY: supabaseAnonKey,
         SUPABASE_SERVICE_ROLE_KEY: supabaseServiceKey,
       },
-      build: {
-        buildArgs: {
-          NEXT_PUBLIC_SUPABASE_URL: supabaseUrl,
-          NEXT_PUBLIC_SUPABASE_ANON_KEY: supabaseAnonKey,
-        },
-      },
     });
 
     return {
-      url: service.url,
+      url: site.url,
       bucket: bucket.name,
     };
   },

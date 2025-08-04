@@ -5,17 +5,13 @@
 
 declare module "sst" {
   export interface Resource {
+    "TeachingTalesApp": {
+      "type": "sst.aws.Nextjs"
+      "url": string
+    }
     "TeachingTalesBucket": {
       "name": string
       "type": "sst.aws.Bucket"
-    }
-    "TeachingTalesService": {
-      "service": string
-      "type": "sst.aws.Service"
-      "url": string
-    }
-    "TeachingTalesVpc": {
-      "type": "sst.aws.Vpc"
     }
   }
 }

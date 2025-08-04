@@ -1,6 +1,7 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
-  output: 'standalone',
+  // Remove 'standalone' output for SST NextJS component
+  // output: 'standalone',
   eslint: {
     ignoreDuringBuilds: true,
   },
