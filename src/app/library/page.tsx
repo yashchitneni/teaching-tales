@@ -236,163 +236,144 @@ const libraryData = {
 }
 
 export default function LibraryPage() {
-  const [currentView, setCurrentView] = useState<'areas' | 'categories' | 'items'>('areas')
-  const [selectedArea, setSelectedArea] = useState<string>('')
-  const [selectedCategory, setSelectedCategory] = useState<string>('')
+  // Track which areas and categories are expanded
+  const [expandedAreas, setExpandedAreas] = useState<Set<string>>(new Set())
+  const [expandedCategories, setExpandedCategories] = useState<Set<string>>(new Set())
 
-  const handleAreaClick = (areaName: string) => {
-    setSelectedArea(areaName)
-    setCurrentView('categories')
-  }
-
-  const handleCategoryClick = (categoryName: string) => {
-    setSelectedCategory(categoryName)
-    setCurrentView('items')
-  }
-
-  const handleBackClick = () => {
-    if (currentView === 'items') {
-      setCurrentView('categories')
-    } else if (currentView === 'categories') {
-      setCurrentView('areas')
-      setSelectedArea('')
+  const toggleArea = (areaName: string) => {
+    const newExpandedAreas = new Set(expandedAreas)
+    if (newExpandedAreas.has(areaName)) {
+      newExpandedAreas.delete(areaName)
+      // Also collapse all categories within this area
+      const newExpandedCategories = new Set(expandedCategories)
+      const areaData = libraryData[areaName as keyof typeof libraryData]
+      Object.keys(areaData.categories).forEach(categoryName => {
+        newExpandedCategories.delete(`${areaName}:${categoryName}`)
+      })
+      setExpandedCategories(newExpandedCategories)
+    } else {
+      newExpandedAreas.add(areaName)
     }
+    setExpandedAreas(newExpandedAreas)
   }
 
-  const renderAreasOfInterest = () => (
-    <div className="p-6">
-      <div className="text-center mb-8">
-        <h1 className="text-3xl font-bold text-white mb-2">Pick an Area of Interest</h1>
-        <p className="text-white/70">Each world holds endless possibilities. Which one speaks to your imagination?</p>
-      </div>
-      
-      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 max-w-6xl mx-auto">
-        {Object.entries(libraryData).map(([areaName, areaData]) => (
-          <div
-            key={areaName}
-            className="cursor-pointer group"
-            onClick={() => handleAreaClick(areaName)}
-          >
-            <div className="bg-white rounded-2xl overflow-hidden shadow-lg hover:shadow-xl transform hover:scale-105 transition-all duration-300">
-              <div className="relative aspect-[2.25] overflow-hidden">
-                <Image
-                  src={areaData.image}
-                  alt={areaName}
-                  fill
-                  className="object-cover object-center group-hover:scale-110 transition-transform duration-300"
-                />
-              </div>
-              <div className="p-4">
-                <h3 className="font-bold text-gray-800 text-center text-sm">{areaName}</h3>
-              </div>
-            </div>
-          </div>
-        ))}
-      </div>
-    </div>
-  )
-
-  const renderCategories = () => {
-    const areaData = libraryData[selectedArea as keyof typeof libraryData]
-    if (!areaData) return null
-
-    return (
-      <div className="p-6">
-        <div className="flex items-center mb-6">
-          <button
-            onClick={handleBackClick}
-            className="text-white hover:text-blue-300 mr-4"
-          >
-            <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
-            </svg>
-          </button>
-          <h1 className="text-3xl font-bold text-white">Pick Again</h1>
-        </div>
-        
-        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 max-w-6xl mx-auto">
-          {Object.entries(areaData.categories).map(([categoryName, categoryData]) => (
-            <div
-              key={categoryName}
-              className="cursor-pointer group"
-              onClick={() => handleCategoryClick(categoryName)}
-            >
-              <div className="bg-white rounded-2xl overflow-hidden shadow-lg hover:shadow-xl transform hover:scale-105 transition-all duration-300">
-                <div className="relative aspect-[2.25] overflow-hidden">
-                  <Image
-                    src={categoryData.image}
-                    alt={categoryName}
-                    fill
-                    className="object-cover object-center group-hover:scale-110 transition-transform duration-300"
-                  />
-                </div>
-                <div className="p-4">
-                  <h3 className="font-bold text-gray-800 text-center text-sm">{categoryName}</h3>
-                </div>
-              </div>
-            </div>
-          ))}
-        </div>
-      </div>
-    )
+  const toggleCategory = (areaName: string, categoryName: string) => {
+    const categoryKey = `${areaName}:${categoryName}`
+    const newExpandedCategories = new Set(expandedCategories)
+    if (newExpandedCategories.has(categoryKey)) {
+      newExpandedCategories.delete(categoryKey)
+    } else {
+      newExpandedCategories.add(categoryKey)
+    }
+    setExpandedCategories(newExpandedCategories)
   }
 
-  const renderItems = () => {
-    const areaData = libraryData[selectedArea as keyof typeof libraryData]
-    const categoryData = areaData?.categories[selectedCategory as keyof typeof areaData.categories]
-    if (!categoryData) return null
-
-    return (
-      <div className="p-6">
-        <div className="flex items-center mb-6">
-          <button
-            onClick={handleBackClick}
-            className="text-white hover:text-blue-300 mr-4"
-          >
-            <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
-            </svg>
-          </button>
-          <h1 className="text-3xl font-bold text-white">Last Choice</h1>
-        </div>
-        
-        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 max-w-6xl mx-auto">
-          {categoryData.items.map((item) => (
-            <div
-              key={item.name}
-              className="cursor-pointer group"
-              onClick={() => {
-                // TODO: Navigate to stories for this topic
-                console.log('Navigate to stories for:', item.name)
-              }}
-            >
-              <div className="bg-white rounded-2xl overflow-hidden shadow-lg hover:shadow-xl transform hover:scale-105 transition-all duration-300">
-                <div className="relative aspect-[2.25] overflow-hidden">
-                  <Image
-                    src={item.image}
-                    alt={item.name}
-                    fill
-                    className="object-cover object-center group-hover:scale-110 transition-transform duration-300"
-                  />
-                </div>
-                <div className="p-4">
-                  <h3 className="font-bold text-gray-800 text-center text-sm">{item.name}</h3>
-                </div>
-              </div>
-            </div>
-          ))}
-        </div>
-      </div>
-    )
+  const handleItemClick = (itemName: string) => {
+    // TODO: Navigate to stories for this topic
+    console.log('Navigate to stories for:', itemName)
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-[#100f2d] via-[#232059] to-[#404081]">
+    <div className="min-h-screen bg-gray-100">
       <TopNavWithTabs />
       
-      {currentView === 'areas' && renderAreasOfInterest()}
-      {currentView === 'categories' && renderCategories()}
-      {currentView === 'items' && renderItems()}
+      <div className="p-6">
+        <div className="text-center mb-8">
+          <h1 className="text-3xl font-bold text-gray-800 mb-2">Pick an Area of Interest</h1>
+          <p className="text-gray-600">Each world holds endless possibilities. Which one speaks to your imagination?</p>
+        </div>
+        
+        <div className="max-w-7xl mx-auto space-y-6">
+          {/* Areas of Interest - Always Visible */}
+          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+            {Object.entries(libraryData).map(([areaName, areaData]) => (
+              <div key={areaName} className="space-y-4">
+                {/* Area Card */}
+                <div
+                  className="cursor-pointer group"
+                  onClick={() => toggleArea(areaName)}
+                >
+                  <div className="bg-white rounded-2xl overflow-hidden shadow-lg hover:shadow-xl transform hover:scale-105 transition-all duration-300 border-2 border-transparent hover:border-blue-200">
+                    <div className="relative aspect-[2.25] overflow-hidden">
+                      <Image
+                        src={areaData.image}
+                        alt={areaName}
+                        fill
+                        className="object-cover object-center group-hover:scale-110 transition-transform duration-300"
+                      />
+                    </div>
+                    <div className="p-4">
+                      <h3 className="font-bold text-gray-800 text-center text-sm">{areaName}</h3>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Expanded Categories for this Area */}
+                {expandedAreas.has(areaName) && (
+                  <div className="space-y-4 pl-4">
+                    <h2 className="text-xl font-bold text-gray-700 text-center">Pick Again</h2>
+                    <div className="grid grid-cols-1 gap-3">
+                      {Object.entries(areaData.categories).map(([categoryName, categoryData]) => (
+                        <div key={categoryName} className="space-y-3">
+                          {/* Category Card */}
+                          <div
+                            className="cursor-pointer group"
+                            onClick={() => toggleCategory(areaName, categoryName)}
+                          >
+                            <div className="bg-white rounded-xl overflow-hidden shadow-md hover:shadow-lg transform hover:scale-[1.02] transition-all duration-300 border border-gray-200 hover:border-blue-300">
+                              <div className="relative aspect-[2.25] overflow-hidden">
+                                <Image
+                                  src={categoryData.image}
+                                  alt={categoryName}
+                                  fill
+                                  className="object-cover object-center group-hover:scale-105 transition-transform duration-300"
+                                />
+                              </div>
+                              <div className="p-3">
+                                <h4 className="font-semibold text-gray-800 text-center text-xs">{categoryName}</h4>
+                              </div>
+                            </div>
+                          </div>
+
+                          {/* Expanded Items for this Category */}
+                          {expandedCategories.has(`${areaName}:${categoryName}`) && (
+                            <div className="space-y-2 pl-4">
+                              <h3 className="text-lg font-bold text-gray-600 text-center">Last Choice</h3>
+                              <div className="grid grid-cols-1 gap-2">
+                                {categoryData.items.map((item) => (
+                                  <div
+                                    key={item.name}
+                                    className="cursor-pointer group"
+                                    onClick={() => handleItemClick(item.name)}
+                                  >
+                                    <div className="bg-white rounded-lg overflow-hidden shadow-sm hover:shadow-md transform hover:scale-[1.01] transition-all duration-300 border border-gray-100 hover:border-blue-200">
+                                      <div className="relative aspect-[2.25] overflow-hidden">
+                                        <Image
+                                          src={item.image}
+                                          alt={item.name}
+                                          fill
+                                          className="object-cover object-center group-hover:scale-105 transition-transform duration-300"
+                                        />
+                                      </div>
+                                      <div className="p-2">
+                                        <h5 className="font-medium text-gray-800 text-center text-xs">{item.name}</h5>
+                                      </div>
+                                    </div>
+                                  </div>
+                                ))}
+                              </div>
+                            </div>
+                          )}
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
     </div>
   )
 }
