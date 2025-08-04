@@ -7,6 +7,7 @@ import { useState, useEffect } from "react"
 import Link from "next/link"
 import { useRouter } from "next/navigation"
 import { auth } from "@/lib/supabase"
+import { useAuth } from "@/contexts/AuthContext"
 
 export default function LoginPage() {
   const [isLoading, setIsLoading] = useState(false)
@@ -17,17 +18,14 @@ export default function LoginPage() {
   const [generalError, setGeneralError] = useState("")
   const [showErrors, setShowErrors] = useState(false)
   const router = useRouter()
+  const { user, signIn } = useAuth()
 
   // Check if user is already logged in
   useEffect(() => {
-    const checkAuth = async () => {
-      const user = await auth.getCurrentUser()
-      if (user) {
-        router.push('/dashboard')
-      }
+    if (user) {
+      router.push('/dashboard')
     }
-    checkAuth()
-  }, [router])
+  }, [user, router])
 
   const handleGoogleLogin = async () => {
     setIsLoading(true)
@@ -39,8 +37,9 @@ export default function LoginPage() {
         setGeneralError(error.message)
       }
       // Note: Redirect is handled by Supabase OAuth flow
-    } catch (err: any) {
-      setGeneralError(err.message || "An unexpected error occurred")
+    } catch (err) {
+      const errorMessage = err instanceof Error ? err.message : "An unexpected error occurred"
+      setGeneralError(errorMessage)
     } finally {
       setIsLoading(false)
     }
@@ -56,8 +55,9 @@ export default function LoginPage() {
         setGeneralError(error.message)
       }
       // Note: Redirect is handled by Supabase OAuth flow
-    } catch (err: any) {
-      setGeneralError(err.message || "An unexpected error occurred")
+    } catch (err) {
+      const errorMessage = err instanceof Error ? err.message : "An unexpected error occurred"
+      setGeneralError(errorMessage)
     } finally {
       setIsLoading(false)
     }
@@ -95,23 +95,19 @@ export default function LoginPage() {
     setIsLoading(true)
     
     try {
-      const { data, error } = await auth.signIn(email, password)
-      
-      if (error) {
-        // Handle specific auth errors
-        if (error.message.includes('Invalid login credentials')) {
-          setGeneralError("Invalid email or password. Please try again.")
-        } else if (error.message.includes('Email not confirmed')) {
-          setGeneralError("Please check your email and click the confirmation link before signing in.")
-        } else {
-          setGeneralError(error.message)
-        }
-      } else if (data.user) {
-        // Success - redirect to dashboard
-        router.push('/dashboard')
+      // Use the new signIn method from auth context
+      await signIn(email, password)
+      // Success - redirect will happen automatically via useEffect
+    } catch (err) {
+      // Handle specific auth errors
+      const errorMessage = err instanceof Error ? err.message : "An unexpected error occurred"
+      if (errorMessage.includes('Invalid login credentials')) {
+        setGeneralError("Invalid email or password. Please try again.")
+      } else if (errorMessage.includes('Email not confirmed')) {
+        setGeneralError("Please check your email and click the confirmation link before signing in.")
+      } else {
+        setGeneralError(errorMessage)
       }
-    } catch (err: any) {
-      setGeneralError(err.message || "An unexpected error occurred")
     } finally {
       setIsLoading(false)
     }
