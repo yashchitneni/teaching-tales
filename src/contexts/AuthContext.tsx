@@ -1,9 +1,8 @@
 'use client'
 
 import React, { createContext, useContext, useEffect, useState } from 'react'
-import { User } from '@supabase/supabase-js'
-import { auth, Profile, db } from '@/lib/supabase'
 import { apiClient } from '@/lib/api-client'
+import { UserRole } from '@/lib/cognito-auth'
 
 interface OneRosterUserData {
   sourcedId: string
@@ -13,14 +12,39 @@ interface OneRosterUserData {
   enabledUser: boolean
   givenName: string
   familyName: string
-  role: 'student' | 'teacher' | 'parent' | 'guardian' | 'relative' | 'aide' | 'administrator'
+  role: UserRole
   email: string
   userIds?: Array<{ type: string; identifier: string }>
   metadata?: Record<string, unknown>
 }
 
+interface Profile {
+  id: string
+  email: string
+  display_name?: string
+  avatar_url?: string
+  subscription_tier: 'free' | 'premium'
+  created_at: string
+  updated_at: string
+  cognito_id?: string
+  role?: UserRole
+  oneroster_id?: string
+  metadata?: any
+}
+
+interface CognitoUser {
+  id: string
+  email: string
+  cognitoId: string
+  role: UserRole
+  name?: string
+  profile?: Profile | null
+  oneRosterData?: OneRosterUserData
+  children?: any[] // Children profiles for this parent
+}
+
 interface AuthContextType {
-  user: User | null
+  user: CognitoUser | null
   profile: Profile | null
   loading: boolean
   signIn: (email: string, password: string) => Promise<void>
@@ -32,7 +56,7 @@ interface AuthContextType {
 const AuthContext = createContext<AuthContextType | undefined>(undefined)
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
-  const [user, setUser] = useState<User | null>(null)
+  const [user, setUser] = useState<CognitoUser | null>(null)
   const [profile, setProfile] = useState<Profile | null>(null)
   const [loading, setLoading] = useState(true)
   const [oneRosterData, setOneRosterData] = useState<OneRosterUserData | null>(null)
@@ -41,13 +65,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const refreshProfile = async () => {
     if (user) {
       try {
-        const { data, error } = await db.getProfile(user.id)
-        if (!error && data) {
-          setProfile(data)
-          // Extract OneRoster data from profile metadata
-          if (data.metadata?.oneRoster) {
-            setOneRosterData(data.metadata.oneRoster)
-          }
+        // Get latest user data from API
+        const response = await apiClient.getCurrentUser()
+        if (response.success && response.data?.user) {
+          const userData = response.data.user
+          setProfile(userData.profile)
+          setOneRosterData(userData.oneRosterData)
         }
       } catch (error) {
         console.error('Error fetching profile:', error)
@@ -61,20 +84,29 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       const response = await apiClient.login(email, password)
       
       if (response.success && response.data) {
-        // Get current user from Supabase after successful login
-        const currentUser = await auth.getCurrentUser()
-        setUser(currentUser)
+        const userData = response.data.user
         
-        // Set OneRoster data from response
-        if (response.data.user?.oneRosterData) {
-          setOneRosterData(response.data.user.oneRosterData)
-        }
+        // Set user data
+        setUser({
+          id: userData.id,
+          email: userData.email,
+          cognitoId: userData.cognitoId,
+          role: userData.role,
+          name: userData.name,
+          profile: userData.profile,
+          oneRosterData: userData.oneRosterData,
+        })
         
-        // Refresh profile to get latest data
-        await refreshProfile()
+        setProfile(userData.profile)
+        setOneRosterData(userData.oneRosterData)
         
         // Set up token refresh after successful login
         setupTokenRefresh()
+        
+        // Store tokens in localStorage for client-side access
+        if (response.data.tokens) {
+          localStorage.setItem('timeback-auth-token', response.data.tokens.accessToken)
+        }
       }
     } catch (error) {
       console.error('Sign in error:', error)
@@ -94,7 +126,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     // Set up new interval to refresh token every 45 minutes (before 1-hour expiry)
     const interval = setInterval(async () => {
       try {
-        await apiClient.refreshToken()
+        // Only refresh if we have a refresh token
+        const hasRefreshToken = document.cookie.includes('timeback-refresh-token')
+        if (hasRefreshToken) {
+          await apiClient.refreshToken()
+        }
       } catch (error) {
         console.error('Token refresh failed:', error)
         // If refresh fails, sign out the user
@@ -109,24 +145,47 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     // Get initial session
     const getInitialSession = async () => {
       try {
-        const currentUser = await auth.getCurrentUser()
-        setUser(currentUser)
+        // Check if we have a token in cookies or localStorage
+        const hasToken = document.cookie.includes('timeback-access-token') || 
+                        localStorage.getItem('timeback-auth-token')
         
-        if (currentUser) {
-          // Try to get user data from API (includes OneRoster data)
-          try {
-            const apiUser = await apiClient.getCurrentUser()
-            if (apiUser.success && apiUser.data?.user?.oneRosterData) {
-              setOneRosterData(apiUser.data.user.oneRosterData)
-            }
-          } catch (error) {
-            console.error('Error fetching API user data:', error)
+        if (!hasToken) {
+          setLoading(false)
+          return
+        }
+        
+        // Try to get current user from API
+        try {
+          const apiUser = await apiClient.getCurrentUser()
+          if (apiUser.success && apiUser.data?.user) {
+            const userData = apiUser.data.user
+            
+            setUser({
+              id: userData.id,
+              email: userData.email,
+              cognitoId: userData.cognitoId,
+              role: userData.role,
+              name: userData.name,
+              profile: userData.profile,
+              oneRosterData: userData.oneRosterData,
+              children: userData.relationships?.children,
+            })
+            
+            setProfile(userData.profile)
+            setOneRosterData(userData.oneRosterData)
+            
+            // Set up token refresh after successful authentication
+            setupTokenRefresh()
           }
+        } catch (error: any) {
+          console.error('Error fetching user data:', error)
+          // Clear invalid tokens
+          localStorage.removeItem('timeback-auth-token')
           
-          await refreshProfile()
-          
-          // Set up token refresh after successful authentication
-          setupTokenRefresh()
+          // If it's a network error, log more details
+          if (error.message?.includes('401')) {
+            console.log('Authentication failed - tokens may be invalid or expired')
+          }
         }
       } catch (error) {
         console.error('Error getting initial session:', error)
@@ -137,21 +196,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
     getInitialSession()
 
-    // Listen for auth changes
-    const { data: { subscription } } = auth.onAuthStateChange(async (event, session) => {
-      setUser(session?.user ?? null)
-      
-      if (session?.user) {
-        await refreshProfile()
-      } else {
-        setProfile(null)
-      }
-      
-      setLoading(false)
-    })
-
     return () => {
-      subscription.unsubscribe()
       // Clear refresh interval on unmount
       if (refreshInterval) {
         clearInterval(refreshInterval)
@@ -170,13 +215,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       // Call API logout endpoint
       await apiClient.logout()
       
+      // Clear local storage
+      localStorage.removeItem('timeback-auth-token')
+      
       // Clear local state
       setUser(null)
       setProfile(null)
       setOneRosterData(null)
-      
-      // Also sign out from Supabase client
-      await auth.signOut()
     } catch (error) {
       console.error('Error signing out:', error)
     }
@@ -205,4 +250,4 @@ export function useAuth() {
     throw new Error('useAuth must be used within an AuthProvider')
   }
   return context
-} 
+}

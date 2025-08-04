@@ -43,21 +43,27 @@ class ApiClient {
     // Request interceptor
     this.client.interceptors.request.use(
       async (config) => {
-        // Try to get Supabase session token for backward compatibility
+        // Try to get Cognito token from cookies (SSO)
         if (typeof window !== 'undefined') {
           try {
-            // Look for Supabase session in localStorage
-            // The key format is sb-[project-ref]-auth-token
-            const storageKey = 'sb-gccgwmuyzlsazkliswjp-auth-token';
-            const storedSession = localStorage.getItem(storageKey);
-            if (storedSession) {
-              const session = JSON.parse(storedSession);
-              if (session?.access_token) {
-                config.headers.Authorization = `Bearer ${session.access_token}`;
+            // First check for Timeback access token in cookies
+            const cookies = document.cookie.split(';');
+            const timebackToken = cookies
+              .find(cookie => cookie.trim().startsWith('timeback-access-token='))
+              ?.split('=')[1];
+            
+            if (timebackToken) {
+              config.headers.Authorization = `Bearer ${timebackToken}`;
+            } else {
+              // Fallback: check localStorage for any stored tokens
+              const storageKey = 'timeback-auth-token';
+              const storedToken = localStorage.getItem(storageKey);
+              if (storedToken) {
+                config.headers.Authorization = `Bearer ${storedToken}`;
               }
             }
           } catch (e) {
-            // Ignore errors, cookie auth will be used as fallback
+            // Ignore errors, server will handle auth via cookies
           }
         }
         return config;
@@ -73,10 +79,44 @@ class ApiClient {
         return response;
       },
       async (error: AxiosError<ApiError>) => {
-        const originalRequest = error.config;
+        const originalRequest = error.config as any;
 
         // Handle 401 errors (unauthorized)
         if (error.response?.status === 401 && originalRequest) {
+          // Prevent infinite loop - only retry once
+          if (originalRequest._retry) {
+            // Already retried, redirect to login
+            if (typeof window !== 'undefined' && !originalRequest.url?.includes('/auth/')) {
+              window.location.href = '/login';
+            }
+            return Promise.reject(error);
+          }
+
+          // Don't try to refresh if this is already an auth request
+          if (originalRequest.url?.includes('/auth/')) {
+            // Don't redirect to login if we're already on the login page
+            if (typeof window !== 'undefined' && !window.location.pathname.includes('/login')) {
+              // Clear any stored tokens
+              localStorage.removeItem('timeback-auth-token');
+              window.location.href = '/login';
+            }
+            return Promise.reject(error);
+          }
+
+          // Mark this request as retried
+          originalRequest._retry = true;
+
+          // Check if we have a refresh token before trying to refresh
+          const hasRefreshToken = document.cookie.includes('timeback-refresh-token');
+          if (!hasRefreshToken) {
+            // No refresh token, redirect to login
+            if (typeof window !== 'undefined' && !window.location.pathname.includes('/login')) {
+              localStorage.removeItem('timeback-auth-token');
+              window.location.href = '/login';
+            }
+            return Promise.reject(error);
+          }
+
           // Token might be expired, try to refresh
           try {
             await this.refreshToken();
@@ -84,7 +124,8 @@ class ApiClient {
             return this.client(originalRequest);
           } catch (refreshError) {
             // Refresh failed, redirect to login
-            if (typeof window !== 'undefined') {
+            if (typeof window !== 'undefined' && !window.location.pathname.includes('/login')) {
+              localStorage.removeItem('timeback-auth-token');
               window.location.href = '/login';
             }
             return Promise.reject(refreshError);

@@ -1,19 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { cookies } from 'next/headers';
-import { createClient } from '@supabase/supabase-js';
+import { loginWithTimeback, getTimebackSSOCookieOptions } from '@/lib/timeback-auth';
 import { randomUUID } from 'crypto';
-
-// Initialize Supabase client with service role for server-side operations
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY!,
-  {
-    auth: {
-      autoRefreshToken: false,
-      persistSession: false
-    }
-  }
-);
+import { supabase } from '@/lib/supabase';
 
 export async function POST(request: NextRequest) {
   try {
@@ -26,95 +15,138 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Sign in with Supabase
-    const { data: authData, error: authError } = await supabase.auth.signInWithPassword({
-      email,
-      password,
-    });
+    // Authenticate through Timeback API (which uses Cognito)
+    const timebackResponse = await loginWithTimeback(email, password);
 
-    if (authError || !authData.user) {
+    if (!timebackResponse.success || !timebackResponse.data) {
       return NextResponse.json(
-        { success: false, error: { message: authError?.message || 'Invalid credentials' } },
+        { 
+          success: false, 
+          error: { 
+            message: timebackResponse.error?.message || 'Invalid credentials' 
+          } 
+        },
         { status: 401 }
       );
     }
 
-    // Get user profile
-    const { data: profile, error: profileError } = await supabase
+    const { accessToken, idToken, refreshToken, expiresIn } = timebackResponse.data;
+
+    // Validate the token to get user info from Timeback
+    const { validateTimebackToken } = await import('@/lib/timeback-auth');
+    const userResponse = await validateTimebackToken(accessToken);
+
+    if (!userResponse.success || !userResponse.data) {
+      return NextResponse.json(
+        { success: false, error: { message: 'Failed to get user information' } },
+        { status: 500 }
+      );
+    }
+
+    const timebackUser = userResponse.data.user;
+
+    // Get or create user profile in our Supabase database
+    let { data: profile, error: profileError } = await supabase
       .from('profiles')
       .select('*')
-      .eq('id', authData.user.id)
+      .eq('cognito_id', timebackUser.cognitoId)
       .single();
 
-    if (profileError) {
+    if (profileError && profileError.code !== 'PGRST116') { // PGRST116 = not found
       console.error('Profile fetch error:', profileError);
     }
 
-    // Create OneRoster user if not exists
-    const oneRosterUserId = authData.user.id; // Using Supabase user ID as OneRoster sourcedId
-    
-    // Check if OneRoster metadata exists in profile
-    let oneRosterUserData = profile?.metadata?.oneRoster || null;
-    
-    // If no OneRoster data exists, create it
-    if (!oneRosterUserData) {
-      oneRosterUserData = {
-        sourcedId: oneRosterUserId,
-        status: 'active' as const,
-        dateLastModified: new Date().toISOString(),
-        username: email,
-        enabledUser: true,
-        givenName: profile?.display_name?.split(' ')[0] || email.split('@')[0],
-        familyName: profile?.display_name?.split(' ').slice(1).join(' ') || '',
-        role: 'parent' as const, // Default role for authenticated users
-        email: email,
-        userIds: [
-          {
-            type: 'supabase',
-            identifier: authData.user.id
-          }
-        ],
-        metadata: {
-          createdAt: new Date().toISOString(),
-          source: 'teaching-tales-auth'
-        }
-      };
+    // Create profile if it doesn't exist
+    let userProfile = profile;
+    if (!profile) {
+      const { data: newProfile, error: createError } = await supabase
+        .from('profiles')
+        .insert({
+          id: randomUUID(),
+          email: timebackUser.email,
+          cognito_id: timebackUser.cognitoId,
+          display_name: email.split('@')[0],
+          role: 'parent', // All TeachingTales users are parents
+          subscription_tier: 'free',
+        })
+        .select()
+        .single();
 
-      // Store OneRoster metadata in profile
+      if (createError) {
+        console.error('Profile creation error:', createError);
+        return NextResponse.json(
+          { success: false, error: { message: 'Failed to create user profile' } },
+          { status: 500 }
+        );
+      }
+      userProfile = newProfile;
+    }
+
+    // Create OneRoster user data for parent
+    const oneRosterUserData = {
+      sourcedId: userProfile.id,
+      status: 'active' as const,
+      dateLastModified: new Date().toISOString(),
+      username: email,
+      enabledUser: true,
+      givenName: userProfile.display_name?.split(' ')[0] || 'Parent',
+      familyName: userProfile.display_name?.split(' ').slice(1).join(' ') || 'User',
+      role: 'parent',
+      email: email,
+      userIds: [
+        {
+          type: 'cognito',
+          identifier: timebackUser.cognitoId
+        }
+      ],
+      metadata: {
+        createdAt: new Date().toISOString(),
+        source: 'teaching-tales-timeback-auth'
+      }
+    };
+
+    // Update profile with OneRoster metadata if needed
+    if (!userProfile.oneroster_id || !userProfile.metadata?.oneRoster) {
       const { error: updateError } = await supabase
         .from('profiles')
         .update({
+          oneroster_id: userProfile.id,
           metadata: {
-            ...profile?.metadata,
+            ...userProfile.metadata,
             oneRoster: oneRosterUserData
           }
         })
-        .eq('id', authData.user.id);
+        .eq('id', userProfile.id);
 
       if (updateError) {
         console.error('Error updating OneRoster metadata:', updateError);
       }
     }
 
-    // Set secure HttpOnly cookies for JWT tokens
+    // Get children for this parent
+    const { data: children } = await supabase
+      .from('children')
+      .select('*')
+      .eq('parent_id', userProfile.id);
+
+    // Set secure HttpOnly cookies for SSO
     const cookieStore = await cookies();
+    const cookieOptions = getTimebackSSOCookieOptions();
     
-    // Access token cookie
-    cookieStore.set('access-token', authData.session.access_token, {
-      httpOnly: true,
-      secure: process.env.NODE_ENV === 'production',
-      sameSite: 'lax',
-      maxAge: 60 * 60, // 1 hour
-      path: '/',
+    // Store tokens in cookies for SSO between apps
+    cookieStore.set('timeback-access-token', accessToken, {
+      ...cookieOptions,
+      maxAge: expiresIn,
     });
 
-    // Refresh token cookie (longer lived)
-    cookieStore.set('refresh-token', authData.session.refresh_token, {
-      httpOnly: true,
-      secure: process.env.NODE_ENV === 'production',
-      sameSite: 'lax',
+    cookieStore.set('timeback-id-token', idToken, {
+      ...cookieOptions,
+      maxAge: expiresIn,
+    });
+
+    cookieStore.set('timeback-refresh-token', refreshToken, {
+      ...cookieOptions,
       maxAge: 60 * 60 * 24 * 30, // 30 days
-      path: '/',
     });
 
     // Return success response
@@ -122,13 +154,21 @@ export async function POST(request: NextRequest) {
       success: true,
       data: {
         user: {
-          id: authData.user.id,
-          email: authData.user.email,
-          profile: profile || null,
-          oneRosterData: oneRosterUserData, // Include OneRoster data in response
+          id: userProfile.id,
+          email: timebackUser.email,
+          cognitoId: timebackUser.cognitoId,
+          role: 'parent',
+          name: userProfile.display_name,
+          profile: userProfile,
+          oneRosterData: oneRosterUserData,
+          children: children || [],
         },
-        expiresIn: 3600,
-        tokenType: 'Bearer',
+        tokens: {
+          accessToken,
+          idToken,
+          expiresIn,
+        },
+        message: 'Login successful'
       }
     });
 

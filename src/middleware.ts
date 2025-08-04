@@ -19,8 +19,8 @@ export function middleware(request: NextRequest) {
   // Check if the current path is public
   const isPublicPath = publicPaths.some(path => pathname.startsWith(path));
 
-  // Get the access token from cookies
-  const accessToken = request.cookies.get('access-token');
+  // Get the Timeback access token from cookies
+  const accessToken = request.cookies.get('timeback-access-token');
 
   // If the path requires auth and there's no token, redirect to login
   if (!isPublicPath && !accessToken) {

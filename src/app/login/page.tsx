@@ -6,7 +6,7 @@ import { Label } from "@/components/ui/label"
 import { useState, useEffect } from "react"
 import Link from "next/link"
 import { useRouter } from "next/navigation"
-import { auth } from "@/lib/supabase"
+// Removed Supabase auth import - using Cognito now
 import { useAuth } from "@/contexts/AuthContext"
 
 export default function LoginPage() {
@@ -32,11 +32,8 @@ export default function LoginPage() {
     setGeneralError("")
     
     try {
-      const { error } = await auth.signInWithGoogle()
-      if (error) {
-        setGeneralError(error.message)
-      }
-      // Note: Redirect is handled by Supabase OAuth flow
+      // TODO: Implement Cognito Google OAuth
+      setGeneralError("Google login coming soon with Cognito integration")
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : "An unexpected error occurred"
       setGeneralError(errorMessage)
@@ -50,11 +47,8 @@ export default function LoginPage() {
     setGeneralError("")
     
     try {
-      const { error } = await auth.signInWithApple()
-      if (error) {
-        setGeneralError(error.message)
-      }
-      // Note: Redirect is handled by Supabase OAuth flow
+      // TODO: Implement Cognito Apple OAuth
+      setGeneralError("Apple login coming soon with Cognito integration")
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : "An unexpected error occurred"
       setGeneralError(errorMessage)

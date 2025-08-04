@@ -1,32 +1,12 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { cookies } from 'next/headers';
-import { createClient } from '@supabase/supabase-js';
-
-// Initialize Supabase client
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY!,
-  {
-    auth: {
-      autoRefreshToken: false,
-      persistSession: false
-    }
-  }
-);
 
 export async function POST(request: NextRequest) {
   try {
     const cookieStore = await cookies();
-    
-    // Get the access token from cookie
-    const accessToken = cookieStore.get('access-token')?.value;
 
-    // Note: We don't need to call Supabase signout from the server
-    // The client-side signout in AuthContext handles it
-    // We just need to clear the cookies here
-
-    // Clear all auth cookies
-    cookieStore.set('access-token', '', {
+    // Clear all Cognito auth cookies
+    cookieStore.set('cognito-access-token', '', {
       httpOnly: true,
       secure: process.env.NODE_ENV === 'production',
       sameSite: 'lax',
@@ -34,15 +14,38 @@ export async function POST(request: NextRequest) {
       path: '/',
     });
 
-    cookieStore.set('refresh-token', '', {
+    cookieStore.set('cognito-id-token', '', {
       httpOnly: true,
       secure: process.env.NODE_ENV === 'production',
       sameSite: 'lax',
-      maxAge: 0, // Expire immediately
+      maxAge: 0,
       path: '/',
     });
 
-    // TODO: Notify OneRoster service about logout if needed
+    cookieStore.set('cognito-refresh-token', '', {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: 'lax',
+      maxAge: 0,
+      path: '/',
+    });
+
+    // Clear SSO cookie if domain is set
+    if (process.env.SSO_COOKIE_DOMAIN) {
+      cookieStore.set('cognito-sso-token', '', {
+        httpOnly: true,
+        secure: process.env.NODE_ENV === 'production',
+        sameSite: 'lax',
+        domain: process.env.SSO_COOKIE_DOMAIN,
+        maxAge: 0,
+        path: '/',
+      });
+    }
+
+    // Note: We don't need to call Cognito to invalidate the session
+    // The tokens will simply expire on their own
+    // If you want to implement token revocation, you would need to
+    // maintain a blacklist or use AWS Cognito's GlobalSignOut
 
     return NextResponse.json({
       success: true,
