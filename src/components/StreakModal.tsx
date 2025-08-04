@@ -24,7 +24,7 @@ export function StreakModal({ onClose }: StreakModalProps) {
         {/* Fire Icon */}
         <div className="text-center mb-6">
           <div className="text-6xl mb-4">🔥</div>
-          <h2 className="text-2xl font-bold">Start your streak</h2>
+          <h2 className="text-2xl font-bold text-gray-800 select-none">Start your streak</h2>
         </div>
 
         {/* Week Tracker */}
