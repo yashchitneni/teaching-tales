@@ -8,7 +8,7 @@ import { TopNavWithTabs } from '@/components/TopNavWithTabs'
 import { FeedbackButton } from '@/components/FeedbackButton'
 import { useAuth } from '@/contexts/AuthContext'
 import { fetchUsers } from '@/lib/api/oneroster-client'
-import { StoryGenerationService } from '@/lib/ai/story-generation-service'
+
 
 const loadingMessages = [
   "Gathering magical ingredients...",
@@ -107,18 +107,29 @@ export default function StoryLoadingPage() {
       existingStories.push(storyMetadata)
       localStorage.setItem('teaching-tales-stories', JSON.stringify(existingStories))
       
-      // Generate real AI story using our StoryGenerationService
-      const storyService = new StoryGenerationService()
-      
+      // Generate real AI story using our server-side API
       console.log('🎭 Starting AI story generation...')
       
-      const storyResponse = await storyService.generateStory({
-        universe: universe,
-        character: character,
-        spark: spark,
-        gradeLevel: targetStudent.grades?.[0] || '4-5', // Default to 4-5 if no grade available
-        studentId: targetStudent.sourcedId
+      const response = await fetch('/api/generate-story', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          universe: universe,
+          character: character,
+          spark: spark,
+          gradeLevel: targetStudent.grades?.[0] || '4-5', // Default to 4-5 if no grade available
+          studentId: targetStudent.sourcedId
+        })
       })
+      
+      if (!response.ok) {
+        const errorData = await response.json()
+        throw new Error(`API Error: ${errorData.error} - ${errorData.details}`)
+      }
+      
+      const storyResponse = await response.json()
       
       console.log('✅ AI story generation completed!')
       
