@@ -7,6 +7,7 @@
         "@aws-sdk/client-cognito-identity-provider": "^3.859.0",
         "@aws-sdk/client-s3": "^3.859.0",
         "@radix-ui/react-slot": "^1.2.3",
+        "@timeback/sso-sdk": "github:this-is-alpha-iota/timeback-sso-auth",
         "axios": "^1.11.0",
         "class-variance-authority": "^0.7.1",
         "clsx": "^2.1.1",
@@ -366,6 +367,8 @@
     "@swc/counter": ["@swc/counter@0.1.3", "", {}, "sha512-e2BR4lsJkkRlKZ/qCHPw9ZaSxc0MVUd7gtbtaB7aMvHeJVYe8sOB8DBZkP2DtISHGSku9sCK6T6cnY0CtXrOCQ=="],
 
     "@swc/helpers": ["@swc/helpers@0.5.15", "", { "dependencies": { "tslib": "^2.8.0" } }, "sha512-JQ5TuMi45Owi4/BIMAJBoSQoOJu12oOk/gADqlcUL9JEdHB8vyjUSsxqeNXnmXHjYKMi2WcYtezGEEhqUI/E2g=="],
+
+    "@timeback/sso-sdk": ["@timeback/sso-sdk@github:this-is-alpha-iota/timeback-sso-auth#5319b9e", { "peerDependencies": { "react": ">=16.8.0" }, "optionalPeers": ["react"] }, "this-is-alpha-iota-timeback-sso-auth-5319b9e"],
 
     "@tootallnate/quickjs-emscripten": ["@tootallnate/quickjs-emscripten@0.23.0", "", {}, "sha512-C5Mc6rdnsaJDjO3UpGW/CQTHtCKaYlScZTly4JIu97Jxo/odCiH0ITnDXSJPTOrEKk/ycSZ0AOgTmkDtkOsvIA=="],
 

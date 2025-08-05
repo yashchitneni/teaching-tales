@@ -7,7 +7,7 @@ import { useRouter, useSearchParams } from 'next/navigation'
 import { TopNavWithTabs } from '@/components/TopNavWithTabs'
 import { FeedbackButton } from '@/components/FeedbackButton'
 import { useAuth } from '@/contexts/AuthContext'
-// Database operations will be replaced with TimeBack API calls
+import { fetchUsers } from '@/lib/api/oneroster-client'
 
 const loadingMessages = [
   "Gathering magical ingredients...",
@@ -72,78 +72,57 @@ export default function StoryLoadingPage() {
 
   const generateStory = async () => {
     try {
-      // For demo purposes, we'll skip the database creation and just simulate the process
-      // In a real app, you would:
-      // 1. Get the actual child ID from the session or context
-      // 2. Create the book record in the database
-      // 3. Call an AI service to generate the story
-      
       console.log('Generating story with:', { universe, character, spark })
       
-      // Simulate story generation
-      setTimeout(() => {
-        // For now, navigate to a mock book/chapter
-        // In production, you'd use the actual book ID from the database
-        const mockBookId = '1'
-        const mockChapterId = '1'
-        router.push(`/book/${mockBookId}/chapter/${mockChapterId}`)
-      }, 5000)
-
-      // In production, this would look like:
-      /*
-      // Get the selected child from context or session
-      const childId = selectedChildId // from context
+      // Get available students from OneRoster to validate context
+      const studentsResponse = await fetchUsers({ role: 'student' })
+      if (studentsResponse.users.length === 0) {
+        throw new Error('No students found. Please create a student first.')
+      }
       
-      // Create the book record
-      const { data: book, error: bookError } = await db.createBook({
-        child_id: childId,
+      // For now, use the first student as the target student
+      const targetStudent = studentsResponse.users[0]
+      console.log('Creating story for student:', targetStudent.givenName, targetStudent.familyName)
+      
+      // Generate a unique book ID for this story session
+      const storyId = crypto.randomUUID()
+      setBookId(storyId)
+      
+      // Store story metadata in localStorage for now (until proper API is available)
+      const storyMetadata = {
+        id: storyId,
+        studentId: targetStudent.sourcedId,
         title: `${character}'s ${spark} Adventure`,
         universe: universe,
         character: character,
         spark: spark,
-        story_content: '', // Will be filled by AI
-        status: 'draft',
-        word_count: 0,
-        estimated_reading_time: 0
-      })
-
-      if (bookError) throw bookError
-
-      if (book) {
-        setBookId(book.id)
-        
-        // Call AI service to generate story
-        const storyContent = await generateStoryWithAI({
-          universe,
-          character,
-          spark,
-          childAge: childProfile.age,
-          readingLevel: childProfile.reading_level
-        })
-        
-        // Update book with generated content
-        await db.updateBook(book.id, {
-          story_content: storyContent,
-          status: 'published',
-          word_count: countWords(storyContent),
-          estimated_reading_time: calculateReadingTime(storyContent)
-        })
-        
-        // Create first chapter
-        const chapter = await db.createChapter({
-          book_id: book.id,
-          chapter_number: 1,
-          title: 'The Beginning',
-          content: storyContent
-        })
+        targetGrade: targetStudent.grades?.[0] || 'Unknown',
+        status: 'generating',
+        createdAt: new Date().toISOString()
+      }
+      
+      // Store in localStorage (temporary solution)
+      const existingStories = JSON.parse(localStorage.getItem('teaching-tales-stories') || '[]')
+      existingStories.push(storyMetadata)
+      localStorage.setItem('teaching-tales-stories', JSON.stringify(existingStories))
+      
+      // Simulate AI story generation
+      setTimeout(() => {
+        // Update story status to completed
+        const updatedStories = existingStories.map(story => 
+          story.id === storyId 
+            ? { ...story, status: 'completed', wordCount: 250, readingTime: '2 minutes' }
+            : story
+        )
+        localStorage.setItem('teaching-tales-stories', JSON.stringify(updatedStories))
         
         // Navigate to reading interface
-        router.push(`/book/${book.id}/chapter/${chapter.id}`)
-      }
-      */
+        router.push(`/book/${storyId}/chapter/1`)
+      }, 5000)
+
     } catch (error) {
       console.error('Error generating story:', error)
-      setError('Sorry, there was an error creating your story. Please try again.')
+      setError(error instanceof Error ? error.message : 'Sorry, there was an error creating your story. Please try again.')
       
       // Navigate back to spark selection after a delay
       setTimeout(() => {

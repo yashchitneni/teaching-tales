@@ -19,7 +19,7 @@ export default function LoginPage() {
   const [generalError, setGeneralError] = useState("")
   const [showErrors, setShowErrors] = useState(false)
   const router = useRouter()
-  const { user, signIn } = useAuth()
+  const { user, login } = useAuth()
   
   console.log('[LoginPage] Component rendered, user:', user)
   
@@ -70,9 +70,14 @@ export default function LoginPage() {
     setIsLoading(true)
     
     try {
-      // Use the new signIn method from auth context
-      await signIn(email, password)
-      // Success - redirect will happen automatically via useEffect
+      // Use the login method from auth context
+      const result = await login(email, password)
+      if (result.success) {
+        // Success - redirect will happen automatically via useEffect
+        router.push('/dashboard')
+      } else {
+        setGeneralError(result.error || 'Login failed')
+      }
     } catch (err) {
       // Handle specific auth errors
       const errorMessage = err instanceof Error ? err.message : "An unexpected error occurred"
