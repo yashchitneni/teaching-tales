@@ -103,7 +103,7 @@ You must return your response as a valid JSON object with this exact structure:
 
 CRITICAL OUTPUT REQUIREMENTS:
 - Return ONLY the JSON object, no additional text, markdown, or code blocks
-- Do NOT wrap the response in ```json or ``` tags
+- Do NOT wrap the response in code blocks or markdown formatting
 - The response must start with { and end with }
 - Ensure the JSON is valid and properly formatted
 - Include all 5 sections with 2 questions each

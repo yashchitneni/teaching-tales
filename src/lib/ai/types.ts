@@ -81,3 +81,21 @@ export interface GeminiSafetySettings {
   category: string;
   threshold: string;
 }
+
+// Error types for AI service
+export class AIServiceError extends Error {
+  public readonly code?: string;
+  public readonly originalError?: Error;
+
+  constructor(message: string, originalError?: Error, code?: string) {
+    super(message);
+    this.name = 'AIServiceError';
+    this.originalError = originalError;
+    this.code = code;
+
+    // Maintain proper stack trace for where our error was thrown (only available on V8)
+    if (Error.captureStackTrace) {
+      Error.captureStackTrace(this, AIServiceError);
+    }
+  }
+}
