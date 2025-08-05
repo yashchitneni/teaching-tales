@@ -248,6 +248,30 @@ All login issues have been resolved. The system now:
 
 ---
 
+---
+
+## 📚 **Official Timeback Resources**
+
+After resolving the immediate login issues, consider reviewing these official resources for potential improvements:
+
+### **Documentation**
+- [Timeback SSO Integration Guide](https://docs.superbuilders.dev/tb-sso/framework-guides/vite-sso-integration)
+- [SSO Overview](https://docs.superbuilders.dev/tb-sso/sso-overview)
+
+### **Production Environment**
+- **Production API**: `https://core.timebackapi.com/`
+- Consider using production environment instead of local development
+
+### **Package Installation**
+- **Official method**: `bun add github:this-is-alpha-iota/timeback-sso-auth`
+- May provide better build process than manual source copying
+
+### **Configuration**
+- **Official .env configuration**: [Team Google Doc](https://docs.google.com/document/d/1leDZpIhnlKMcV_-MQz5DOAnaHKayQ6U4tNCCy3zmatY/edit?tab=t.0)
+- Contains complete environment setup guidance
+
+---
+
 *Document created: August 5, 2025*  
 *Last updated: August 5, 2025*  
 *Status: Complete*
