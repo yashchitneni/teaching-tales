@@ -1,10 +1,11 @@
 'use client'
 
 import React, { createContext, useContext, useEffect, useState } from 'react'
-import { apiClient } from '@/lib/api-client'
-import { UserRole } from '@/lib/cognito-auth'
+import { sso } from '@/lib/auth/timeback-sso'
 
-interface CognitoUser {
+export type UserRole = 'parent' | 'teacher' | 'student' | 'admin'
+
+interface TimeBackUser {
   id: string
   email: string
   cognitoId: string
@@ -13,7 +14,7 @@ interface CognitoUser {
 }
 
 interface AuthContextType {
-  user: CognitoUser | null
+  user: TimeBackUser | null
   loading: boolean
   signIn: (email: string, password: string) => Promise<void>
   signOut: () => Promise<void>
@@ -22,7 +23,7 @@ interface AuthContextType {
 const AuthContext = createContext<AuthContextType | undefined>(undefined)
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
-  const [user, setUser] = useState<CognitoUser | null>(null)
+  const [user, setUser] = useState<TimeBackUser | null>(null)
   const [loading, setLoading] = useState(true)
   const [refreshInterval, setRefreshInterval] = useState<NodeJS.Timeout | null>(null)
   const [hasCheckedAuth, setHasCheckedAuth] = useState(false)
@@ -31,7 +32,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     console.log('[AuthContext] signIn called for:', email)
     try {
       setLoading(true)
-      const response = await apiClient.login(email, password)
+      const response = await sso.login(email, password)
       
       console.log('[AuthContext] Login response:', response)
       
@@ -51,11 +52,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         
         // Set up token refresh after successful login
         setupTokenRefresh()
-        
-        // Store tokens in localStorage for client-side access
-        if (response.data.tokens) {
-          localStorage.setItem('timeback-auth-token', response.data.tokens.accessToken)
-        }
       }
     } catch (error) {
       console.error('[AuthContext] Sign in error:', error)
@@ -75,10 +71,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     // Set up new interval to refresh token every 45 minutes (before 1-hour expiry)
     const interval = setInterval(async () => {
       try {
-        // Only refresh if we have a refresh token
-        const hasRefreshToken = document.cookie.includes('timeback-refresh-token')
-        if (hasRefreshToken) {
-          await apiClient.refreshToken()
+        // Only refresh if we have a token
+        const token = sso.getToken()
+        if (token) {
+          await sso.refreshToken()
         }
       } catch (error) {
         console.error('Token refresh failed:', error)
@@ -103,14 +99,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       setHasCheckedAuth(true)
       
       try {
-        // Check if we have a token in cookies or localStorage
-        const hasToken = document.cookie.includes('timeback-access-token') || 
-                        localStorage.getItem('timeback-auth-token')
+        // Check if we have a token
+        const token = sso.getToken()
         
-        console.log('[AuthContext] Has token:', hasToken)
-        console.log('[AuthContext] Cookies:', document.cookie)
+        console.log('[AuthContext] Has token:', !!token)
         
-        if (!hasToken) {
+        if (!token) {
           console.log('[AuthContext] No token found, user not logged in')
           setLoading(false)
           return
@@ -118,7 +112,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         
         // Try to get current user from API
         try {
-          const apiUser = await apiClient.getCurrentUser()
+          const apiUser = await sso.getCurrentUser()
           if (apiUser.success && apiUser.data?.user) {
             const userData = apiUser.data.user
             console.log('[AuthContext] User data retrieved:', userData)
@@ -138,8 +132,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           }
         } catch (error: any) {
           console.error('Error fetching user data:', error)
-          // Clear invalid tokens
-          localStorage.removeItem('timeback-auth-token')
           
           // If it's a network error, log more details
           if (error.message?.includes('401')) {
@@ -171,11 +163,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         setRefreshInterval(null)
       }
       
-      // Call API logout endpoint
-      await apiClient.logout()
-      
-      // Clear local storage
-      localStorage.removeItem('timeback-auth-token')
+      // Call SSO logout
+      await sso.logout()
       
       // Clear local state
       setUser(null)

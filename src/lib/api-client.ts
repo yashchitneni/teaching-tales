@@ -43,7 +43,7 @@ class ApiClient {
     // Request interceptor
     this.client.interceptors.request.use(
       async (config) => {
-        // Try to get Cognito token from cookies (SSO)
+        // Try to get TimeBack token from cookies (SSO)
         if (typeof window !== 'undefined') {
           try {
             // First check for Timeback access token in cookies

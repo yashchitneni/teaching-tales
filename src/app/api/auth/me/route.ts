@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { cookies } from 'next/headers';
-import { validateTimebackToken } from '@/lib/timeback-auth';
+
+const TIMEBACK_API_URL = process.env.NEXT_PUBLIC_TIMEBACK_API_URL || 'http://localhost:8080';
 
 export async function GET(request: NextRequest) {
   try {
@@ -23,19 +24,25 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    // Validate token with Timeback API
-    const userResponse = await validateTimebackToken(token);
+    // Validate token with TimeBack API
+    const userResponse = await fetch(`${TIMEBACK_API_URL}/api/auth/me`, {
+      headers: {
+        'Authorization': `Bearer ${token}`,
+      },
+    });
 
-    if (!userResponse.success || !userResponse.data) {
+    const userData = await userResponse.json();
+
+    if (!userData.success || !userData.data) {
       return NextResponse.json(
         { success: false, error: { message: 'Invalid or expired token' } },
         { status: 401 }
       );
     }
 
-    const timebackUser = userResponse.data.user;
+    const timebackUser = userData.data.user;
 
-    // Return user data from Timeback
+    // Return user data from TimeBack
     return NextResponse.json({
       success: true,
       data: {
@@ -44,7 +51,7 @@ export async function GET(request: NextRequest) {
           email: timebackUser.email,
           cognitoId: timebackUser.cognitoId,
           role: timebackUser.role || 'parent',
-          name: timebackUser.name || timebackUser.email.split('@')[0],
+          name: timebackUser.name || timebackUser.email?.split('@')[0],
         },
         message: 'User information retrieved successfully'
       }

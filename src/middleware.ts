@@ -12,6 +12,8 @@ export function middleware(request: NextRequest) {
     '/api/auth/login',
     '/api/auth/logout',
     '/api/auth/refresh',
+    '/api/auth/signup',
+    '/api/auth/me',
     '/_next',
     '/favicon.ico',
   ];

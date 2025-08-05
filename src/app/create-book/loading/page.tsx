@@ -7,7 +7,7 @@ import { useRouter, useSearchParams } from 'next/navigation'
 import { TopNavWithTabs } from '@/components/TopNavWithTabs'
 import { FeedbackButton } from '@/components/FeedbackButton'
 import { useAuth } from '@/contexts/AuthContext'
-import { db } from '@/lib/supabase'
+// Database operations will be replaced with TimeBack API calls
 
 const loadingMessages = [
   "Gathering magical ingredients...",

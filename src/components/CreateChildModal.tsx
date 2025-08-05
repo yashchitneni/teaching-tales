@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
-import { db } from '@/lib/supabase'
+// Database operations will be replaced with TimeBack API calls
 import { useAuth } from '@/contexts/AuthContext'
 
 interface CreateChildModalProps {

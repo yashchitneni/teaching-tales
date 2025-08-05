@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { cookies } from 'next/headers';
-import { refreshTimebackToken } from '@/lib/timeback-auth';
-import { getSSOCookieOptions } from '@/lib/cognito-auth';
+
+const TIMEBACK_API_URL = process.env.NEXT_PUBLIC_TIMEBACK_API_URL || 'http://localhost:8080';
 
 export async function POST(request: NextRequest) {
   try {
@@ -15,27 +15,33 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Refresh the token with Timeback API
-    let refreshResponse;
-    try {
-      refreshResponse = await refreshTimebackToken(refreshToken);
-      if (!refreshResponse.success) {
-        return NextResponse.json(
-          { success: false, error: { message: refreshResponse.error || 'Token refresh failed' } },
-          { status: 401 }
-        );
-      }
-    } catch (error) {
-      // If refresh fails, user needs to login again
+    // Refresh the token with TimeBack API
+    const refreshResponse = await fetch(`${TIMEBACK_API_URL}/api/auth/refresh`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ refreshToken }),
+    });
+
+    const refreshData = await refreshResponse.json();
+
+    if (!refreshData.success) {
       return NextResponse.json(
-        { success: false, error: { message: 'Token refresh failed. Please login again.' } },
+        { success: false, error: { message: refreshData.error?.message || 'Token refresh failed' } },
         { status: 401 }
       );
     }
 
-    // Update cookies with new tokens from Timeback
-    const cookieOptions = getSSOCookieOptions();
-    const { tokens } = refreshResponse.data;
+    // Update cookies with new tokens from TimeBack
+    const cookieOptions = {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: 'lax' as const,
+      path: '/',
+    };
+
+    const { tokens } = refreshData.data;
 
     // Access token cookie
     cookieStore.set('timeback-access-token', tokens.accessToken, {

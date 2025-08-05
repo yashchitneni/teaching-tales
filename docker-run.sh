@@ -16,8 +16,7 @@ if [ -f .env.docker ]; then
     
     # Build the Docker image with build arguments
     docker build \
-        --build-arg NEXT_PUBLIC_SUPABASE_URL="$NEXT_PUBLIC_SUPABASE_URL" \
-        --build-arg NEXT_PUBLIC_SUPABASE_ANON_KEY="$NEXT_PUBLIC_SUPABASE_ANON_KEY" \
+        --build-arg NEXT_PUBLIC_TIMEBACK_API_URL="$NEXT_PUBLIC_TIMEBACK_API_URL" \
         -t teaching-tales:prod .
     
     if [ $? -eq 0 ]; then
@@ -51,6 +50,6 @@ if [ -f .env.docker ]; then
     fi
 else
     echo "Error: .env.docker file not found!"
-    echo "Please create .env.docker with your Supabase credentials"
+    echo "Please create .env.docker with your TimeBack credentials"
     exit 1
 fi
