@@ -1,194 +1,122 @@
-'use client'
+'use client';
 
-import React, { createContext, useContext, useEffect, useState } from 'react'
-import { apiClient } from '@/lib/api-client'
-import { UserRole } from '@/lib/cognito-auth'
+import { createContext, useContext, useState, useEffect, ReactNode } from 'react';
+import { sso } from '@/lib/auth/timeback-sso';
+import { authEvents } from '@/lib/auth/auth-events';
 
-interface CognitoUser {
-  id: string
-  email: string
-  cognitoId: string
-  role: UserRole
-  name?: string
+interface User {
+  id: string;
+  email: string;
+  name?: string;
+  role: string;
 }
 
 interface AuthContextType {
-  user: CognitoUser | null
-  loading: boolean
-  signIn: (email: string, password: string) => Promise<void>
-  signOut: () => Promise<void>
+  user: User | null;
+  isLoading: boolean;
+  isAuthenticated: boolean;
+  login: (email: string, password: string) => Promise<{ success: boolean; error?: string }>;
+  logout: () => Promise<void>;
+  checkAuth: () => Promise<void>;
 }
 
-const AuthContext = createContext<AuthContextType | undefined>(undefined)
+const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
-export function AuthProvider({ children }: { children: React.ReactNode }) {
-  const [user, setUser] = useState<CognitoUser | null>(null)
-  const [loading, setLoading] = useState(true)
-  const [refreshInterval, setRefreshInterval] = useState<NodeJS.Timeout | null>(null)
-  const [hasCheckedAuth, setHasCheckedAuth] = useState(false)
+export function AuthProvider({ children }: { children: ReactNode }) {
+  const [user, setUser] = useState<User | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
 
-  const signIn = async (email: string, password: string) => {
-    console.log('[AuthContext] signIn called for:', email)
+  const checkAuth = async () => {
+    setIsLoading(true);
     try {
-      setLoading(true)
-      const response = await apiClient.login(email, password)
-      
-      console.log('[AuthContext] Login response:', response)
-      
-      if (response.success && response.data) {
-        const userData = response.data.user
-        
-        console.log('[AuthContext] Setting user data:', userData)
-        
-        // Set user data
-        setUser({
-          id: userData.id,
-          email: userData.email,
-          cognitoId: userData.cognitoId,
-          role: userData.role,
-          name: userData.name,
-        })
-        
-        // Set up token refresh after successful login
-        setupTokenRefresh()
-        
-        // Store tokens in localStorage for client-side access
-        if (response.data.tokens) {
-          localStorage.setItem('timeback-auth-token', response.data.tokens.accessToken)
+      const token = sso.getToken();
+      if (token) {
+        const response = await sso.request('/api/auth/me');
+        if (response.ok) {
+          const data = await response.json();
+          setUser(data.data.user);
+          // Set cookie for middleware
+          document.cookie = `timeback_token=${token}; path=/; max-age=86400`;
+        } else {
+          // Token is invalid or expired
+          console.log('Auth check failed, clearing token. Status:', response.status);
+          setUser(null);
+          sso.clearToken();
+          document.cookie = 'timeback_token=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT';
+          
+          // If we get a 401, don't try SSO check, just stay logged out
+          if (response.status === 401) {
+            return;
+          }
+        }
+      } else {
+        // Check for SSO session
+        const result = await sso.checkSession();
+        if (result.authenticated && result.user) {
+          setUser(result.user);
+          if (result.token) {
+            document.cookie = `timeback_token=${result.token}; path=/; max-age=86400`;
+          }
         }
       }
     } catch (error) {
-      console.error('[AuthContext] Sign in error:', error)
-      throw error
+      console.error('Auth check failed:', error);
+      setUser(null);
+      sso.clearToken();
+      document.cookie = 'timeback_token=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT';
     } finally {
-      setLoading(false)
+      setIsLoading(false);
     }
-  }
+  };
 
-  // Set up automatic token refresh
-  const setupTokenRefresh = () => {
-    // Clear any existing interval
-    if (refreshInterval) {
-      clearInterval(refreshInterval)
-    }
-
-    // Set up new interval to refresh token every 45 minutes (before 1-hour expiry)
-    const interval = setInterval(async () => {
-      try {
-        // Only refresh if we have a refresh token
-        const hasRefreshToken = document.cookie.includes('timeback-refresh-token')
-        if (hasRefreshToken) {
-          await apiClient.refreshToken()
+  const login = async (email: string, password: string) => {
+    try {
+      const result = await sso.login(email, password);
+      if (result.success && result.user) {
+        setUser(result.user);
+        // Set cookie for middleware
+        if (result.token) {
+          document.cookie = `timeback_token=${result.token}; path=/; max-age=86400`;
         }
-      } catch (error) {
-        console.error('Token refresh failed:', error)
-        // If refresh fails, sign out the user
-        await signOut()
+        return { success: true };
       }
-    }, 45 * 60 * 1000) // 45 minutes
-
-    setRefreshInterval(interval)
-  }
+      return { success: false, error: 'Invalid credentials' };
+    } catch (error) {
+      console.error('Login error:', error);
+      return { success: false, error: 'Login failed' };
+    }
+  };
 
   useEffect(() => {
-    // Prevent multiple auth checks
-    if (hasCheckedAuth) {
-      console.log('[AuthContext] Already checked auth, skipping')
-      return
-    }
+    checkAuth();
     
-    // Get initial session
-    const getInitialSession = async () => {
-      console.log('[AuthContext] Checking for existing session...')
-      setHasCheckedAuth(true)
-      
-      try {
-        // Check if we have a token in cookies or localStorage
-        const hasToken = document.cookie.includes('timeback-access-token') || 
-                        localStorage.getItem('timeback-auth-token')
-        
-        console.log('[AuthContext] Has token:', hasToken)
-        console.log('[AuthContext] Cookies:', document.cookie)
-        
-        if (!hasToken) {
-          console.log('[AuthContext] No token found, user not logged in')
-          setLoading(false)
-          return
-        }
-        
-        // Try to get current user from API
-        try {
-          const apiUser = await apiClient.getCurrentUser()
-          if (apiUser.success && apiUser.data?.user) {
-            const userData = apiUser.data.user
-            console.log('[AuthContext] User data retrieved:', userData)
-            
-            setUser({
-              id: userData.id,
-              email: userData.email,
-              cognitoId: userData.cognitoId,
-              role: userData.role,
-              name: userData.name,
-            })
-            
-            // Set up token refresh after successful authentication
-            setupTokenRefresh()
-          } else {
-            console.log('[AuthContext] No user data in response')
-          }
-        } catch (error: any) {
-          console.error('Error fetching user data:', error)
-          // Clear invalid tokens
-          localStorage.removeItem('timeback-auth-token')
-          
-          // If it's a network error, log more details
-          if (error.message?.includes('401')) {
-            console.log('Authentication failed - tokens may be invalid or expired')
-          }
-        }
-      } catch (error) {
-        console.error('Error getting initial session:', error)
-      } finally {
-        setLoading(false)
-      }
-    }
+    // Listen for logout events from other tabs/windows or 401 responses
+    const unsubscribe = authEvents.onLogout(() => {
+      setUser(null);
+      setIsLoading(false);
+    });
+    
+    return unsubscribe;
+  }, []);
 
-    getInitialSession()
-
-    return () => {
-      // Clear refresh interval on unmount
-      if (refreshInterval) {
-        clearInterval(refreshInterval)
-      }
-    }
-  }, [])
-
-  const signOut = async () => {
+  const logout = async () => {
     try {
-      // Clear token refresh interval
-      if (refreshInterval) {
-        clearInterval(refreshInterval)
-        setRefreshInterval(null)
-      }
-      
-      // Call API logout endpoint
-      await apiClient.logout()
-      
-      // Clear local storage
-      localStorage.removeItem('timeback-auth-token')
-      
-      // Clear local state
-      setUser(null)
+      await sso.logout();
+      setUser(null);
+      // Clear cookie for middleware
+      document.cookie = 'timeback_token=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT';
     } catch (error) {
-      console.error('Error signing out:', error)
+      console.error('Logout error:', error);
     }
-  }
+  };
 
   const value = {
     user,
-    loading,
-    signIn,
-    signOut,
+    isLoading,
+    isAuthenticated: !!user,
+    login,
+    logout,
+    checkAuth,
   }
 
   return (

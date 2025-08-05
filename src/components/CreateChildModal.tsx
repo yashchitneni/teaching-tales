@@ -5,8 +5,8 @@ import { useRouter } from 'next/navigation'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
-import { db } from '@/lib/supabase'
 import { useAuth } from '@/contexts/AuthContext'
+import { apiClient } from '@/lib/api-client'
 
 interface CreateChildModalProps {
   onClose: () => void
@@ -57,21 +57,26 @@ export function CreateChildModal({ onClose }: CreateChildModalProps) {
 
     setIsLoading(true)
     try {
-      // Create child profile
-      const { error } = await db.createChild({
-        parent_id: user.id,
-        name: `${formData.firstName} ${formData.lastName}`,
-        age: getAgeFromGrade(formData.grade),
-        reading_level: getReadingLevelFromGrade(formData.grade),
-        favorite_genres: []
-      })
+      // Create student profile using OneRoster API
+      const studentData = {
+        sourcedId: crypto.randomUUID(),
+        status: 'active' as const,
+        dateLastModified: new Date().toISOString(),
+        username: `${formData.firstName.toLowerCase()}.${formData.lastName.toLowerCase()}`,
+        enabledUser: true,
+        givenName: formData.firstName,
+        familyName: formData.lastName,
+        role: 'student' as const,
+        email: formData.email || `${formData.firstName.toLowerCase()}.${formData.lastName.toLowerCase()}@student.local`,
+        grades: [formData.grade]
+      }
 
-      if (error) throw error
+      await apiClient.createOneRosterUser(studentData)
 
       // Navigate to book creation
       router.push('/create-book/universe')
     } catch (error) {
-      console.error('Error creating child:', error)
+      console.error('Error creating student:', error)
     } finally {
       setIsLoading(false)
     }
