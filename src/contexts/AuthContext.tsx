@@ -70,9 +70,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   };
 
   const login = async (email: string, password: string) => {
+    console.log('[AuthContext] Login called with:', { email, password: '***' });
     try {
+      console.log('[AuthContext] Calling sso.login...');
       const result = await sso.login(email, password);
+      console.log('[AuthContext] SSO login result:', result);
       if (result.success && result.user) {
+        console.log('[AuthContext] Login successful, setting user');
         setUser(result.user);
         // Set cookie for middleware
         if (result.token) {
@@ -80,9 +84,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         }
         return { success: true };
       }
+      console.log('[AuthContext] Login failed - no success or user');
       return { success: false, error: 'Invalid credentials' };
     } catch (error) {
-      console.error('Login error:', error);
+      console.error('[AuthContext] Login error:', error);
       return { success: false, error: 'Login failed' };
     }
   };

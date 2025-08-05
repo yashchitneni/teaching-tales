@@ -39,6 +39,7 @@ export default function LoginPage() {
 
 
   const handleSubmit = async (e: React.FormEvent) => {
+    console.log('[LoginPage] Form submitted');
     e.preventDefault()
     setShowErrors(true)
     setGeneralError("")
@@ -68,10 +69,12 @@ export default function LoginPage() {
     if (hasError) return
     
     setIsLoading(true)
+    console.log('[LoginPage] About to call login with:', { email, password: '***' });
     
     try {
       // Use the login method from auth context
       const result = await login(email, password)
+      console.log('[LoginPage] Login result:', result);
       if (result.success) {
         // Success - redirect will happen automatically via useEffect
         router.push('/dashboard')

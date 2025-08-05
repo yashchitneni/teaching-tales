@@ -148,10 +148,16 @@ class TimeBackSSO {
     token?: string;
     error?: string;
   }> {
+    console.log('[SSO] Login method called with:', { email, password: '***' });
     try {
+      console.log('[SSO] Getting fingerprint...');
       const fingerprint = await this.getFingerprint();
+      console.log('[SSO] Fingerprint:', fingerprint);
       
-      const response = await fetch(`${this.config.apiBaseUrl}/api/auth/login`, {
+      const url = `${this.config.apiBaseUrl}/api/auth/login`;
+      console.log('[SSO] Making request to:', url);
+      
+      const response = await fetch(url, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -163,22 +169,55 @@ class TimeBackSSO {
         }),
       });
 
-      const data = await response.json();
+      console.log('[SSO] Response status:', response.status);
+      console.log('[SSO] Response ok:', response.ok);
 
-      if (response.ok && data.token) {
-        this.setToken(data.token);
+      const data = await response.json();
+      console.log('[SSO] Response data:', data);
+
+      // Handle the actual API response format: {"success":true,"data":{"accessToken":"...","idToken":"..."}}
+      if (response.ok && data.success && data.data && data.data.accessToken) {
+        console.log('[SSO] Login successful, setting token');
+        const token = data.data.accessToken;
+        this.setToken(token);
+        
+        // Extract user info from idToken if available, or create basic user object
+        let user = null;
+        if (data.data.idToken) {
+          try {
+            // Decode the JWT payload (basic decode, not verification)
+            const payload = JSON.parse(atob(data.data.idToken.split('.')[1]));
+            user = {
+              id: payload.sub || payload['cognito:username'] || 'unknown',
+              email: payload.email || 'unknown',
+              name: payload.name || null,
+              role: 'user' // Default role
+            };
+          } catch (e) {
+            console.warn('[SSO] Could not decode idToken:', e);
+            user = {
+              id: 'unknown',
+              email: 'unknown',
+              name: null,
+              role: 'user'
+            };
+          }
+        }
+        
         return {
           success: true,
-          user: data.user,
-          token: data.token,
+          user: user,
+          token: token,
         };
       }
 
+      console.log('[SSO] Login failed - no success or no access token');
       return {
         success: false,
         error: data.message || 'Login failed',
       };
     } catch (error) {
+      console.error('[SSO] Network error during login:', error);
       return {
         success: false,
         error: 'Network error during login',
