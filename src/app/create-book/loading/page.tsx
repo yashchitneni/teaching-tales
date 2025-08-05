@@ -8,6 +8,7 @@ import { TopNavWithTabs } from '@/components/TopNavWithTabs'
 import { FeedbackButton } from '@/components/FeedbackButton'
 import { useAuth } from '@/contexts/AuthContext'
 import { fetchUsers } from '@/lib/api/oneroster-client'
+import { StoryGenerationService } from '@/lib/ai/story-generation-service'
 
 const loadingMessages = [
   "Gathering magical ingredients...",
@@ -101,24 +102,44 @@ export default function StoryLoadingPage() {
         createdAt: new Date().toISOString()
       }
       
-      // Store in localStorage (temporary solution)
+      // Store initial story metadata in localStorage
       const existingStories = JSON.parse(localStorage.getItem('teaching-tales-stories') || '[]')
       existingStories.push(storyMetadata)
       localStorage.setItem('teaching-tales-stories', JSON.stringify(existingStories))
       
-      // Simulate AI story generation
-      setTimeout(() => {
-        // Update story status to completed
-        const updatedStories = existingStories.map(story => 
-          story.id === storyId 
-            ? { ...story, status: 'completed', wordCount: 250, readingTime: '2 minutes' }
-            : story
-        )
-        localStorage.setItem('teaching-tales-stories', JSON.stringify(updatedStories))
-        
-        // Navigate to reading interface
-        router.push(`/book/${storyId}/chapter/1`)
-      }, 5000)
+      // Generate real AI story using our StoryGenerationService
+      const storyService = new StoryGenerationService()
+      
+      console.log('🎭 Starting AI story generation...')
+      
+      const storyResponse = await storyService.generateStory({
+        universe: universe,
+        character: character,
+        spark: spark,
+        gradeLevel: targetStudent.grades?.[0] || '4-5', // Default to 4-5 if no grade available
+        studentId: targetStudent.sourcedId
+      })
+      
+      console.log('✅ AI story generation completed!')
+      
+      // Update story metadata with generated content
+      const updatedStories = existingStories.map(story => 
+        story.id === storyId 
+          ? { 
+              ...story, 
+              status: 'completed',
+              title: storyResponse.title,
+              wordCount: storyResponse.wordCount,
+              readingTime: storyResponse.readingTime,
+              sections: storyResponse.sections,
+              metadata: storyResponse.metadata
+            }
+          : story
+      )
+      localStorage.setItem('teaching-tales-stories', JSON.stringify(updatedStories))
+      
+      // Navigate to reading interface
+      router.push(`/book/${storyId}/chapter/1`)
 
     } catch (error) {
       console.error('Error generating story:', error)

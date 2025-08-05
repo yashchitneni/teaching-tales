@@ -67,8 +67,47 @@ export default function ReadingPage() {
   const bookId = params.bookId as string
   const chapterId = params.chapterId as string
 
-  // In a real app, fetch chapter data from Supabase
-  const chapter = mockChapter
+  // Load story data from localStorage
+  const getChapterData = () => {
+    try {
+      const stories = JSON.parse(localStorage.getItem('teaching-tales-stories') || '[]')
+      const story = stories.find((s: any) => s.id === bookId)
+      
+      if (!story || !story.sections) {
+        console.warn('Story not found or has no sections, using mock data')
+        return mockChapter
+      }
+
+      const sectionIndex = parseInt(chapterId) - 1
+      const section = story.sections[sectionIndex]
+      
+      if (!section) {
+        console.warn(`Section ${chapterId} not found, using mock data`)
+        return mockChapter
+      }
+
+      // Transform AI-generated structure to match expected format
+      return {
+        id: chapterId,
+        bookId: bookId,
+        title: sectionIndex === 0 ? story.title : `${story.title} - Part ${chapterId}`,
+        content: section.content,
+        questions: section.questions.map((q: any) => ({
+          id: q.id,
+          text: q.question,
+          options: q.options,
+          correctAnswer: q.correct
+        })),
+        wordCount: story.wordCount || 0,
+        readingTime: story.readingTime || '2 minutes'
+      }
+    } catch (error) {
+      console.error('Error loading story data:', error)
+      return mockChapter
+    }
+  }
+
+  const chapter = getChapterData()
 
   const handleQuestionAnswer = (answerIndex: number) => {
     const newAnswers = [...answers]

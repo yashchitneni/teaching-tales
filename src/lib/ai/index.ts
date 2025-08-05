@@ -1,6 +1,7 @@
 // Main exports for the AI module
 export { GeminiClient } from './gemini-client';
 export { PromptTemplates } from './prompt-templates';
+export { StoryGenerationService } from './story-generation-service';
 export * from './types';
 
 // Re-export commonly used types for convenience
