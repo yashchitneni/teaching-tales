@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
+import { apiClient } from "@/lib/api-client"
 
 interface FormData {
   firstName: string
@@ -64,10 +65,24 @@ export default function CreateChildAccountPage() {
     setIsLoading(true)
     
     try {
-      // TODO: Implement actual API call
-      await new Promise(resolve => setTimeout(resolve, 1500))
+      // Create student using OneRoster API
+      const studentData = {
+        sourcedId: crypto.randomUUID(),
+        status: 'active' as const,
+        dateLastModified: new Date().toISOString(),
+        username: `${formData.firstName.toLowerCase()}.${formData.lastName.toLowerCase()}`,
+        enabledUser: true,
+        givenName: formData.firstName,
+        familyName: formData.lastName,
+        role: 'student' as const,
+        email: formData.email,
+        grades: [formData.grade]
+      }
+
+      await apiClient.createOneRosterUser(studentData)
       setShowModal(true)
     } catch (error) {
+      console.error('Error creating student:', error)
       setErrors({ email: "Could not create account. Please try again." })
     } finally {
       setIsLoading(false)

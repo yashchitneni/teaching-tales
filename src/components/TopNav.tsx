@@ -6,11 +6,11 @@ import { Button } from '@/components/ui/button'
 import { useRouter } from 'next/navigation'
 
 export function TopNav() {
-  const { user, profile, signOut } = useAuth()
+  const { user, logout } = useAuth()
   const router = useRouter()
 
   const handleSignOut = async () => {
-    await signOut()
+    await logout()
     router.push('/login')
   }
 
@@ -43,9 +43,9 @@ export function TopNav() {
 
         {/* User Info */}
         <div className="flex items-center space-x-4">
-          <span className="text-sm">{profile?.display_name || user?.email?.split('@')[0] || 'User'}</span>
+          <span className="text-sm">{user?.name || user?.email?.split('@')[0] || 'User'}</span>
           <div className="w-10 h-10 bg-white/20 rounded-full flex items-center justify-center font-bold">
-            {profile?.display_name?.charAt(0).toUpperCase() || user?.email?.charAt(0).toUpperCase() || 'U'}
+            {user?.name?.charAt(0).toUpperCase() || user?.email?.charAt(0).toUpperCase() || 'U'}
           </div>
           <Button
             onClick={handleSignOut}

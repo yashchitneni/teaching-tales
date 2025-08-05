@@ -69,8 +69,8 @@ function StoriesContent() {
 
   const handleStartReading = (storyId: string) => {
     console.log('Start reading story:', storyId)
-    // TODO: Navigate to reading page
-    // router.push(`/book/${storyId}`)
+    // Navigate to reading page using the story ID
+    router.push(`/book/${storyId}/chapter/1`)
   }
 
   return (

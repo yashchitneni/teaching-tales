@@ -16,18 +16,14 @@ export default $config({
       access: "public"
     });
 
-    // Get Supabase configuration from environment or secrets
-    const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || $secret("NEXT_PUBLIC_SUPABASE_URL");
-    const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || $secret("NEXT_PUBLIC_SUPABASE_ANON_KEY");
-    const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY || "";
+    // Get TimeBack configuration from environment or secrets
+const timebackApiUrl = process.env.NEXT_PUBLIC_TIMEBACK_API_URL || "http://localhost:8080";
 
     // Create the Next.js app
     const site = new sst.aws.Nextjs("TeachingTalesApp", {
       link: [bucket],
       environment: {
-        NEXT_PUBLIC_SUPABASE_URL: supabaseUrl,
-        NEXT_PUBLIC_SUPABASE_ANON_KEY: supabaseAnonKey,
-        SUPABASE_SERVICE_ROLE_KEY: supabaseServiceKey,
+        NEXT_PUBLIC_TIMEBACK_API_URL: timebackApiUrl,
       },
     });
 

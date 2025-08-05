@@ -1,53 +1,48 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { cookies } from 'next/headers';
-import { logoutFromTimeback } from '@/lib/timeback-auth';
+
+const TIMEBACK_API_URL = process.env.NEXT_PUBLIC_TIMEBACK_API_URL || 'http://localhost:8080';
 
 export async function POST(request: NextRequest) {
   try {
     const cookieStore = await cookies();
 
-    // Call Timeback logout endpoint
-    try {
-      await logoutFromTimeback();
-    } catch (error) {
-      // Continue with local logout even if Timeback logout fails
-      console.error('Timeback logout error:', error);
+    // Get access token from cookies
+    const accessToken = cookieStore.get('timeback-access-token')?.value;
+
+    // Call TimeBack logout endpoint if we have a token
+    if (accessToken) {
+      try {
+        await fetch(`${TIMEBACK_API_URL}/api/auth/logout`, {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${accessToken}`,
+          },
+        });
+      } catch (error) {
+        // Continue with local logout even if TimeBack logout fails
+        console.error('TimeBack logout error:', error);
+      }
     }
 
-    // Clear all Timeback auth cookies
-    cookieStore.set('timeback-access-token', '', {
+    // Clear all TimeBack auth cookies
+    const cookieOptions = {
       httpOnly: true,
       secure: process.env.NODE_ENV === 'production',
-      sameSite: 'lax',
+      sameSite: 'lax' as const,
       maxAge: 0, // Expire immediately
       path: '/',
-    });
+    };
 
-    cookieStore.set('timeback-id-token', '', {
-      httpOnly: true,
-      secure: process.env.NODE_ENV === 'production',
-      sameSite: 'lax',
-      maxAge: 0,
-      path: '/',
-    });
-
-    cookieStore.set('timeback-refresh-token', '', {
-      httpOnly: true,
-      secure: process.env.NODE_ENV === 'production',
-      sameSite: 'lax',
-      maxAge: 0,
-      path: '/',
-    });
+    cookieStore.set('timeback-access-token', '', cookieOptions);
+    cookieStore.set('timeback-id-token', '', cookieOptions);
+    cookieStore.set('timeback-refresh-token', '', cookieOptions);
 
     // Clear SSO cookie if domain is set
     if (process.env.SSO_COOKIE_DOMAIN) {
       cookieStore.set('timeback-sso-token', '', {
-        httpOnly: true,
-        secure: process.env.NODE_ENV === 'production',
-        sameSite: 'lax',
+        ...cookieOptions,
         domain: process.env.SSO_COOKIE_DOMAIN,
-        maxAge: 0,
-        path: '/',
       });
     }
 

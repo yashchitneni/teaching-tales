@@ -25,12 +25,10 @@ COPY . .
 ENV NEXT_TELEMETRY_DISABLED=1
 
 # Build arguments for environment variables
-ARG NEXT_PUBLIC_SUPABASE_URL
-ARG NEXT_PUBLIC_SUPABASE_ANON_KEY
+ARG NEXT_PUBLIC_TIMEBACK_API_URL
 
 # Set environment variables from build args
-ENV NEXT_PUBLIC_SUPABASE_URL=${NEXT_PUBLIC_SUPABASE_URL:-placeholder_supabase_url}
-ENV NEXT_PUBLIC_SUPABASE_ANON_KEY=${NEXT_PUBLIC_SUPABASE_ANON_KEY:-placeholder_supabase_anon_key}
+ENV NEXT_PUBLIC_TIMEBACK_API_URL=${NEXT_PUBLIC_TIMEBACK_API_URL:-http://localhost:8080}
 
 RUN npm run build
 
