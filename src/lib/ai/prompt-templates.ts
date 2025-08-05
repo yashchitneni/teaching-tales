@@ -11,12 +11,43 @@ STORY PARAMETERS:
 - Target Grade Level: ${request.gradeLevel}
 - Word Count Target: 800-1200 words
 
-STRUCTURE REQUIREMENTS:
-1. Create exactly 5 story sections
-2. Each section should be 160-240 words
-3. End each section with a natural pause or cliffhanger to encourage continued reading
-4. Use age-appropriate vocabulary and themes for ${request.gradeLevel}
-5. Include educational elements that promote reading comprehension
+STORY BEAT STRUCTURE:
+Create exactly 5 story sections that follow classic narrative structure with compelling cliffhangers:
+
+1. OPENING HOOK (160-240 words): 
+   - Establish character, setting, and initial situation
+   - End with an intriguing discovery or unexpected event that draws readers in
+
+2. RISING ACTION - PART 1 (160-240 words):
+   - Character responds to the hook, begins their journey
+   - Introduce the main challenge or mystery
+   - End with a complication or obstacle that raises stakes
+
+3. RISING ACTION - PART 2 (160-240 words):
+   - Character faces the challenge, learns something important
+   - Build tension and develop character growth
+   - End with a major revelation or turning point that changes everything
+
+4. CLIMAX & RESOLUTION SETUP (160-240 words):
+   - Character confronts the main challenge with new knowledge/skills
+   - Show character growth and problem-solving
+   - End with the resolution in sight but one final challenge remaining
+
+5. RESOLUTION & NEW BEGINNING (160-240 words):
+   - Resolve the main conflict satisfyingly
+   - Show character growth and lessons learned
+   - End with a sense of completion but hint at future adventures
+
+CLIFFHANGER REQUIREMENTS:
+- Each section (except the last) must end with a compelling cliffhanger
+- Use techniques like: unexpected discoveries, mysterious events, sudden obstacles, important revelations, or dramatic moments
+- Make readers think "I need to know what happens next!"
+- Ensure natural story flow between sections
+
+VOCABULARY INTEGRATION:
+- Include 3-5 age-appropriate vocabulary words per section
+- Mark vocabulary as: <span class="vocabulary" data-word="word" data-definition="definition">word</span>
+- Choose words that enhance the story and are appropriate for ${request.gradeLevel}
 
 EDUCATIONAL INTEGRATION:
 For each section, create exactly 2 comprehension questions:
@@ -60,14 +91,26 @@ You must return your response as a valid JSON object with this exact structure:
     }
   ],
   "wordCount": 1000,
-  "readingTime": "4 minutes"
+  "readingTime": "4 minutes",
+  "metadata": {
+    "universe": "${request.universe}",
+    "character": "${request.character}",
+    "spark": "${request.spark}",
+    "gradeLevel": "${request.gradeLevel}",
+    "generatedAt": "ISO timestamp"
+  }
 }
 
-Important: 
+CRITICAL OUTPUT REQUIREMENTS:
+- Return ONLY the JSON object, no additional text, markdown, or code blocks
+- Do NOT wrap the response in ```json or ``` tags
+- The response must start with { and end with }
 - Ensure the JSON is valid and properly formatted
 - Include all 5 sections with 2 questions each
 - Make questions engaging and educational
-- Keep the story cohesive and engaging throughout all sections`;
+- Keep the story cohesive and engaging throughout all sections
+- Each section should build naturally from the previous one
+- Cliffhangers should feel organic to the story, not forced`;
   }
 
   static generateContinuationPrompt(request: ContinuationRequest): string {
@@ -184,5 +227,86 @@ Important: Ensure JSON validity and maintain story continuity while introducing 
       .replace(/[<>]/g, '') // Remove potential HTML tags
       .replace(/\s+/g, ' ') // Normalize whitespace
       .substring(0, 500); // Limit length
+  }
+
+  static getGradeLevelGuidance(gradeLevel: string): string {
+    const guidance: Record<string, string> = {
+      'K-1': `
+GRADE K-1 SPECIFIC REQUIREMENTS:
+- Use simple, short sentences (5-10 words each)
+- Focus on basic emotions and familiar situations
+- Include repetitive phrases for engagement
+- Use present tense primarily
+- Cliffhangers should be gentle mysteries or discoveries, not scary
+- Vocabulary should be sight words plus 1-2 new words per section`,
+
+      '2-3': `
+GRADE 2-3 SPECIFIC REQUIREMENTS:
+- Use slightly longer sentences (10-15 words)
+- Include more descriptive language and adjectives
+- Character can face mild challenges and solve simple problems
+- Mix of present and past tense
+- Cliffhangers can include small obstacles or surprising discoveries
+- Vocabulary can include more complex words with context clues`,
+
+      '4-5': `
+GRADE 4-5 SPECIFIC REQUIREMENTS:
+- Use varied sentence lengths and more complex structures
+- Include character development and emotional growth
+- Character can face moderate challenges requiring problem-solving
+- Use past tense primarily with dialogue
+- Cliffhangers can include plot twists and character revelations
+- Vocabulary can include subject-specific terms and advanced descriptive words`,
+
+      '6-8': `
+GRADE 6-8 SPECIFIC REQUIREMENTS:
+- Use sophisticated sentence structures and varied paragraph lengths
+- Include complex character relationships and moral dilemmas  
+- Character can face significant challenges requiring critical thinking
+- Use advanced literary techniques like foreshadowing
+- Cliffhangers can include dramatic tension and emotional conflicts
+- Vocabulary can include abstract concepts and specialized terminology`
+    };
+
+    return guidance[gradeLevel] || guidance['4-5']; // Default to 4-5 if not found
+  }
+
+  static generateStoryPromptWithGradeLevel(request: StoryGenerationRequest): string {
+    const basePrompt = this.generateStoryPrompt(request);
+    const gradeGuidance = this.getGradeLevelGuidance(request.gradeLevel);
+    
+    return basePrompt.replace(
+      'VOCABULARY INTEGRATION:',
+      gradeGuidance + '\n\nVOCABULARY INTEGRATION:'
+    );
+  }
+
+  static parseAIResponse(response: string): any {
+    try {
+      // First, try parsing as-is
+      return JSON.parse(response);
+    } catch (error) {
+      // If that fails, try to extract JSON from markdown code blocks
+      const codeBlockMatch = response.match(/```(?:json)?\s*([\s\S]*?)\s*```/);
+      if (codeBlockMatch) {
+        try {
+          return JSON.parse(codeBlockMatch[1]);
+        } catch (innerError) {
+          throw new Error(`Failed to parse JSON from code block: ${innerError.message}`);
+        }
+      }
+      
+      // Try to find JSON-like content between first { and last }
+      const jsonMatch = response.match(/\{[\s\S]*\}/);
+      if (jsonMatch) {
+        try {
+          return JSON.parse(jsonMatch[0]);
+        } catch (innerError) {
+          throw new Error(`Failed to parse extracted JSON: ${innerError.message}`);
+        }
+      }
+      
+      throw new Error(`No valid JSON found in response: ${error.message}`);
+    }
   }
 }
