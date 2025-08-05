@@ -531,17 +531,48 @@ export async function POST(request: NextRequest) {
       // At this point, validation has ensured agents exist and are valid
       const parentAgent = body.agents.find(agent => agent.agentSourcedId === user.id)!;
       
+      // Ensure parent profile exists in Supabase (Cognito is primary, Supabase is relational support)
+      const { data: existingProfile, error: profileError } = await supabase
+        .from('profiles')
+        .select('id')
+        .eq('id', user.id)
+        .single();
+
+      if (!existingProfile) {
+        // Profile doesn't exist, create it (Cognito user needs Supabase profile for relationships)
+        const { error: createProfileError } = await supabase
+          .from('profiles')
+          .insert({
+            id: user.id,
+            email: user.email || body.email || `${user.id}@example.com`,
+            display_name: user.display_name || `${body.givenName} ${body.familyName}`.trim(),
+            subscription_tier: 'free',
+            cognito_id: user.id,
+            role: 'parent'
+          });
+
+        if (createProfileError) {
+          console.error('Error creating parent profile:', createProfileError);
+          return NextResponse.json(
+            { success: false, error: { message: 'Failed to create parent profile' } },
+            { status: 500 }
+          );
+        }
+      }
+      
+      // Ensure age is a valid number (required by database schema)
+      const childAge = parseInt(body.metadata?.age?.toString() || '8', 10);
+      const validAge = isNaN(childAge) ? 8 : childAge; // Default to 8 if invalid
+
       const { data: child, error: childError } = await supabase
         .from('children')
         .insert({
           id: sourcedId,
           parent_id: user.id,
           name: `${body.givenName} ${body.familyName}`.trim(),
-          age: body.metadata?.age || null,
-          grade_level: body.grades?.[0] || null,
-          interests: body.metadata?.interests || [],
-          reading_level: body.metadata?.readingLevel || null,
-          preferences: body.metadata?.preferences || {}
+          age: validAge,
+          favorite_genres: body.metadata?.interests || [],
+          reading_level: body.metadata?.readingLevel || 'beginner',
         })
         .select()
         .single();
