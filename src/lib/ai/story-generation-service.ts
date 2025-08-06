@@ -110,10 +110,19 @@ export class StoryGenerationService {
 
       // Validate and transform the response
       const storyResponse = this.validateAndTransformResponse(parsedResponse, sanitizedRequest);
+      
+      console.log('📝 Story response validated, starting image generation...');
 
-      // TODO: Re-enable image generation after fixing CloudFront timeout
-      // For now, skip image generation to avoid 30-second CloudFront timeout
-      console.log('⏭️ Skipping image generation to avoid timeout issues');
+      // Generate story illustration
+      console.log('🎨 Generating story illustration...');
+      try {
+        const imageUrl = await this.generateStoryImage(storyResponse, sanitizedRequest);
+        storyResponse.imageUrl = imageUrl;
+        console.log('✅ Story illustration generated successfully:', imageUrl);
+      } catch (imageError) {
+        console.warn('⚠️ Image generation failed, continuing without image:', imageError);
+        // Continue without image - don't fail the whole story generation
+      }
 
       console.log('🎉 Story generation completed successfully!');
       console.log('📊 Generated:', {

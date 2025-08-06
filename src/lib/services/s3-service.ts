@@ -90,11 +90,6 @@ export class S3Service {
     try {
       console.log(`📥 Downloading image from: ${imageUrl}`);
       
-      // For now, skip S3 upload to avoid timeouts and use Replicate URL directly
-      // TODO: Re-enable S3 upload once we add proper IAM permissions
-      console.log('🔗 Using Replicate URL directly to avoid timeouts');
-      return imageUrl;
-      
       const response = await fetch(imageUrl);
       if (!response.ok) {
         throw new Error(`Failed to download image: ${response.statusText}`);
