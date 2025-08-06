@@ -139,7 +139,7 @@ export function AssessmentResults({
               >
                 <div className="flex items-start justify-between">
                   <div className="flex-1">
-                    <p className="text-sm font-medium mb-1">{question.text}</p>
+                    <p className="text-sm font-medium mb-1 text-gray-900">{question.text}</p>
                     <p className="text-xs text-gray-600">
                       Your answer: {question.options[answers[index]]}
                     </p>
