@@ -39,6 +39,27 @@ import {
   defaultValidationPipeline,
   PipelineValidationResult
 } from '../validators/validation-pipeline';
+import {
+  QTIErrorHandler,
+  defaultQTIErrorHandler,
+  EnhancedQTIError,
+  ExtendedQTIErrorType,
+  ErrorSeverity,
+  RecoveryStrategy
+} from '../errors/qti-error-handler';
+import {
+  EdgeCaseDetector,
+  EdgeCaseHandler,
+  defaultEdgeCaseDetector,
+  defaultEdgeCaseHandler
+} from '../errors/edge-case-handler';
+import {
+  RecoveryEngine,
+  defaultRecoveryEngine,
+  FallbackLevel,
+  RecoveryMode,
+  GenerationStrategy
+} from '../errors/fallback-recovery';
 import { DEFAULT_QTI_OPTIONS } from '../index';
 
 /**
@@ -86,6 +107,10 @@ export class QTIGenerator {
   private navigationService: ConditionalNavigationService;
   private storyProgressionService: AdaptiveStoryProgressionService;
   private validationPipeline: ValidationPipeline;
+  private errorHandler: QTIErrorHandler;
+  private edgeCaseDetector: EdgeCaseDetector;
+  private edgeCaseHandler: EdgeCaseHandler;
+  private recoveryEngine: RecoveryEngine;
 
   constructor(
     transformer?: AIToQTITransformer,
@@ -93,7 +118,11 @@ export class QTIGenerator {
     branchRuleEngine?: BranchRuleEngine,
     navigationService?: ConditionalNavigationService,
     storyProgressionService?: AdaptiveStoryProgressionService,
-    validationPipeline?: ValidationPipeline
+    validationPipeline?: ValidationPipeline,
+    errorHandler?: QTIErrorHandler,
+    edgeCaseDetector?: EdgeCaseDetector,
+    edgeCaseHandler?: EdgeCaseHandler,
+    recoveryEngine?: RecoveryEngine
   ) {
     this.transformer = transformer || defaultAIToQTITransformer;
     this.templateLoader = templateLoader || defaultTemplateLoader;
@@ -101,6 +130,10 @@ export class QTIGenerator {
     this.navigationService = navigationService || defaultConditionalNavigationService;
     this.storyProgressionService = storyProgressionService || defaultAdaptiveStoryProgressionService;
     this.validationPipeline = validationPipeline || defaultValidationPipeline;
+    this.errorHandler = errorHandler || defaultQTIErrorHandler;
+    this.edgeCaseDetector = edgeCaseDetector || defaultEdgeCaseDetector;
+    this.edgeCaseHandler = edgeCaseHandler || defaultEdgeCaseHandler;
+    this.recoveryEngine = recoveryEngine || defaultRecoveryEngine;
   }
 
   /**
@@ -249,6 +282,217 @@ export class QTIGenerator {
         }
       );
     }
+  }
+
+  /**
+   * Generate resilient QTI package with comprehensive error handling and recovery
+   * 
+   * @param storyResponse - AI-generated story with sections and questions
+   * @param options - QTI generation options
+   * @param fallbackLevel - Maximum fallback level to use for recovery
+   * @param enableValidation - Whether to run validation pipeline
+   * @returns Complete generated QTI package with error handling results
+   */
+  async generateResilientPackage(
+    storyResponse: StoryGenerationResponse,
+    options: QTIGenerationOptions = {},
+    fallbackLevel: FallbackLevel = FallbackLevel.STANDARD,
+    enableValidation: boolean = true
+  ): Promise<GeneratedQTIPackage> {
+    const startTime = Date.now();
+    
+    try {
+      console.log('🛡️  Starting resilient QTI package generation...');
+      console.log('📖 Story:', storyResponse.title);
+      console.log('🔧 Max Fallback Level:', fallbackLevel);
+      console.log('🔍 Validation enabled:', enableValidation);
+      
+      // Step 1: Edge case detection and handling
+      console.log('🔄 Step 1: Detecting and handling edge cases...');
+      const edgeCases = this.edgeCaseDetector.detectStoryEdgeCases(storyResponse);
+      
+      if (edgeCases.length > 0) {
+        console.log(`  📊 Detected ${edgeCases.length} edge cases:`);
+        edgeCases.forEach(edgeCase => {
+          console.log(`    - ${edgeCase.type}: ${edgeCase.description} (${edgeCase.severity})`);
+        });
+        
+        const handlingResults = await this.edgeCaseHandler.handleEdgeCases(edgeCases);
+        
+        let criticalIssues = 0;
+        handlingResults.forEach((result, type) => {
+          if (!result.success) {
+            criticalIssues++;
+            console.warn(`    ⚠️  Failed to handle ${type}: ${result.warnings.join(', ')}`);
+          } else if (result.modifications.length > 0) {
+            console.log(`    ✅ Handled ${type}: ${result.modifications.join(', ')}`);
+          }
+        });
+        
+        if (criticalIssues > 0) {
+          console.warn(`  ⚠️  ${criticalIssues} critical edge cases could not be automatically resolved`);
+        }
+      }
+
+      // Step 2: Attempt normal generation with error handling
+      console.log('🔄 Step 2: Attempting normal package generation...');
+      let generatedPackage: GeneratedQTIPackage;
+      
+      try {
+        if (enableValidation) {
+          generatedPackage = await this.generateValidatedPackage(storyResponse, options, true);
+        } else {
+          generatedPackage = await this.generatePackage(storyResponse, options);
+        }
+        
+        console.log('✅ Normal generation successful');
+        
+      } catch (error) {
+        console.log('⚠️  Normal generation failed, initiating recovery...');
+        
+        // Step 3: Error handling and recovery
+        const enhancedError = error instanceof EnhancedQTIError ? error : 
+          new EnhancedQTIError(
+            ExtendedQTIErrorType.GENERATION_ERROR,
+            error instanceof Error ? error.message : 'Unknown generation error',
+            {
+              operation: 'package_generation',
+              phase: 'generation',
+              component: 'QTIGenerator',
+              storyTitle: storyResponse.title
+            },
+            ErrorSeverity.HIGH,
+            RecoveryStrategy.FALLBACK
+          );
+
+        // Handle the error with recovery attempts
+        const recoveryResult = await this.errorHandler.handleError(enhancedError, {
+          operation: 'resilient_generation',
+          phase: 'recovery',
+          component: 'QTIGenerator',
+          storyTitle: storyResponse.title
+        });
+
+        if (recoveryResult.success && recoveryResult.strategy === RecoveryStrategy.FALLBACK) {
+          console.log('🔄 Step 3: Attempting fallback recovery...');
+          
+          const fallbackResult = await this.recoveryEngine.attemptRecovery(
+            storyResponse,
+            enhancedError,
+            {
+              level: fallbackLevel,
+              mode: RecoveryMode.AUTOMATIC,
+              strategy: GenerationStrategy.CONTENT_PRESERVED,
+              preserveContent: true,
+              allowPartialGeneration: true,
+              maxRetryAttempts: 3,
+              retryDelay: 1000,
+              emergencyMode: fallbackLevel >= FallbackLevel.EMERGENCY
+            }
+          );
+
+          if (fallbackResult.success && fallbackResult.generatedPackage) {
+            console.log('✅ Fallback recovery successful');
+            console.log(`  📊 Content Preservation: ${Math.round(fallbackResult.performanceMetrics.contentPreservation * 100)}%`);
+            console.log(`  ⚠️  Limitations: ${fallbackResult.limitations.join(', ')}`);
+            
+            // Convert recovered QTI package to GeneratedQTIPackage format
+            generatedPackage = await this.convertRecoveredPackage(fallbackResult, storyResponse, options);
+            
+          } else {
+            throw new EnhancedQTIError(
+              ExtendedQTIErrorType.RECOVERY_FAILED,
+              'All recovery attempts failed',
+              {
+                operation: 'resilient_generation',
+                component: 'QTIGenerator',
+                storyTitle: storyResponse.title,
+                fallbackLevel: fallbackLevel
+              },
+              ErrorSeverity.CRITICAL,
+              RecoveryStrategy.USER_INTERVENTION
+            );
+          }
+        } else {
+          // Re-throw the original error if recovery wasn't successful
+          throw enhancedError;
+        }
+      }
+
+      // Step 4: Final validation and reporting
+      const totalTime = Date.now() - startTime;
+      
+      console.log('📊 Resilient Generation Summary:');
+      console.log(`  - Total Time: ${totalTime}ms`);
+      console.log(`  - Edge Cases Handled: ${edgeCases.length}`);
+      console.log(`  - Package Generated: ✅`);
+      
+      if (generatedPackage.validation) {
+        console.log(`  - Validation Success: ${generatedPackage.validation.success ? '✅' : '⚠️'}`);
+        if (generatedPackage.validation.complianceReport) {
+          console.log(`  - Compliance Score: ${generatedPackage.validation.complianceReport.overallScore}/100`);
+        }
+      }
+
+      console.log(`✅ Resilient QTI package generation completed in ${totalTime}ms!`);
+      return generatedPackage;
+
+    } catch (error) {
+      const totalTime = Date.now() - startTime;
+      
+      // Final error handling - log comprehensive error information
+      if (error instanceof EnhancedQTIError) {
+        console.error('🚨 Resilient generation failed with enhanced error:');
+        console.error(`  - Error ID: ${error.id}`);
+        console.error(`  - Type: ${error.type}`);
+        console.error(`  - Severity: ${error.severity}`);
+        console.error(`  - Recovery Strategy: ${error.recoveryStrategy}`);
+        console.error(`  - User Message: ${error.userMessage}`);
+        console.error('  - Actionable Steps:');
+        error.actionableSteps.forEach(step => {
+          console.error(`    • ${step}`);
+        });
+      }
+      
+      throw new EnhancedQTIError(
+        ExtendedQTIErrorType.GENERATION_ERROR,
+        `Resilient QTI package generation failed: ${error instanceof Error ? error.message : 'Unknown error'}`,
+        {
+          operation: 'resilient_generation',
+          component: 'QTIGenerator',
+          storyTitle: storyResponse.title,
+          generationTime: totalTime,
+          fallbackLevel: fallbackLevel
+        },
+        ErrorSeverity.CRITICAL,
+        RecoveryStrategy.USER_INTERVENTION
+      );
+    }
+  }
+
+  /**
+   * Convert recovered QTI package to GeneratedQTIPackage format
+   */
+  private async convertRecoveredPackage(
+    recoveryResult: any,
+    storyResponse: StoryGenerationResponse,
+    options: QTIGenerationOptions
+  ): Promise<GeneratedQTIPackage> {
+    // Generate XML files from the recovered package
+    const files = await this.generateXMLFiles(recoveryResult.generatedPackage, options);
+    
+    return {
+      package: recoveryResult.generatedPackage,
+      files,
+      metadata: {
+        generatedAt: new Date().toISOString(),
+        generationTime: recoveryResult.performanceMetrics.recoveryTime,
+        itemCount: recoveryResult.generatedPackage.assessmentTest.sections.reduce(
+          (sum: number, section: any) => sum + (section.items?.length || 0), 0
+        ),
+        sectionCount: recoveryResult.generatedPackage.assessmentTest.sections.length
+      }
+    };
   }
 
   /**

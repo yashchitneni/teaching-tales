@@ -47,6 +47,11 @@ export * from './validators/qti-validator';
 export * from './validators/compliance-reporter';
 export * from './validators/validation-pipeline';
 
+// Error Handling & Recovery
+export * from './errors/qti-error-handler';
+export * from './errors/edge-case-handler';
+export * from './errors/fallback-recovery';
+
 /**
  * QTI Module version
  */
