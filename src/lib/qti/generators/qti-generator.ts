@@ -21,6 +21,19 @@ import {
 } from '../types';
 import { AIToQTITransformer, defaultAIToQTITransformer } from '../transformers/ai-to-qti-transformer';
 import { TemplateLoader, defaultTemplateLoader } from '../utils/template-loader';
+import {
+  BranchRuleEngine,
+  defaultBranchRuleEngine
+} from '../branching/branch-rule-engine';
+import {
+  ConditionalNavigationService,
+  defaultConditionalNavigationService
+} from '../branching/conditional-navigation';
+import {
+  AdaptiveStoryProgressionService,
+  defaultAdaptiveStoryProgressionService,
+  StoryProgressionStrategy
+} from '../branching/adaptive-story-progression';
 import { DEFAULT_QTI_OPTIONS } from '../index';
 
 /**
@@ -62,13 +75,22 @@ export interface GeneratedQTIPackage {
 export class QTIGenerator {
   private transformer: AIToQTITransformer;
   private templateLoader: TemplateLoader;
+  private branchRuleEngine: BranchRuleEngine;
+  private navigationService: ConditionalNavigationService;
+  private storyProgressionService: AdaptiveStoryProgressionService;
 
   constructor(
     transformer?: AIToQTITransformer,
-    templateLoader?: TemplateLoader
+    templateLoader?: TemplateLoader,
+    branchRuleEngine?: BranchRuleEngine,
+    navigationService?: ConditionalNavigationService,
+    storyProgressionService?: AdaptiveStoryProgressionService
   ) {
     this.transformer = transformer || defaultAIToQTITransformer;
     this.templateLoader = templateLoader || defaultTemplateLoader;
+    this.branchRuleEngine = branchRuleEngine || defaultBranchRuleEngine;
+    this.navigationService = navigationService || defaultConditionalNavigationService;
+    this.storyProgressionService = storyProgressionService || defaultAdaptiveStoryProgressionService;
   }
 
   /**
@@ -138,6 +160,224 @@ export class QTIGenerator {
         }
       );
     }
+  }
+
+  /**
+   * Generate advanced QTI package with branching logic and adaptive story progression
+   * 
+   * @param storyResponse - AI-generated story with sections and questions
+   * @param options - QTI generation options
+   * @param progressionStrategy - Story progression strategy to use
+   * @returns Complete generated QTI package with advanced branching
+   */
+  async generateAdvancedPackage(
+    storyResponse: StoryGenerationResponse,
+    options: QTIGenerationOptions = {},
+    progressionStrategy: StoryProgressionStrategy = StoryProgressionStrategy.ADAPTIVE_PACING
+  ): Promise<GeneratedQTIPackage> {
+    const startTime = Date.now();
+    
+    try {
+      console.log('🚀 Starting advanced QTI package generation with branching...');
+      console.log('📖 Story:', storyResponse.title);
+      console.log('🌳 Strategy:', progressionStrategy);
+      
+      const finalOptions = { ...DEFAULT_QTI_OPTIONS, ...options };
+
+      // Step 1: Initialize story progression
+      console.log('🔄 Step 1: Initializing story progression...');
+      const progressionState = this.storyProgressionService.initializeStoryProgression(
+        storyResponse,
+        progressionStrategy
+      );
+
+      // Step 2: Transform AI story to QTI package structure (enhanced)
+      console.log('🔄 Step 2: Transforming story to QTI structure with mapping...');
+      const qtiPackage = await this.transformer.transformStoryToQTI(storyResponse, finalOptions);
+
+      // Step 3: Build navigation graph
+      console.log('🔄 Step 3: Building navigation graph...');
+      const navigationGraph = this.navigationService.buildNavigationGraph(qtiPackage.assessmentTest);
+
+      // Step 4: Generate adaptive navigation paths
+      console.log('🔄 Step 4: Generating adaptive navigation paths...');
+      const studentProfile = {
+        gradeLevel: storyResponse.metadata?.gradeLevel || 'unknown',
+        performanceLevel: 'proficient', // This would come from actual student data
+        learningStyle: ['narrative', 'visual']
+      };
+      const navigationPaths = this.navigationService.generateNavigationPaths(
+        qtiPackage.assessmentTest,
+        studentProfile
+      );
+
+      // Step 5: Generate branch rules
+      console.log('🔄 Step 5: Generating branch rules...');
+      // We need to get the mapping results from the transformer
+      // For now, we'll generate basic branch rules
+      await this.generateStoryBranchRules(qtiPackage.assessmentTest, storyResponse);
+
+      // Step 6: Enhance assessment test with branching
+      console.log('🔄 Step 6: Enhancing assessment with branch rules...');
+      const enhancedAssessmentTest = await this.enhanceAssessmentWithBranching(
+        qtiPackage.assessmentTest,
+        storyResponse
+      );
+      qtiPackage.assessmentTest = enhancedAssessmentTest;
+
+      // Step 7: Generate XML files
+      console.log('🔄 Step 7: Generating XML files with branching...');
+      const files = await this.generateXMLFiles(qtiPackage, finalOptions);
+
+      // Step 8: Calculate metadata
+      const generationTime = Date.now() - startTime;
+      const itemCount = qtiPackage.assessmentTest.sections.reduce(
+        (sum, section) => sum + section.items.length, 
+        0
+      );
+
+      const result: GeneratedQTIPackage = {
+        package: qtiPackage,
+        files,
+        metadata: {
+          generatedAt: new Date().toISOString(),
+          generationTime,
+          itemCount,
+          sectionCount: qtiPackage.assessmentTest.sections.length
+        }
+      };
+
+      console.log('✅ Advanced QTI package generation completed!');
+      console.log('📊 Advanced Summary:', {
+        identifier: qtiPackage.identifier,
+        sections: result.metadata.sectionCount,
+        items: result.metadata.itemCount,
+        navigationPaths: navigationPaths.length,
+        branchRules: this.branchRuleEngine.getAllRules().length,
+        checkpoints: this.storyProgressionService.getStats().totalCheckpoints,
+        generationTime: `${generationTime}ms`
+      });
+
+      return result;
+
+    } catch (error) {
+      throw new QTIError(
+        `Failed to generate advanced QTI package: ${error instanceof Error ? error.message : 'Unknown error'}`,
+        QTIErrorType.GENERATION_ERROR,
+        { 
+          storyTitle: storyResponse.title,
+          strategy: progressionStrategy,
+          generationTime: Date.now() - startTime,
+          error 
+        }
+      );
+    }
+  }
+
+  /**
+   * Generate story-specific branch rules
+   */
+  private async generateStoryBranchRules(
+    assessmentTest: QTIAssessmentTest,
+    storyResponse: StoryGenerationResponse
+  ): Promise<void> {
+    console.log('🌳 Generating story-specific branch rules...');
+
+    // Create mock section and question mapping results for branch rule generation
+    // In a full implementation, these would come from the actual mapping process
+    const sectionResults = assessmentTest.sections.map((section, index) => ({
+      section,
+      metadata: {
+        originalSectionId: index + 1,
+        itemCount: section.items.length,
+        complexityScore: 6, // Mock complexity
+        estimatedTime: section.items.length * 60,
+        sectionType: this.determineSectionType(index, assessmentTest.sections.length) as any
+      },
+      itemReferences: section.items.map(item => item.identifier)
+    }));
+
+    const questionResults = assessmentTest.sections.map(section => 
+      section.items.map((item, qIndex) => ({
+        item,
+        analysis: {
+          difficulty: 5, // Mock difficulty
+          type: 'inferential' as any,
+          cognitiveLevel: 'understand' as any,
+          estimatedTime: 60,
+          keywords: ['story', 'character'],
+          requiresContext: true,
+          suggestedInteractionType: item.interactionType
+        },
+        metadata: {
+          originalQuestionId: item.identifier,
+          sectionIndex: 0,
+          questionIndex: qIndex,
+          identifiers: {
+            item: item.identifier,
+            response: 'RESPONSE'
+          }
+        }
+      }))
+    );
+
+    // Generate branch rules using the mock data
+    const context = {
+      storyResponse,
+      options: {},
+      student: { id: 'student', gradeLevel: storyResponse.metadata?.gradeLevel || 'unknown' }
+    };
+
+    await this.branchRuleEngine.generateStoryBranchRules(
+      sectionResults,
+      questionResults,
+      context
+    );
+
+    console.log(`✅ Generated ${this.branchRuleEngine.getAllRules().length} branch rules`);
+  }
+
+  /**
+   * Enhance assessment test with branching logic
+   */
+  private async enhanceAssessmentWithBranching(
+    assessmentTest: QTIAssessmentTest,
+    storyResponse: StoryGenerationResponse
+  ): Promise<QTIAssessmentTest> {
+    console.log('🔧 Enhancing assessment with branching logic...');
+
+    // Get all branch rules
+    const branchRules = this.branchRuleEngine.getAllRules();
+    
+    // Convert to QTI branch rules
+    const qtiBranchRules = this.branchRuleEngine.convertToQTIBranchRules(branchRules);
+
+    // Add branch rules to sections
+    assessmentTest.sections.forEach(section => {
+      const sectionRules = qtiBranchRules.filter(rule => 
+        rule.target.includes(section.identifier)
+      );
+      
+      if (sectionRules.length > 0) {
+        section.branchRules = sectionRules;
+        console.log(`📎 Added ${sectionRules.length} branch rules to section ${section.identifier}`);
+      }
+    });
+
+    console.log('✅ Assessment enhanced with branching logic');
+    return assessmentTest;
+  }
+
+  /**
+   * Helper method to determine section type
+   */
+  private determineSectionType(sectionIndex: number, totalSections: number): string {
+    const position = sectionIndex / (totalSections - 1);
+    if (sectionIndex === 0) return 'opening';
+    if (sectionIndex === totalSections - 1) return 'conclusion';
+    if (position < 0.4) return 'rising_action';
+    if (position < 0.7) return 'climax';
+    return 'resolution';
   }
 
   /**
