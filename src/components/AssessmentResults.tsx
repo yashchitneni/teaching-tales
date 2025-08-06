@@ -169,7 +169,7 @@ export function AssessmentResults({
         className="w-full bg-blue-600 hover:bg-blue-700 text-white"
         disabled={satisfaction === null}
       >
-        Continue to Next Chapter
+Continue to Next Section
       </Button>
 
       {/* Achievement Notification */}
