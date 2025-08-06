@@ -7,6 +7,7 @@ import { FeedbackButton } from '@/components/FeedbackButton'
 import { GuidingQuestions } from '@/components/GuidingQuestions'
 import { AssessmentResults } from '@/components/AssessmentResults'
 import { Button } from '@/components/ui/button'
+import { StoryStorageService } from '@/lib/services/story-storage-service'
 
 interface Question {
   id: string
@@ -50,18 +51,24 @@ export default function StoryReadingPage() {
     )
   }
 
-  // Load story data from localStorage
+  // Load story data from QTI API
   useEffect(() => {
+    loadStoryFromAPI()
+  }, [bookId, router])
+
+  const loadStoryFromAPI = async () => {
     try {
-      const stories = JSON.parse(localStorage.getItem('teaching-tales-stories') || '[]')
-      const foundStory = stories.find((s: any) => s.id === bookId)
+      console.log('📖 Loading story from QTI API:', bookId)
       
-      if (foundStory && foundStory.sections) {
-        // Transform AI-generated structure to match expected format
+      // Try to load from QTI Stimuli API first
+      const storedStory = await StoryStorageService.getStory(bookId)
+      
+      if (storedStory && storedStory.sections) {
+        // Transform stored story to reading format
         const transformedStory: Story = {
-          id: foundStory.id,
-          title: foundStory.title,
-          sections: foundStory.sections.map((section: any) => ({
+          id: storedStory.id,
+          title: storedStory.title,
+          sections: storedStory.sections.map((section: any) => ({
             id: section.id,
             content: processVocabularyWords(section.content),
             questions: section.questions.map((q: any) => ({
@@ -71,20 +78,84 @@ export default function StoryReadingPage() {
               correctAnswer: q.correct
             }))
           })),
-          wordCount: foundStory.wordCount || 0,
-          readingTime: foundStory.readingTime || '5 minutes'
+          wordCount: storedStory.wordCount || 0,
+          readingTime: storedStory.readingTime || '5 minutes'
         }
         setStory(transformedStory)
+        console.log('✅ Story loaded from QTI API successfully')
       } else {
-        console.warn('Story not found:', bookId)
-        // Redirect back to dashboard if story not found
-        router.push('/dashboard')
+        console.warn('❌ Story not found in QTI API:', bookId)
+        
+        // Fallback to localStorage
+        console.log('🔄 Trying localStorage fallback...')
+        try {
+          const stories = JSON.parse(localStorage.getItem('teaching-tales-stories') || '[]')
+          const foundStory = stories.find((s: any) => s.id === bookId)
+          
+          if (foundStory && foundStory.sections) {
+            const transformedStory: Story = {
+              id: foundStory.id,
+              title: foundStory.title,
+              sections: foundStory.sections.map((section: any) => ({
+                id: section.id,
+                content: processVocabularyWords(section.content),
+                questions: section.questions.map((q: any) => ({
+                  id: q.id,
+                  text: q.question,
+                  options: q.options,
+                  correctAnswer: q.correct
+                }))
+              })),
+              wordCount: foundStory.wordCount || 0,
+              readingTime: foundStory.readingTime || '5 minutes'
+            }
+            setStory(transformedStory)
+            console.log('📱 Story loaded from localStorage fallback')
+          } else {
+            console.warn('Story not found in localStorage either')
+            router.push('/dashboard')
+          }
+        } catch (localError) {
+          console.error('Fallback to localStorage failed:', localError)
+          router.push('/dashboard')
+        }
       }
     } catch (error) {
-      console.error('Error loading story data:', error)
-      router.push('/dashboard')
+      console.error('❌ Error loading story:', error)
+      
+      // Try localStorage as fallback
+      try {
+        const stories = JSON.parse(localStorage.getItem('teaching-tales-stories') || '[]')
+        const foundStory = stories.find((s: any) => s.id === bookId)
+        
+        if (foundStory && foundStory.sections) {
+          const transformedStory: Story = {
+            id: foundStory.id,
+            title: foundStory.title,
+            sections: foundStory.sections.map((section: any) => ({
+              id: section.id,
+              content: processVocabularyWords(section.content),
+              questions: section.questions.map((q: any) => ({
+                id: q.id,
+                text: q.question,
+                options: q.options,
+                correctAnswer: q.correct
+              }))
+            })),
+            wordCount: foundStory.wordCount || 0,
+            readingTime: foundStory.readingTime || '5 minutes'
+          }
+          setStory(transformedStory)
+          console.log('📱 Story loaded from localStorage after API error')
+        } else {
+          router.push('/dashboard')
+        }
+      } catch (localError) {
+        console.error('All story loading methods failed:', localError)
+        router.push('/dashboard')
+      }
     }
-  }, [bookId, router])
+  }
 
   const handleQuestionAnswer = (answerIndex: number) => {
     const newAnswers = [...answers]

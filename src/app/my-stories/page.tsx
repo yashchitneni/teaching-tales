@@ -5,40 +5,57 @@ import { useRouter } from 'next/navigation'
 import { TopNavWithTabs } from '@/components/TopNavWithTabs'
 import { FeedbackButton } from '@/components/FeedbackButton'
 import { Button } from '@/components/ui/button'
+import { StoryStorageService, type StoredStory } from '@/lib/services/story-storage-service'
 
-interface UserStory {
-  id: string
-  title: string
-  universe: string
-  character: string
-  spark: string
-  status: 'generating' | 'completed' | 'error'
-  createdAt: string
-  wordCount?: number
-  readingTime?: string
-  sections?: any[]
-}
+// Use StoredStory from the service instead of local interface
+// interface UserStory is replaced by StoredStory
 
 export default function MyStoriesPage() {
   const router = useRouter()
-  const [stories, setStories] = useState<UserStory[]>([])
+  const [stories, setStories] = useState<StoredStory[]>([])
   const [loading, setLoading] = useState(true)
 
-  // Load user stories from localStorage
+  // Load user stories from QTI API
   useEffect(() => {
+    loadStoriesFromAPI()
+  }, [])
+
+  const loadStoriesFromAPI = async () => {
     try {
-      const storedStories = JSON.parse(localStorage.getItem('teaching-tales-stories') || '[]')
+      setLoading(true)
+      console.log('📚 Loading stories from QTI API...')
+      
+      // Load stories from QTI Stimuli API
+      const storiesFromAPI = await StoryStorageService.getUserStories()
+      
       // Sort by creation date, newest first
-      const sortedStories = storedStories.sort((a: UserStory, b: UserStory) => 
+      const sortedStories = storiesFromAPI.sort((a, b) => 
         new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
       )
+      
       setStories(sortedStories)
+      console.log(`✅ Loaded ${sortedStories.length} stories from QTI API`)
+      
     } catch (error) {
-      console.error('Error loading stories:', error)
+      console.error('❌ Error loading stories from QTI API:', error)
+      
+      // Fallback to localStorage if QTI API fails
+      console.log('🔄 Falling back to localStorage...')
+      try {
+        const storedStories = JSON.parse(localStorage.getItem('teaching-tales-stories') || '[]')
+        const sortedStories = storedStories.sort((a: any, b: any) => 
+          new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+        )
+        setStories(sortedStories)
+        console.log(`📱 Loaded ${sortedStories.length} stories from localStorage fallback`)
+      } catch (localError) {
+        console.error('❌ Fallback to localStorage also failed:', localError)
+        setStories([])
+      }
     } finally {
       setLoading(false)
     }
-  }, [])
+  }
 
   const handleReadStory = (storyId: string) => {
     router.push(`/book/${storyId}`)
@@ -48,14 +65,22 @@ export default function MyStoriesPage() {
     router.push('/create-book/universe')
   }
 
-  const handleDeleteStory = (storyId: string) => {
+  const handleDeleteStory = async (storyId: string) => {
     if (confirm('Are you sure you want to delete this story? This action cannot be undone.')) {
       try {
+        console.log('🗑️ Deleting story:', storyId)
+        
+        // Delete from QTI API
+        await StoryStorageService.deleteStory(storyId)
+        
+        // Update local state
         const updatedStories = stories.filter(story => story.id !== storyId)
         setStories(updatedStories)
-        localStorage.setItem('teaching-tales-stories', JSON.stringify(updatedStories))
+        
+        console.log('✅ Story deleted successfully')
       } catch (error) {
-        console.error('Error deleting story:', error)
+        console.error('❌ Error deleting story:', error)
+        alert('Failed to delete story. Please try again.')
       }
     }
   }

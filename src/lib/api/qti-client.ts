@@ -1,5 +1,5 @@
 import { API_CONFIG } from '@/lib/config';
-import { getAuthToken } from '@/lib/auth/sso';
+import { getAuthToken } from '@/lib/auth/timeback-sso';
 import { authFetch } from './auth-fetch';
 
 interface TestPart {
@@ -51,6 +51,47 @@ interface AssessmentTest {
   status: string;
   createdAt: string;
   updatedAt: string;
+}
+
+// QTI Stimuli interfaces
+interface Stimulus {
+  id: string;
+  identifier: string;
+  title: string;
+  description?: string;
+  content: string;
+  mediaType: string;
+  language?: string;
+  metadata?: Record<string, any>;
+  createdAt: string;
+  updatedAt: string;
+}
+
+interface CreateStimulusRequest {
+  identifier: string;
+  title: string;
+  description?: string;
+  content: string;
+  mediaType: string;
+  language?: string;
+  metadata?: Record<string, any>;
+}
+
+interface UpdateStimulusRequest {
+  identifier?: string;
+  title?: string;
+  description?: string;
+  content?: string;
+  mediaType?: string;
+  language?: string;
+  metadata?: Record<string, any>;
+}
+
+interface StimuliListResponse {
+  stimuli: Stimulus[];
+  total: number;
+  page: number;
+  pageSize: number;
 }
 
 interface AssessmentTestsResponse {
@@ -215,6 +256,123 @@ export async function loadCompleteAssessmentTest(testId: string): Promise<TestPa
     return testData;
   } catch (error) {
     console.error('Failed to load assessment test:', error);
+    throw error;
+  }
+}
+
+// QTI Stimuli API functions
+
+/**
+ * Get list of stimuli
+ */
+export async function listStimuli(page: number = 1, pageSize: number = 20): Promise<StimuliListResponse> {
+  try {
+    const response = await authFetch(`${API_CONFIG.BASE_URL}/qti/v3.0/stimuli?page=${page}&pageSize=${pageSize}`, {
+      method: 'GET',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+    });
+
+    if (!response.ok) {
+      throw new Error(`Failed to fetch stimuli: ${response.status} ${response.statusText}`);
+    }
+
+    return await response.json();
+  } catch (error) {
+    console.error('Failed to list stimuli:', error);
+    throw error;
+  }
+}
+
+/**
+ * Create a new stimulus (story)
+ */
+export async function createStimulus(stimulusData: CreateStimulusRequest): Promise<Stimulus> {
+  try {
+    const response = await authFetch(`${API_CONFIG.BASE_URL}/qti/v3.0/stimuli`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(stimulusData),
+    });
+
+    if (!response.ok) {
+      throw new Error(`Failed to create stimulus: ${response.status} ${response.statusText}`);
+    }
+
+    return await response.json();
+  } catch (error) {
+    console.error('Failed to create stimulus:', error);
+    throw error;
+  }
+}
+
+/**
+ * Get a specific stimulus by ID
+ */
+export async function getStimulus(stimulusId: string): Promise<Stimulus> {
+  try {
+    const response = await authFetch(`${API_CONFIG.BASE_URL}/qti/v3.0/stimuli/${stimulusId}`, {
+      method: 'GET',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+    });
+
+    if (!response.ok) {
+      throw new Error(`Failed to fetch stimulus: ${response.status} ${response.statusText}`);
+    }
+
+    return await response.json();
+  } catch (error) {
+    console.error('Failed to get stimulus:', error);
+    throw error;
+  }
+}
+
+/**
+ * Update a stimulus
+ */
+export async function updateStimulus(stimulusId: string, updateData: UpdateStimulusRequest): Promise<Stimulus> {
+  try {
+    const response = await authFetch(`${API_CONFIG.BASE_URL}/qti/v3.0/stimuli/${stimulusId}`, {
+      method: 'PUT',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(updateData),
+    });
+
+    if (!response.ok) {
+      throw new Error(`Failed to update stimulus: ${response.status} ${response.statusText}`);
+    }
+
+    return await response.json();
+  } catch (error) {
+    console.error('Failed to update stimulus:', error);
+    throw error;
+  }
+}
+
+/**
+ * Delete a stimulus
+ */
+export async function deleteStimulus(stimulusId: string): Promise<void> {
+  try {
+    const response = await authFetch(`${API_CONFIG.BASE_URL}/qti/v3.0/stimuli/${stimulusId}`, {
+      method: 'DELETE',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+    });
+
+    if (!response.ok) {
+      throw new Error(`Failed to delete stimulus: ${response.status} ${response.statusText}`);
+    }
+  } catch (error) {
+    console.error('Failed to delete stimulus:', error);
     throw error;
   }
 }

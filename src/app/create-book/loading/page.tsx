@@ -8,6 +8,7 @@ import { TopNavWithTabs } from '@/components/TopNavWithTabs'
 import { FeedbackButton } from '@/components/FeedbackButton'
 import { useAuth } from '@/contexts/AuthContext'
 import { fetchUsers } from '@/lib/api/oneroster-client'
+import { StoryStorageService } from '@/lib/services/story-storage-service'
 
 
 const loadingMessages = [
@@ -110,10 +111,8 @@ export default function StoryLoadingPage() {
         createdAt: new Date().toISOString()
       }
       
-      // Store initial story metadata in localStorage
-      const existingStories = JSON.parse(localStorage.getItem('teaching-tales-stories') || '[]')
-      existingStories.push(storyMetadata)
-      localStorage.setItem('teaching-tales-stories', JSON.stringify(existingStories))
+      // Note: We'll save to QTI API after successful generation
+      // No need to store initial metadata since we save complete stories
       
       // Generate real AI story using our server-side API
       console.log('🎭 Starting AI story generation...')
@@ -141,24 +140,21 @@ export default function StoryLoadingPage() {
       
       console.log('✅ AI story generation completed!')
       
-      // Update story metadata with generated content
-      const updatedStories = existingStories.map(story => 
-        story.id === storyId 
-          ? { 
-              ...story, 
-              status: 'completed',
-              title: storyResponse.title,
-              wordCount: storyResponse.wordCount,
-              readingTime: storyResponse.readingTime,
-              sections: storyResponse.sections,
-              metadata: storyResponse.metadata
-            }
-          : story
-      )
-      localStorage.setItem('teaching-tales-stories', JSON.stringify(updatedStories))
+      // Save complete story to QTI Stimuli API
+      console.log('💾 Saving story to QTI API...')
+      const savedStimulus = await StoryStorageService.saveStory(storyResponse, {
+        universe: universe,
+        character: character,
+        spark: spark,
+        gradeLevel: targetStudent.grades?.[0] || '4-5',
+        studentId: targetStudent.sourcedId,
+        storyId: storyId
+      })
       
-      // Navigate to reading interface
-      router.push(`/book/${storyId}`)
+      console.log('✅ Story saved to QTI API successfully!')
+      
+      // Navigate to reading interface using the stimulus ID
+      router.push(`/book/${savedStimulus.id}`)
 
     } catch (error) {
       console.error('Error generating story:', error)
