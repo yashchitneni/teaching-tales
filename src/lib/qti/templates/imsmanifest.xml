@@ -1,0 +1,254 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<manifest 
+    xmlns="http://www.imsglobal.org/xsd/imscp_v1p1"
+    xmlns:imsmd="http://www.ltsc.ieee.org/xsd/imsmd_v1p2"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xsi:schemaLocation="http://www.imsglobal.org/xsd/imscp_v1p1 http://www.imsglobal.org/xsd/imscp_v1p1.xsd http://www.ltsc.ieee.org/xsd/imsmd_v1p2 http://www.ltsc.ieee.org/xsd/imsmd_v1p2p4.xsd"
+    identifier="{{MANIFEST_IDENTIFIER}}"
+    version="{{MANIFEST_VERSION}}">
+
+    <!-- Package-level metadata -->
+    <metadata>
+        <schema>IMS Content</schema>
+        <schemaversion>1.1</schemaversion>
+        <imsmd:lom>
+            <imsmd:general>
+                <imsmd:identifier>
+                    <imsmd:catalog>URI</imsmd:catalog>
+                    <imsmd:entry>{{PACKAGE_IDENTIFIER}}</imsmd:entry>
+                </imsmd:identifier>
+                <imsmd:title>
+                    <imsmd:langstring xml:lang="{{LANGUAGE}}">{{PACKAGE_TITLE}}</imsmd:langstring>
+                </imsmd:title>
+                {{#if PACKAGE_DESCRIPTION}}
+                <imsmd:description>
+                    <imsmd:langstring xml:lang="{{LANGUAGE}}">{{PACKAGE_DESCRIPTION}}</imsmd:langstring>
+                </imsmd:description>
+                {{/if}}
+                {{#if KEYWORDS}}
+                <imsmd:keyword>
+                    {{#each KEYWORDS}}
+                    <imsmd:langstring xml:lang="{{../LANGUAGE}}">{{this}}</imsmd:langstring>
+                    {{/each}}
+                </imsmd:keyword>
+                {{/if}}
+                <imsmd:language>{{LANGUAGE}}</imsmd:language>
+            </imsmd:general>
+            
+            {{#if EDUCATIONAL_METADATA}}
+            <imsmd:educational>
+                {{#if EDUCATIONAL_METADATA.learningResourceType}}
+                <imsmd:learningresourcetype>
+                    <imsmd:source>
+                        <imsmd:langstring xml:lang="{{LANGUAGE}}">LOMv1.0</imsmd:langstring>
+                    </imsmd:source>
+                    <imsmd:value>
+                        <imsmd:langstring xml:lang="{{LANGUAGE}}">{{EDUCATIONAL_METADATA.learningResourceType}}</imsmd:langstring>
+                    </imsmd:value>
+                </imsmd:learningresourcetype>
+                {{/if}}
+                
+                {{#if EDUCATIONAL_METADATA.intendedEndUserRole}}
+                <imsmd:intendedenduserrole>
+                    <imsmd:source>
+                        <imsmd:langstring xml:lang="{{LANGUAGE}}">LOMv1.0</imsmd:langstring>
+                    </imsmd:source>
+                    <imsmd:value>
+                        <imsmd:langstring xml:lang="{{LANGUAGE}}">{{EDUCATIONAL_METADATA.intendedEndUserRole}}</imsmd:langstring>
+                    </imsmd:value>
+                </imsmd:intendedenduserrole>
+                {{/if}}
+                
+                {{#if EDUCATIONAL_METADATA.context}}
+                <imsmd:context>
+                    <imsmd:source>
+                        <imsmd:langstring xml:lang="{{LANGUAGE}}">LOMv1.0</imsmd:langstring>
+                    </imsmd:source>
+                    <imsmd:value>
+                        <imsmd:langstring xml:lang="{{LANGUAGE}}">{{EDUCATIONAL_METADATA.context}}</imsmd:langstring>
+                    </imsmd:value>
+                </imsmd:context>
+                {{/if}}
+                
+                {{#if EDUCATIONAL_METADATA.typicalAgeRange}}
+                <imsmd:typicalagerange>
+                    <imsmd:langstring xml:lang="{{LANGUAGE}}">{{EDUCATIONAL_METADATA.typicalAgeRange}}</imsmd:langstring>
+                </imsmd:typicalagerange>
+                {{/if}}
+                
+                {{#if EDUCATIONAL_METADATA.difficulty}}
+                <imsmd:difficulty>
+                    <imsmd:source>
+                        <imsmd:langstring xml:lang="{{LANGUAGE}}">LOMv1.0</imsmd:langstring>
+                    </imsmd:source>
+                    <imsmd:value>
+                        <imsmd:langstring xml:lang="{{LANGUAGE}}">{{EDUCATIONAL_METADATA.difficulty}}</imsmd:langstring>
+                    </imsmd:value>
+                </imsmd:difficulty>
+                {{/if}}
+                
+                {{#if EDUCATIONAL_METADATA.typicalLearningTime}}
+                <imsmd:typicallearningtime>
+                    <imsmd:datetime>{{EDUCATIONAL_METADATA.typicalLearningTime}}</imsmd:datetime>
+                </imsmd:typicallearningtime>
+                {{/if}}
+                
+                {{#if EDUCATIONAL_METADATA.description}}
+                <imsmd:description>
+                    <imsmd:langstring xml:lang="{{LANGUAGE}}">{{EDUCATIONAL_METADATA.description}}</imsmd:langstring>
+                </imsmd:description>
+                {{/if}}
+                
+                <imsmd:language>{{LANGUAGE}}</imsmd:language>
+            </imsmd:educational>
+            {{/if}}
+            
+            {{#if LIFECYCLE_METADATA}}
+            <imsmd:lifecycle>
+                <imsmd:version>
+                    <imsmd:langstring xml:lang="{{LANGUAGE}}">{{LIFECYCLE_METADATA.version}}</imsmd:langstring>
+                </imsmd:version>
+                <imsmd:status>
+                    <imsmd:source>
+                        <imsmd:langstring xml:lang="{{LANGUAGE}}">LOMv1.0</imsmd:langstring>
+                    </imsmd:source>
+                    <imsmd:value>
+                        <imsmd:langstring xml:lang="{{LANGUAGE}}">{{LIFECYCLE_METADATA.status}}</imsmd:langstring>
+                    </imsmd:value>
+                </imsmd:status>
+                {{#each LIFECYCLE_METADATA.contributors}}
+                <imsmd:contribute>
+                    <imsmd:role>
+                        <imsmd:source>
+                            <imsmd:langstring xml:lang="{{../LANGUAGE}}">LOMv1.0</imsmd:langstring>
+                        </imsmd:source>
+                        <imsmd:value>
+                            <imsmd:langstring xml:lang="{{../LANGUAGE}}">{{this.role}}</imsmd:langstring>
+                        </imsmd:value>
+                    </imsmd:role>
+                    <imsmd:centity>
+                        <imsmd:vcard>{{this.vcard}}</imsmd:vcard>
+                    </imsmd:centity>
+                    {{#if this.date}}
+                    <imsmd:date>
+                        <imsmd:datetime>{{this.date}}</imsmd:datetime>
+                    </imsmd:date>
+                    {{/if}}
+                </imsmd:contribute>
+                {{/each}}
+            </imsmd:lifecycle>
+            {{/if}}
+        </imsmd:lom>
+    </metadata>
+
+    <!-- Organizations (optional for QTI packages) -->
+    {{#if ORGANIZATIONS}}
+    <organizations default="{{DEFAULT_ORGANIZATION}}">
+        {{#each ORGANIZATIONS}}
+        <organization identifier="{{this.identifier}}" {{#if this.structure}}structure="{{this.structure}}"{{/if}}>
+            <title>{{this.title}}</title>
+            {{#each this.items}}
+            <item identifier="{{this.identifier}}" {{#if this.identifierref}}identifierref="{{this.identifierref}}"{{/if}}>
+                <title>{{this.title}}</title>
+                {{#each this.items}}
+                <item identifier="{{this.identifier}}" {{#if this.identifierref}}identifierref="{{this.identifierref}}"{{/if}}>
+                    <title>{{this.title}}</title>
+                </item>
+                {{/each}}
+            </item>
+            {{/each}}
+        </organization>
+        {{/each}}
+    </organizations>
+    {{else}}
+    <organizations />
+    {{/if}}
+
+    <!-- Resources section containing all QTI files -->
+    <resources>
+        <!-- Main assessment test resource -->
+        <resource identifier="{{ASSESSMENT_TEST_RESOURCE_ID}}" type="imsqti_test_xmlv3p0" href="{{ASSESSMENT_TEST_HREF}}">
+            <file href="{{ASSESSMENT_TEST_HREF}}" />
+            <metadata>
+                <imsmd:lom>
+                    <imsmd:general>
+                        <imsmd:identifier>
+                            <imsmd:catalog>URI</imsmd:catalog>
+                            <imsmd:entry>{{ASSESSMENT_TEST_RESOURCE_ID}}</imsmd:entry>
+                        </imsmd:identifier>
+                        <imsmd:title>
+                            <imsmd:langstring xml:lang="{{LANGUAGE}}">{{ASSESSMENT_TEST_TITLE}}</imsmd:langstring>
+                        </imsmd:title>
+                    </imsmd:general>
+                </imsmd:lom>
+            </metadata>
+            
+            <!-- Dependencies on assessment items -->
+            {{#each ASSESSMENT_ITEM_DEPENDENCIES}}
+            <dependency identifierref="{{this}}" />
+            {{/each}}
+        </resource>
+
+        <!-- Assessment item resources -->
+        {{#each ASSESSMENT_ITEMS}}
+        <resource identifier="{{this.resourceId}}" type="imsqti_item_xmlv3p0" href="{{this.href}}">
+            <file href="{{this.href}}" />
+            <metadata>
+                <imsmd:lom>
+                    <imsmd:general>
+                        <imsmd:identifier>
+                            <imsmd:catalog>URI</imsmd:catalog>
+                            <imsmd:entry>{{this.resourceId}}</imsmd:entry>
+                        </imsmd:identifier>
+                        <imsmd:title>
+                            <imsmd:langstring xml:lang="{{../LANGUAGE}}">{{this.title}}</imsmd:langstring>
+                        </imsmd:title>
+                    </imsmd:general>
+                    {{#if this.educational}}
+                    <imsmd:educational>
+                        {{#if this.educational.learningObjective}}
+                        <imsmd:description>
+                            <imsmd:langstring xml:lang="{{../LANGUAGE}}">{{this.educational.learningObjective}}</imsmd:langstring>
+                        </imsmd:description>
+                        {{/if}}
+                    </imsmd:educational>
+                    {{/if}}
+                </imsmd:lom>
+            </metadata>
+            
+            <!-- Additional files for this item (images, etc.) -->
+            {{#each this.additionalFiles}}
+            <file href="{{this.href}}" />
+            {{/each}}
+        </resource>
+        {{/each}}
+
+        <!-- Additional media resources -->
+        {{#each MEDIA_RESOURCES}}
+        <resource identifier="{{this.resourceId}}" type="{{this.type}}" href="{{this.href}}">
+            <file href="{{this.href}}" />
+            {{#if this.metadata}}
+            <metadata>
+                <imsmd:lom>
+                    <imsmd:general>
+                        <imsmd:identifier>
+                            <imsmd:catalog>URI</imsmd:catalog>
+                            <imsmd:entry>{{this.resourceId}}</imsmd:entry>
+                        </imsmd:identifier>
+                        <imsmd:title>
+                            <imsmd:langstring xml:lang="{{../LANGUAGE}}">{{this.metadata.title}}</imsmd:langstring>
+                        </imsmd:title>
+                        {{#if this.metadata.description}}
+                        <imsmd:description>
+                            <imsmd:langstring xml:lang="{{../LANGUAGE}}">{{this.metadata.description}}</imsmd:langstring>
+                        </imsmd:description>
+                        {{/if}}
+                    </imsmd:general>
+                </imsmd:lom>
+            </metadata>
+            {{/if}}
+        </resource>
+        {{/each}}
+    </resources>
+
+</manifest>

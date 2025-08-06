@@ -1,0 +1,81 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<qti-assessment-section
+    xmlns="http://www.imsglobal.org/xsd/imsqtiasi_v3p0"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xsi:schemaLocation="http://www.imsglobal.org/xsd/imsqtiasi_v3p0 https://purl.imsglobal.org/spec/qti/v3p0/schema/xsd/imsqti_asiv3p0.xsd"
+    identifier="{{SECTION_IDENTIFIER}}"
+    title="{{SECTION_TITLE}}"
+    visible="{{SECTION_VISIBLE}}">
+
+    <!-- Section-level outcome declarations -->
+    <qti-outcome-declaration identifier="{{SECTION_IDENTIFIER}}_SCORE" cardinality="single" base-type="float">
+        <qti-default-value>
+            <qti-value>0</qti-value>
+        </qti-default-value>
+    </qti-outcome-declaration>
+    
+    <qti-outcome-declaration identifier="{{SECTION_IDENTIFIER}}_MAXSCORE" cardinality="single" base-type="float">
+        <qti-default-value>
+            <qti-value>{{SECTION_MAX_SCORE}}</qti-value>
+        </qti-default-value>
+    </qti-outcome-declaration>
+
+    <!-- Section instructions (optional) -->
+    {{#if SECTION_INSTRUCTIONS}}
+    <qti-rubric-block>
+        <p>{{SECTION_INSTRUCTIONS}}</p>
+    </qti-rubric-block>
+    {{/if}}
+
+    <!-- Time limits for this section (optional) -->
+    {{#if SECTION_TIME_LIMITS}}
+    <qti-time-limits max-time="{{SECTION_TIME_LIMITS}}" />
+    {{/if}}
+
+    <!-- Item ordering configuration -->
+    {{#if SHUFFLE_ITEMS}}
+    <qti-ordering shuffle="true" />
+    {{else}}
+    <qti-ordering shuffle="false" />
+    {{/if}}
+
+    <!-- Item selection configuration (optional) -->
+    {{#if ITEM_SELECTION}}
+    <qti-selection select="{{ITEM_SELECTION.select}}" {{#if ITEM_SELECTION.withReplacement}}with-replacement="true"{{/if}} />
+    {{/if}}
+
+    <!-- Assessment items will be inserted here -->
+    {{ASSESSMENT_ITEMS}}
+
+    <!-- Branch rules for conditional navigation (optional) -->
+    {{#each BRANCH_RULES}}
+    <qti-branch-rule>
+        <qti-condition>
+            {{#if this.condition.type}}
+            <qti-{{this.condition.type}}>
+                {{#if this.condition.variable}}
+                <qti-variable identifier="{{this.condition.variable}}" />
+                {{/if}}
+                {{#if this.condition.baseValue}}
+                <qti-base-value base-type="{{this.condition.baseType}}">{{this.condition.baseValue}}</qti-base-value>
+                {{/if}}
+            </qti-{{this.condition.type}}>
+            {{/if}}
+        </qti-condition>
+        <qti-target identifier="{{this.target}}" />
+    </qti-branch-rule>
+    {{/each}}
+
+    <!-- Section-level outcome processing -->
+    <qti-outcome-processing>
+        <!-- Sum all item scores in this section -->
+        <qti-set-outcome-value identifier="{{SECTION_IDENTIFIER}}_SCORE">
+            <qti-sum>
+                {{#each ITEM_SCORE_VARIABLES}}
+                <qti-variable identifier="{{this}}" />
+                {{/each}}
+            </qti-sum>
+        </qti-set-outcome-value>
+    </qti-outcome-processing>
+
+</qti-assessment-section>
