@@ -96,7 +96,7 @@ export function GuidingQuestions({
       <div className="mt-8 p-4 bg-blue-50 rounded-lg">
         <h4 className="font-medium text-gray-900 mb-2">💡 Reading Tip</h4>
         <p className="text-sm text-blue-800">
-          Look for vocabulary words marked with **bold** text and definitions. They help build your reading skills!
+          Look for vocabulary words highlighted in blue. Hover over them to see their definitions!
         </p>
       </div>
     </div>

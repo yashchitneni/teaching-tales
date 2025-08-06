@@ -67,6 +67,14 @@ export default function ReadingPage() {
   const bookId = params.bookId as string
   const chapterId = params.chapterId as string
 
+  // Function to convert vocabulary markdown to HTML with hover tooltips
+  const processVocabularyWords = (content: string) => {
+    // Convert **word** (meaning: definition) to HTML spans with hover tooltips
+    return content.replace(/\*\*([^*]+)\*\* \(meaning: ([^)]+)\)/g, 
+      '<span class="vocabulary" data-word="$1" data-definition="$2">$1</span>'
+    )
+  }
+
   // Load story data from localStorage
   const getChapterData = () => {
     try {
@@ -91,7 +99,7 @@ export default function ReadingPage() {
         id: chapterId,
         bookId: bookId,
         title: sectionIndex === 0 ? story.title : `${story.title} - Part ${chapterId}`,
-        content: section.content,
+        content: processVocabularyWords(section.content),
         questions: section.questions.map((q: any) => ({
           id: q.id,
           text: q.question,
@@ -236,13 +244,20 @@ export default function ReadingPage() {
 
       <style jsx global>{`
         .vocabulary {
-          background-color: #FEF3C7;
-          padding: 2px 4px;
+          background-color: #DBEAFE;
+          color: #1E40AF;
+          padding: 2px 6px;
           border-radius: 4px;
           cursor: help;
           position: relative;
-          font-weight: 500;
-          border-bottom: 2px dotted #F59E0B;
+          font-weight: 600;
+          border-bottom: 2px dotted #3B82F6;
+          transition: all 0.2s ease;
+        }
+        
+        .vocabulary:hover {
+          background-color: #BFDBFE;
+          transform: translateY(-1px);
         }
         
         .vocabulary:hover::after {
@@ -253,12 +268,18 @@ export default function ReadingPage() {
           transform: translateX(-50%);
           background-color: #1F2937;
           color: white;
-          padding: 8px 12px;
-          border-radius: 6px;
-          font-size: 14px;
+          padding: 10px 14px;
+          border-radius: 8px;
+          font-size: 13px;
+          font-weight: 400;
           white-space: nowrap;
-          z-index: 10;
-          margin-bottom: 4px;
+          z-index: 1000;
+          margin-bottom: 8px;
+          box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+          max-width: 300px;
+          white-space: normal;
+          text-align: center;
+          line-height: 1.4;
         }
         
         .vocabulary:hover::before {
@@ -269,7 +290,8 @@ export default function ReadingPage() {
           transform: translateX(-50%);
           border: 6px solid transparent;
           border-top-color: #1F2937;
-          margin-bottom: -8px;
+          margin-bottom: 2px;
+          z-index: 1001;
         }
       `}</style>
     </div>
