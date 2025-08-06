@@ -3,10 +3,34 @@ import { GEMINI_CONFIG } from '@/lib/config';
 import { GeminiGenerationConfig, GeminiSafetySettings, AIServiceError } from './types';
 import { RetryManager } from './retry-manager';
 
+/**
+ * Client class for interacting with Google Gemini AI API
+ * 
+ * Provides a robust interface to Google's Gemini AI models with built-in
+ * retry logic, error handling, and safety configurations. All API calls
+ * are automatically retried on transient failures with exponential backoff.
+ * 
+ * @example
+ * ```typescript
+ * const client = new GeminiClient();
+ * const response = await client.generateContent(
+ *   'Write a short story about a brave knight'
+ * );
+ * console.log(response); // Generated story text
+ * ```
+ */
 export class GeminiClient {
   private genAI: GoogleGenerativeAI;
   private model: GenerativeModel;
 
+  /**
+   * Creates a new GeminiClient instance
+   * 
+   * Initializes the Google Generative AI client with configuration from
+   * environment variables. Requires GOOGLE_AI_API_KEY to be set.
+   * 
+   * @throws {Error} When GOOGLE_AI_API_KEY environment variable is not set
+   */
   constructor() {
     if (!GEMINI_CONFIG.API_KEY) {
       throw new Error('GOOGLE_AI_API_KEY environment variable is required');
@@ -50,6 +74,31 @@ export class GeminiClient {
     ];
   }
 
+  /**
+   * Generate content using Google Gemini AI with retry logic
+   * 
+   * Sends a prompt to the Gemini AI model and returns the generated text response.
+   * Automatically retries failed requests with exponential backoff for transient
+   * errors like rate limits or network issues. Non-retryable errors (invalid API
+   * key, content blocked) fail immediately.
+   * 
+   * @param prompt - Text prompt to send to the AI model
+   * @param config - Optional generation configuration to override defaults
+   * @returns Promise resolving to the generated text response
+   * @throws {AIServiceError} When API call fails after all retry attempts
+   * 
+   * @example
+   * ```typescript
+   * // Basic usage
+   * const response = await client.generateContent('Tell me a story');
+   * 
+   * // With custom configuration
+   * const response = await client.generateContent(
+   *   'Write a poem',
+   *   { temperature: 0.9, maxOutputTokens: 1000 }
+   * );
+   * ```
+   */
   async generateContent(
     prompt: string,
     config?: GeminiGenerationConfig

@@ -1,8 +1,47 @@
 import { AIServiceError, RetryOptions } from './types';
 
+/**
+ * Utility class for handling API operation retries with exponential backoff
+ * 
+ * Provides robust retry logic for API calls that may fail due to temporary issues
+ * like network problems, rate limits, or service unavailability. Uses exponential
+ * backoff with jitter to prevent thundering herd problems.
+ * 
+ * @example
+ * ```typescript
+ * const result = await RetryManager.executeWithRetry(
+ *   async () => await geminiClient.generateContent(prompt),
+ *   { maxAttempts: 3, baseDelay: 1000, maxDelay: 30000 }
+ * );
+ * ```
+ */
 export class RetryManager {
   /**
    * Execute an operation with exponential backoff retry logic
+   * 
+   * Attempts to execute the provided operation multiple times with increasing
+   * delays between attempts. Only retries operations that fail with retryable
+   * errors (network issues, rate limits, etc.). Non-retryable errors (invalid
+   * API keys, content blocked) fail immediately.
+   * 
+   * @param operation - Async function to execute with retry logic
+   * @param options - Retry configuration options
+   * @returns Promise resolving to the operation result
+   * @throws The last error encountered if all retry attempts fail
+   * 
+   * @example
+   * ```typescript
+   * // Retry API call with custom options
+   * const response = await RetryManager.executeWithRetry(
+   *   () => fetch('/api/data'),
+   *   { maxAttempts: 5, baseDelay: 500, maxDelay: 10000 }
+   * );
+   * 
+   * // Use default retry options
+   * const result = await RetryManager.executeWithRetry(
+   *   () => processData()
+   * );
+   * ```
    */
   static async executeWithRetry<T>(
     operation: () => Promise<T>,

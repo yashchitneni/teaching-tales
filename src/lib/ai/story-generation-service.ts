@@ -7,15 +7,61 @@ import {
   AIServiceError 
 } from './types';
 
+/**
+ * Service class for generating educational stories using Google Gemini AI
+ * 
+ * This service provides methods to generate complete stories and story continuations
+ * with educational content including comprehension questions and grade-level appropriate
+ * vocabulary. All stories follow a 5-act structure with compelling cliffhangers.
+ * 
+ * @example
+ * ```typescript
+ * const service = new StoryGenerationService();
+ * const story = await service.generateStory({
+ *   universe: 'Pokemon',
+ *   character: 'Pikachu',
+ *   spark: 'discovers a mysterious glowing Pokeball',
+ *   gradeLevel: '4-5',
+ *   studentId: 'student-123'
+ * });
+ * ```
+ */
 export class StoryGenerationService {
   private geminiClient: GeminiClient;
 
+  /**
+   * Creates a new StoryGenerationService instance
+   * Initializes the internal Gemini client for AI communication
+   */
   constructor() {
     this.geminiClient = new GeminiClient();
   }
 
   /**
-   * Generate a new story based on the provided parameters
+   * Generate a complete educational story based on the provided parameters
+   * 
+   * Creates a 5-section story with compelling cliffhangers, grade-appropriate
+   * vocabulary, and comprehension questions. The story follows classic narrative
+   * structure: Opening Hook → Rising Action (2 parts) → Climax Setup → Resolution.
+   * 
+   * @param request - Story generation parameters including universe, character, spark, grade level
+   * @returns Promise resolving to a complete story with sections and questions
+   * @throws {AIServiceError} When input validation fails or AI generation encounters errors
+   * 
+   * @example
+   * ```typescript
+   * const story = await service.generateStory({
+   *   universe: 'Harry Potter',
+   *   character: 'Hermione Granger',
+   *   spark: 'finds a book that writes itself',
+   *   gradeLevel: '6-8',
+   *   studentId: 'student-456'
+   * });
+   * 
+   * console.log(story.title); // "Hermione's Magical Discovery"
+   * console.log(story.sections.length); // 5
+   * console.log(story.wordCount); // ~1000
+   * ```
    */
   async generateStory(request: StoryGenerationRequest): Promise<StoryGenerationResponse> {
     try {
@@ -86,6 +132,29 @@ export class StoryGenerationService {
 
   /**
    * Generate a continuation of an existing story
+   * 
+   * Creates a new chapter or section that continues from previous story content,
+   * maintaining narrative consistency and character development. The continuation
+   * follows the same educational standards and structure as new stories.
+   * 
+   * @param request - Continuation parameters including previous story context and new direction
+   * @returns Promise resolving to a story continuation with sections and questions
+   * @throws {AIServiceError} When input validation fails or AI generation encounters errors
+   * 
+   * @example
+   * ```typescript
+   * const continuation = await service.generateContinuation({
+   *   universe: 'Pokemon',
+   *   character: 'Pikachu',
+   *   spark: 'continues the adventure in the mysterious forest',
+   *   gradeLevel: '4-5',
+   *   studentId: 'student-123',
+   *   previousStory: {
+   *     title: 'Pikachu\'s First Adventure',
+   *     previousSections: [...] // Previous story sections
+   *   }
+   * });
+   * ```
    */
   async generateContinuation(request: ContinuationRequest): Promise<StoryGenerationResponse> {
     try {
@@ -135,6 +204,19 @@ export class StoryGenerationService {
 
   /**
    * Validate and transform the raw AI response into our expected format
+   * 
+   * Performs comprehensive validation of the AI-generated story response,
+   * ensuring it meets all educational and structural requirements. Validates
+   * story structure, question format, content appropriateness, and calculates
+   * reading metrics.
+   * 
+   * @param response - Raw response object from AI service
+   * @param request - Original request parameters for context validation
+   * @returns Validated and transformed story response
+   * @throws {AIServiceError} When response validation fails
+   * 
+   * @private
+   * @internal
    */
   private validateAndTransformResponse(
     response: any, 
