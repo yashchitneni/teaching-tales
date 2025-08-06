@@ -6,6 +6,7 @@ A pixel-perfect clone of the TeachTales educational platform, featuring a magica
 
 - **Magical Design**: Cosmic backgrounds, gradient effects, and enchanting animations
 - **Educational Content**: Complete recreation of TeachTales content structure
+- **OneRoster Integration**: TimeBack API integration for user management
 - **Responsive Design**: Fully responsive across all device sizes
 - **Modern Stack**: Built with Next.js, TypeScript, and Tailwind CSS
 - **Component Library**: Shadcn/ui components for consistent design
@@ -87,6 +88,16 @@ This clone faithfully recreates the original TeachTales website while adding:
 - Improved performance with modern React patterns
 - Better accessibility features
 - Responsive design optimizations
+
+## 📡 API Integration
+
+### TimeBack OneRoster v1.2 API
+✅ **COMPLETE** - OneRoster v1.2 API integration implemented
+
+- **Documentation**: See [`TIMEBACK_INTEGRATION.md`](TIMEBACK_INTEGRATION.md)
+- **API Spec**: Auto-generated from live server
+- **Authentication**: AWS Cognito JWT tokens
+- **Quick Test**: `./update-api-spec.sh && node test-timeback-corrected.js`
 
 ## 📄 License
 

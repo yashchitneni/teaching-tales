@@ -7,24 +7,39 @@ interface ApiError {
 }
 
 interface OneRosterUser {
-  sourcedId: string;
-  status: 'active' | 'tobedeleted';
-  dateLastModified: string;
-  metadata?: Record<string, unknown>;
+  // Required for creation (v1.2 format)
   username: string;
-  userIds?: Array<{ type: string; identifier: string }>;
-  enabledUser: boolean;
   givenName: string;
   familyName: string;
-  middleName?: string;
   role: 'student' | 'teacher' | 'parent' | 'guardian' | 'relative' | 'aide' | 'administrator';
-  identifier?: string;
-  email: string;
+  orgIds: string[];
+  enabledUser: boolean;
+  
+  // Optional fields for creation
+  email?: string;
+  grades?: string[];
+  metadata?: {
+    age?: number;
+    parentId?: string;
+    readingLevel?: 'beginner' | 'intermediate' | 'advanced';
+    interests?: string[];
+    [key: string]: unknown;
+  };
+  
+  // Response fields (may be returned by API but not required for creation)
+  sourcedId?: string;
+  status?: 'active' | 'tobedeleted';
+  dateLastModified?: string;
+  middleName?: string;
   sms?: string;
   phone?: string;
-  agents?: Array<{ sourcedId: string; agentSourcedId: string }>;
-  grades?: string[];
-  password?: string;
+  identifier?: string;
+  
+  // OneRoster v1.2 specific response fields
+  orgs?: Array<{ href: string; sourcedId: string; type: string }>;
+  
+  // Legacy fields that may be returned for compatibility but shouldn't be sent in requests
+  agents?: Array<{ sourcedId: string; agentSourcedId: string; type?: string }>;
 }
 
 class ApiClient {
@@ -32,7 +47,7 @@ class ApiClient {
 
   constructor() {
     this.client = axios.create({
-      baseURL: process.env.NEXT_PUBLIC_API_URL || '/api',
+      baseURL: process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080',
       timeout: 30000,
       headers: {
         'Content-Type': 'application/json',
@@ -144,28 +159,28 @@ class ApiClient {
 
   // Authentication endpoints
   async login(email: string, password: string) {
-    const response = await this.client.post('/auth/login', { email, password });
+    const response = await this.client.post('/api/auth/login', { email, password });
     return response.data;
   }
 
   async logout() {
-    const response = await this.client.post('/auth/logout');
+    const response = await this.client.post('/api/auth/logout');
     return response.data;
   }
 
   async refreshToken() {
-    const response = await this.client.post('/auth/refresh');
+    const response = await this.client.post('/api/auth/refresh');
     return response.data;
   }
 
   async getCurrentUser() {
-    const response = await this.client.get('/auth/me');
+    const response = await this.client.get('/api/auth/me');
     return response.data;
   }
 
-  // OneRoster endpoints
+  // OneRoster endpoints (v1.2)
   async createOneRosterUser(userData: OneRosterUser) {
-    const response = await this.client.post('/ims/oneroster/v1p1/users', userData);
+    const response = await this.client.post('/ims/oneroster/rostering/v1p2/users', userData);
     return response.data;
   }
 
@@ -175,17 +190,17 @@ class ApiClient {
     filter?: string;
     orderBy?: string;
   }) {
-    const response = await this.client.get('/ims/oneroster/v1p1/users', { params });
+    const response = await this.client.get('/ims/oneroster/rostering/v1p2/users', { params });
     return response.data;
   }
 
   async getOneRosterUser(sourcedId: string) {
-    const response = await this.client.get(`/ims/oneroster/v1p1/users/${sourcedId}`);
+    const response = await this.client.get(`/ims/oneroster/rostering/v1p2/users/${sourcedId}`);
     return response.data;
   }
 
   async updateOneRosterUser(sourcedId: string, userData: Partial<OneRosterUser>) {
-    const response = await this.client.put(`/ims/oneroster/v1p1/users/${sourcedId}`, userData);
+    const response = await this.client.put(`/ims/oneroster/rostering/v1p2/users/${sourcedId}`, userData);
     return response.data;
   }
 

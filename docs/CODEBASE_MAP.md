@@ -8,7 +8,7 @@
 
 - **Framework**: Next.js 15 with App Router
 - **Language**: TypeScript
-- **Auth & Database**: Supabase
+- **Auth**: AWS Cognito
 - **Styling**: Tailwind CSS + Shadcn/ui components
 - **Package Manager**: Bun
 - **Development**: ESLint, Biome for formatting
@@ -21,7 +21,7 @@ graph TD
         root[/"🏠 teaching-tales<br/>(Next.js 15 App)"/]
         
         subgraph "📁 Root Config Files"
-            package["📦 package.json<br/>(Next.js, React, Supabase)"]
+            package["📦 package.json<br/>(Next.js, React, AWS)"]
             tsconfig["⚙️ tsconfig.json<br/>(TypeScript Config)"]
             tailwind["🎨 tailwind.config.ts<br/>(Styling)"]
             next["⚡ next.config.js<br/>(Next.js Config)"]
@@ -88,7 +88,7 @@ graph TD
         
         subgraph "📚 Library (src/lib/)"
             utils["📄 utils.ts<br/>(Utility Functions)"]
-            supabase_client["📄 supabase.ts<br/>(Database Client)"]
+            database_client["📄 database.ts<br/>(Database Client)"]
             mock_data["📄 mockData.ts<br/>(Test Data)"]
         end
     end
@@ -125,14 +125,14 @@ graph TD
     contexts --> auth_context
     
     lib --> utils
-    lib --> supabase_client
+    lib --> database_client
     lib --> mock_data
     
     %% Key integrations
     layout -.-> auth_context
     dashboard -.-> auth_context
     layout -.-> globals
-    auth_context -.-> supabase_client
+    auth_context -.-> database_client
     components -.-> utils
     
     classDef appRouter fill:#e1f5fe
@@ -143,7 +143,7 @@ graph TD
     class app_dir,layout,home,login,signup,dashboard,onboarding,book_dynamic,create_book,chapter_dynamic appRouter
     class components,ui_components,app_components,top_nav,create_child,assessment,feedback,choices components
     class package,tsconfig,tailwind,next config
-    class lib,utils,supabase_client,mock_data,contexts,auth_context lib
+    class lib,utils,database_client,mock_data,contexts,auth_context lib
 ```
 
 ## 📁 Detailed Directory Structure
@@ -239,9 +239,9 @@ teaching-tales/
 
 ### 📂 src/lib/ - Utilities & Database
 ```
-📄 supabase.ts              # Supabase client setup
+📄 database.ts              # Database client setup
                             # - Database types (Profile, Child, Book, etc.)
-                            # - Auth helpers
+                            # - Connection helpers
                             # - Database operations
 
 📄 utils.ts                 # Utility functions
@@ -289,7 +289,7 @@ Login → Dashboard → [Select Child] → [Continue Reading | Create New Book]
 
 ### 🔧 Technical Architecture
 - **Server-Side Rendering** - Next.js App Router with SSR
-- **Real-time Auth** - Supabase authentication with session management
+- **Authentication** - AWS Cognito with JWT token management
 - **Type Safety** - Full TypeScript implementation
 - **Component Library** - Shadcn/ui for consistent design system
 
@@ -317,8 +317,8 @@ bun run format
 - **TypeScript** - Type safety
 
 ### Database & Auth
-- **Supabase** - Authentication and database
-- **@supabase/supabase-js** - Supabase client
+- **AWS Cognito** - Authentication service
+- **Database** - PostgreSQL or preferred database solution
 
 ### UI & Styling  
 - **Tailwind CSS** - Utility-first CSS framework

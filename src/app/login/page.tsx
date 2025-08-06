@@ -6,7 +6,7 @@ import { Label } from "@/components/ui/label"
 import { useState, useEffect } from "react"
 import Link from "next/link"
 import { useRouter } from "next/navigation"
-// Removed Supabase auth import - using Cognito now
+// Using AWS Cognito for authentication
 import { useAuth } from "@/contexts/AuthContext"
 import { logNavigation } from "@/lib/debug-navigation"
 

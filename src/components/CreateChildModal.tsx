@@ -57,18 +57,20 @@ export function CreateChildModal({ onClose }: CreateChildModalProps) {
 
     setIsLoading(true)
     try {
-      // Create student profile using OneRoster API
+      // Create student profile using OneRoster API (TimeBack v1.2 format)
       const studentData = {
-        sourcedId: crypto.randomUUID(),
-        status: 'active' as const,
-        dateLastModified: new Date().toISOString(),
         username: `${formData.firstName.toLowerCase()}.${formData.lastName.toLowerCase()}`,
-        enabledUser: true,
         givenName: formData.firstName,
         familyName: formData.lastName,
         role: 'student' as const,
+        orgIds: ['dZNtFzQq94Bn'], // Teaching Tales School organization ID
+        enabledUser: true,
         email: formData.email || `${formData.firstName.toLowerCase()}.${formData.lastName.toLowerCase()}@student.local`,
-        grades: [formData.grade]
+        grades: [formData.grade],
+        metadata: {
+          age: getAgeFromGrade(formData.grade),
+          parentId: user.id
+        }
       }
 
       await apiClient.createOneRosterUser(studentData)

@@ -2,35 +2,35 @@
 
 ## 📋 **Step-by-Step Setup Instructions**
 
-### 1. **Run the Database Schema**
-1. Go to your Supabase project: https://gccgwmuyzlsazkliswjp.supabase.co
-2. Navigate to **SQL Editor** in the left sidebar
-3. Copy the entire contents of `database/schema.sql`
-4. Paste it into the SQL Editor
-5. Click **Run** to execute the schema
+### 1. **Database Schema Setup**
+1. Set up your preferred database solution (PostgreSQL recommended)
+2. Create the required tables for the application:
+   - User profiles and children relationships
+   - Books, chapters, and reading progress
+   - See `database/schema.sql` for complete schema
 
-### 2. **Configure Authentication**
-1. Go to **Authentication** → **Settings** in your Supabase dashboard
-2. Under **Site URL**, add: `http://localhost:3000`
-3. Under **Redirect URLs**, add:
-   - `http://localhost:3000/dashboard`
-   - `http://localhost:3000/auth/callback` (if needed)
+### 2. **Configure AWS Cognito Authentication**
+1. Go to **AWS Cognito Console** in your AWS account
+2. Create a new **User Pool** for TeachTales
+3. Configure **App Client** settings:
+   - Add callback URLs: `http://localhost:3000/dashboard`, `http://localhost:3000/auth/callback`
+   - Configure OAuth flows as needed
 
 ### 3. **Enable OAuth Providers (Optional)**
 If you want Google/Apple login to work:
 
 #### Google OAuth:
-1. Go to **Authentication** → **Providers**
-2. Enable **Google**
-3. Add your Google OAuth credentials
+1. Go to **AWS Cognito** → **Identity Providers**
+2. Add **Google** as an identity provider
+3. Configure with your Google OAuth credentials
 
 #### Apple OAuth:  
-1. Go to **Authentication** → **Providers**
-2. Enable **Apple**
-3. Add your Apple OAuth credentials
+1. Go to **AWS Cognito** → **Identity Providers**
+2. Add **Apple** as an identity provider
+3. Configure with your Apple OAuth credentials
 
 ### 4. **Verify Database Tables**
-After running the schema, you should see these tables in **Table Editor**:
+After setting up your database, ensure these tables exist:
 - ✅ `profiles`
 - ✅ `children` 
 - ✅ `books`
@@ -41,17 +41,17 @@ After running the schema, you should see these tables in **Table Editor**:
 ### 5. **Test the Application**
 1. Run `npm run dev`
 2. Go to `http://localhost:3000/signup`
-3. Create a test account
+3. Create a test account through AWS Cognito
 4. Check your email for confirmation
 5. Sign in at `http://localhost:3000/login`
 
 ## 🔐 **Security Features Included**
 
-- ✅ **Row Level Security (RLS)** enabled on all tables
+- ✅ **AWS Cognito Security** - Enterprise-grade authentication
 - ✅ **User isolation** - users can only access their own data
-- ✅ **Automatic profile creation** on user signup
+- ✅ **JWT token validation** for API requests
 - ✅ **Email confirmation** required for new accounts
-- ✅ **Password validation** (minimum 6 characters)
+- ✅ **Password validation** (configured in Cognito)
 
 ## 🚀 **What's Ready to Use**
 
@@ -61,7 +61,7 @@ After running the schema, you should see these tables in **Table Editor**:
 - ✅ Google OAuth (when configured)
 - ✅ Apple OAuth (when configured)
 - ✅ Email confirmation flow
-- ✅ Automatic profile creation
+- ✅ JWT token-based authentication
 
 ### Database Operations:
 - ✅ User profiles management
@@ -74,7 +74,7 @@ After running the schema, you should see these tables in **Table Editor**:
 ### Security:
 - ✅ Environment variables properly configured
 - ✅ API keys secured and gitignored
-- ✅ Row Level Security policies
+- ✅ Database access controls
 - ✅ Type-safe database operations
 
 ## 📁 **File Structure Created**
@@ -82,7 +82,7 @@ After running the schema, you should see these tables in **Table Editor**:
 ```
 src/
 ├── lib/
-│   └── supabase.ts          # Supabase client & helper functions
+│   └── database.ts          # Database client & helper functions
 ├── contexts/
 │   └── AuthContext.tsx      # Authentication state management
 ├── app/
