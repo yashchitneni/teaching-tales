@@ -46,8 +46,8 @@ export default function StoryReadingPage() {
 
   // Function to convert vocabulary markdown to HTML with hover tooltips
   const processVocabularyWords = (content: string) => {
-    // Convert **word** (meaning: definition) to HTML spans with hover tooltips
-    return content.replace(/\*\*([^*]+)\*\* \(meaning: ([^)]+)\)/g, 
+    // Convert **word** (meaning: definition) or **word** (definition) to HTML spans with hover tooltips
+    return content.replace(/\*\*([^*]+)\*\* \((?:meaning: )?([^)]+)\)/g, 
       '<span class="vocabulary" data-word="$1" data-definition="$2">$1</span>'
     )
   }
