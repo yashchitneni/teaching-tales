@@ -27,12 +27,15 @@ export * from './types';
 export * from './utils/template-loader';
 export * from './utils/identifier-generator';
 export * from './utils/xml-builder';
+export * from './utils/relationship-manager';
 
 // Main generator
 export * from './generators/qti-generator';
 
 // Transformers
 export * from './transformers/ai-to-qti-transformer';
+export * from './transformers/section-mapper';
+export * from './transformers/question-mapper';
 
 // Validators (will be implemented in Phase 5)
 // export * from './validators/qti-validator';

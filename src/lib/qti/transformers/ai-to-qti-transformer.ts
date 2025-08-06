@@ -34,6 +34,20 @@ import {
   IdentifierType,
   defaultIdentifierGenerator 
 } from '../utils/identifier-generator';
+import { 
+  SectionMapper,
+  defaultSectionMapper,
+  SectionMappingResult
+} from './section-mapper';
+import { 
+  QuestionMapper,
+  defaultQuestionMapper,
+  QuestionMappingResult
+} from './question-mapper';
+import { 
+  RelationshipManager,
+  defaultRelationshipManager
+} from '../utils/relationship-manager';
 import { DEFAULT_QTI_OPTIONS, INTERACTION_TYPE_MAPPINGS } from '../index';
 
 /**
@@ -44,9 +58,20 @@ import { DEFAULT_QTI_OPTIONS, INTERACTION_TYPE_MAPPINGS } from '../index';
  */
 export class AIToQTITransformer {
   private identifierGenerator: IdentifierGenerator;
+  private sectionMapper: SectionMapper;
+  private questionMapper: QuestionMapper;
+  private relationshipManager: RelationshipManager;
 
-  constructor(identifierGenerator?: IdentifierGenerator) {
+  constructor(
+    identifierGenerator?: IdentifierGenerator,
+    sectionMapper?: SectionMapper,
+    questionMapper?: QuestionMapper,
+    relationshipManager?: RelationshipManager
+  ) {
     this.identifierGenerator = identifierGenerator || defaultIdentifierGenerator;
+    this.sectionMapper = sectionMapper || defaultSectionMapper;
+    this.questionMapper = questionMapper || defaultQuestionMapper;
+    this.relationshipManager = relationshipManager || defaultRelationshipManager;
   }
 
   /**
@@ -81,9 +106,25 @@ export class AIToQTITransformer {
         }
       };
 
-      // Generate the assessment test
-      const assessmentTest = await this.createAssessmentTest(context);
+      // Reset relationship manager for this transformation
+      this.relationshipManager.reset();
+
+      // Generate the assessment test with enhanced mapping
+      const assessmentTest = await this.createAssessmentTestWithMapping(context);
       
+      // Validate relationships
+      const validationResult = this.relationshipManager.validateHierarchy();
+      if (!validationResult.valid) {
+        console.warn('⚠️ Hierarchy validation warnings:', validationResult.warnings);
+        if (validationResult.errors.length > 0) {
+          throw new QTIError(
+            'Invalid hierarchy structure detected',
+            QTIErrorType.TRANSFORMATION_ERROR,
+            { validationResult }
+          );
+        }
+      }
+
       // Generate the IMS manifest
       const manifest = await this.createIMSManifest(context, assessmentTest);
       
@@ -114,9 +155,9 @@ export class AIToQTITransformer {
   }
 
   /**
-   * Create QTI Assessment Test from story response
+   * Create QTI Assessment Test with enhanced mapping
    */
-  private async createAssessmentTest(context: AIToQTITransformationContext): Promise<QTIAssessmentTest> {
+  private async createAssessmentTestWithMapping(context: AIToQTITransformationContext): Promise<QTIAssessmentTest> {
     const { storyResponse, options } = context;
     
     // Generate test identifier based on story metadata
@@ -129,15 +170,54 @@ export class AIToQTITransformer {
       }
     );
 
-    console.log('🏗️ Creating assessment test:', testIdentifier);
+    console.log('🏗️ Creating assessment test with enhanced mapping:', testIdentifier);
 
-    // Transform story sections to QTI sections
+    // Register test in relationship manager
+    this.relationshipManager.registerComponent(testIdentifier, 'test', storyResponse.title);
+
+    // Use enhanced section mapping
+    const sectionMappingResults = await this.sectionMapper.mapSections(
+      storyResponse.sections,
+      context
+    );
+
+    // Transform sections with question mapping
     const sections: QTIAssessmentSection[] = [];
     
-    for (let i = 0; i < storyResponse.sections.length; i++) {
+    for (let i = 0; i < sectionMappingResults.length; i++) {
+      const mappingResult = sectionMappingResults[i];
       const storySection = storyResponse.sections[i];
-      const qtiSection = await this.transformStorySection(storySection, i, context);
-      sections.push(qtiSection);
+      
+      // Register section in relationship manager
+      this.relationshipManager.registerComponent(
+        mappingResult.section.identifier,
+        'section',
+        mappingResult.section.title,
+        testIdentifier
+      );
+
+      // Map questions to items using enhanced question mapper
+      const questionMappingResults = await this.questionMapper.mapQuestions(
+        storySection.questions,
+        storySection,
+        i,
+        context
+      );
+
+      // Update section with mapped items
+      mappingResult.section.items = questionMappingResults.map(qmr => {
+        // Register item in relationship manager
+        this.relationshipManager.registerComponent(
+          qmr.item.identifier,
+          'item',
+          qmr.item.title,
+          mappingResult.section.identifier
+        );
+        
+        return qmr.item;
+      });
+
+      sections.push(mappingResult.section);
     }
 
     // Calculate total possible score
@@ -602,10 +682,13 @@ export class AIToQTITransformer {
   }
 
   /**
-   * Reset the identifier generator (useful for testing)
+   * Reset all internal components (useful for testing)
    */
   reset(): void {
     this.identifierGenerator.reset();
+    this.sectionMapper.reset();
+    this.questionMapper.reset();
+    this.relationshipManager.reset();
   }
 
   /**
