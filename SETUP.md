@@ -5,17 +5,11 @@
 Create a `.env.local` file in the project root with the following variables:
 
 ```env
-# Supabase Configuration for TeachTales
-NEXT_PUBLIC_SUPABASE_URL=your_supabase_url_here
-NEXT_PUBLIC_SUPABASE_ANON_KEY=your_supabase_anon_key_here
-
-# Service Role Key (for server-side operations - keep secure!)
-SUPABASE_SERVICE_ROLE_KEY=your_supabase_service_role_key_here
+# AWS Cognito Configuration for TeachTales
+NEXT_PUBLIC_COGNITO_USER_POOL_ID=your_cognito_user_pool_id_here
+NEXT_PUBLIC_COGNITO_USER_POOL_CLIENT_ID=your_cognito_client_id_here
+NEXT_PUBLIC_COGNITO_REGION=your_aws_region_here
 ```
-
-## Database Setup
-
-The database password is: `kpArzpbhvqsvhyOj`
 
 ## Development
 
@@ -35,10 +29,4 @@ The database password is: `kpArzpbhvqsvhyOj`
 
 - The `.env.local` file is automatically gitignored
 - Never commit API keys or database passwords to version control
-- The anon key is safe to use in client-side code
-- The service role key should only be used server-side and kept secure
-
-## Supabase Project
-
-- **Project URL**: your_supabase_project_url
-- **Project ID**: your_supabase_project_id 
+- Use AWS IAM best practices for access management 

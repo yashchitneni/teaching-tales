@@ -84,9 +84,7 @@
 
 ### 9. Environment Variables
 All functions have access to:
-- `NEXT_PUBLIC_SUPABASE_URL`
-- `NEXT_PUBLIC_SUPABASE_ANON_KEY`
-- `SUPABASE_SERVICE_ROLE_KEY`
+- AWS Cognito configuration via environment variables
 - `SST_RESOURCE_TeachingTalesBucket`
 - `SST_RESOURCE_App`
 

@@ -67,7 +67,7 @@ export default function ReadingPage() {
   const bookId = params.bookId as string
   const chapterId = params.chapterId as string
 
-  // In a real app, fetch chapter data from Supabase
+  // In a real app, fetch chapter data from database
   const chapter = mockChapter
 
   const handleQuestionAnswer = (answerIndex: number) => {

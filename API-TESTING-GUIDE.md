@@ -1,14 +1,30 @@
-# 🧪 OneRoster Child User Creation API - Testing Guide
+# 🧪 OneRoster Child User Creation API - Testing Guide (TimeBack Integration)
 
-This guide provides multiple ways to test the enhanced Child User Creation API implementation from **Subtask 2.1**.
+⚠️ **UPDATED**: This guide now covers testing the TimeBack OneRoster v1.2 API integration.
+
+This guide provides multiple ways to test the OneRoster User Management functionality via **TimeBack server integration**.
+
+## 🚀 **Quick Start (New TimeBack Integration)**
+
+```bash
+# 1. Start TimeBack server
+cd ../timeback-superbuilders && bun run dev
+
+# 2. Test integration directly
+cd ../trevor && node test-timeback-integration.js
+
+# 3. Test interactively  
+node test-runner.js
+# Use credentials: demo123@example.com / TestPassword123!
+```
 
 ## 📋 **What We're Testing**
 
-✅ **Enhanced Child Creation API** with:
-- Comprehensive validation (grade level, age, agent relationships)
-- Robust error handling with cleanup on failure
-- OneRoster-compliant responses with bidirectional agent relationships
-- Integration with Subtask 2.2 agent relationship foundation
+✅ **TimeBack OneRoster v1.2 Integration** with:
+- Direct integration with TimeBack server (localhost:8080)
+- OneRoster v1.2 compliant endpoints and data formats
+- Robust authentication via TimeBack Cognito system
+- Production-ready infrastructure with AWS backend
 
 ---
 
@@ -24,8 +40,8 @@ npm run test:interactive
 # Or directly:
 node test-runner.js
 
-# Or with custom server:
-node test-runner.js http://localhost:3001
+# Or with custom server (defaults to TimeBack server):
+node test-runner.js http://localhost:8080
 ```
 
 **Features**:
@@ -48,7 +64,7 @@ npm run test:api user@example.com yourpassword
 node automated-test.js user@example.com yourpassword
 
 # With custom server:
-node automated-test.js user@example.com yourpassword http://localhost:3001
+node automated-test.js demo123@example.com TestPassword123! http://localhost:8080
 ```
 
 **Features**:
@@ -69,9 +85,9 @@ node automated-test.js user@example.com yourpassword http://localhost:3001
 ```bash
 # 1. Get authentication token (via browser or curl)
 # 2. Test child creation:
-curl -X POST http://localhost:3001/api/ims/oneroster/v1p1/users \
+curl -X POST http://localhost:8080/ims/oneroster/rostering/v1p2/users \
   -H "Content-Type: application/json" \
-  -H "Cookie: timeback-access-token=YOUR_TOKEN" \
+  -H "Authorization: Bearer YOUR_TOKEN" \
   -d '{ /* child data */ }'
 ```
 
@@ -120,15 +136,21 @@ node test-agent-relationships.js
 
 ### **Server Setup:**
 ```bash
-# Make sure your server is running
+# Make sure TimeBack server is running
+cd ../timeback-superbuilders
+bun run dev
+# TimeBack server should be accessible at http://localhost:8080
+
+# Also ensure trevor frontend is running (for UI testing)
+cd ../trevor  
 npm run dev
-# Server should be accessible at http://localhost:3001
+# Frontend accessible at http://localhost:3002 or 3003
 ```
 
 ### **Authentication Required:**
-- Valid user account (parent role)
-- Email and password for authentication
-- Server must have authentication system working
+- TimeBack Cognito user account
+- Test credentials: demo123@example.com / TestPassword123!
+- TimeBack server must be running with Cognito integration
 
 ### **Dependencies (Already Installed):**
 - `axios` - For HTTP requests

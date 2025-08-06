@@ -8,7 +8,7 @@ The authentication integration has been successfully implemented, connecting the
 ### 1. API Client Setup ✅
 - Created centralized API client using axios (`/src/lib/api-client.ts`)
 - Configured automatic token handling with Authorization headers
-- Added support for both Supabase localStorage tokens and cookie-based auth
+- Added support for JWT tokens and cookie-based auth
 
 ### 2. Secure JWT Storage ✅
 - Implemented HttpOnly cookies for secure token storage
@@ -23,11 +23,11 @@ The authentication integration has been successfully implemented, connecting the
 ### 4. Auth Context Provider ✅
 - Updated AuthContext to use new API client
 - Added OneRoster data state management
-- Integrated with existing Supabase authentication
+- Integrated with AWS Cognito authentication
 
 ### 5. Login/Logout Flows ✅
 - Login page uses auth context `signIn` method
-- Logout clears both cookies and Supabase session
+- Logout clears both cookies and JWT session
 - TopNav displays user email and sign out button
 
 ### 6. Token Refresh Mechanism ✅
@@ -91,7 +91,8 @@ The authentication integration has been successfully implemented, connecting the
 #### Check Authentication State
 ```javascript
 // In browser console
-localStorage.getItem('sb-gccgwmuyzlsazkliswjp-auth-token')
+// Check for JWT tokens in cookies or localStorage
+document.cookie
 ```
 
 #### Inspect API Requests
@@ -102,8 +103,8 @@ localStorage.getItem('sb-gccgwmuyzlsazkliswjp-auth-token')
 #### Common Issues
 
 1. **500 Error on Login**: 
-   - Ensure Supabase environment variables are set in `.env.local`
-   - Check that user exists in Supabase
+   - Ensure AWS Cognito environment variables are set in `.env.local`
+   - Check that user exists in AWS Cognito
 
 2. **Not Redirecting After Login**:
    - Check browser console for errors
