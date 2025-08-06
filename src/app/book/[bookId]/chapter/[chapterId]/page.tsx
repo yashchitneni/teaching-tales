@@ -162,7 +162,7 @@ export default function ReadingPage() {
 
             {/* Story Content */}
             <div 
-              className="prose prose-lg max-w-none"
+              className="prose prose-lg max-w-none text-gray-900"
               dangerouslySetInnerHTML={{ __html: chapter.content }}
             />
 
@@ -218,8 +218,16 @@ export default function ReadingPage() {
               accuracy={calculateAccuracy()}
               wordsPerMinute={calculateWPM()}
               onContinue={() => {
-                // Handle continue to next chapter
-                console.log('Continue to next chapter')
+                const nextChapter = parseInt(chapterId) + 1
+                const maxChapters = 5 // Our stories have 5 sections
+                
+                if (nextChapter <= maxChapters) {
+                  // Navigate to next chapter
+                  router.push(`/book/${bookId}/chapter/${nextChapter}`)
+                } else {
+                  // Story complete - navigate to dashboard or library
+                  router.push('/dashboard')
+                }
               }}
             />
           )}
