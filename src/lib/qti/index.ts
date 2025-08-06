@@ -52,6 +52,14 @@ export * from './errors/qti-error-handler';
 export * from './errors/edge-case-handler';
 export * from './errors/fallback-recovery';
 
+// Testing & Quality Assurance
+export * from './testing/test-framework';
+export * from './testing/test-runner';
+export * from './testing/unit-tests';
+export * from './testing/integration-tests';
+export * from './testing/performance-tests';
+export * from './testing/quality-assurance-tests';
+
 /**
  * QTI Module version
  */
