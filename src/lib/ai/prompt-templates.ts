@@ -45,8 +45,8 @@ CLIFFHANGER REQUIREMENTS:
 - Ensure natural story flow between sections
 
 VOCABULARY INTEGRATION:
-- Include 3-5 age-appropriate vocabulary words per section
-- Mark vocabulary as: <span class="vocabulary" data-word="word" data-definition="definition">word</span>
+- Include 3-5 age-appropriate vocabulary words per section  
+- Mark vocabulary as: **word** (meaning: simple definition)
 - Choose words that enhance the story and are appropriate for ${request.gradeLevel}
 
 EDUCATIONAL INTEGRATION:
@@ -328,35 +328,38 @@ GRADE 6-8 SPECIFIC REQUIREMENTS:
     // Remove trailing commas before closing braces/brackets
     fixed = fixed.replace(/,(\s*[}\]])/g, '$1');
     
-    // Fix unescaped control characters in strings
-    fixed = fixed.replace(/\\n/g, '\\\\n');  // Fix literal \n
-    fixed = fixed.replace(/\\t/g, '\\\\t');  // Fix literal \t
-    fixed = fixed.replace(/\\r/g, '\\\\r');  // Fix literal \r
+    // Fix unescaped quotes in HTML attributes (the main issue!)
+    // This handles: class="vocabulary" -> class=\"vocabulary\"
+    fixed = fixed.replace(/([a-zA-Z-]+)="([^"]*?)"/g, '$1=\\"$2\\"');
     
-    // Fix unescaped newlines and tabs in JSON strings
-    fixed = fixed.replace(/"([^"]*)\n([^"]*)":/g, '"$1\\n$2":');
-    fixed = fixed.replace(/"([^"]*)\t([^"]*)":/g, '"$1\\t$2":');
-    fixed = fixed.replace(/"([^"]*)\r([^"]*)":/g, '"$1\\r$2":');
+    // Fix unescaped control characters in strings - more comprehensive approach
+    fixed = fixed.replace(/:\s*"([^"]*)"([,}\]])/g, (match, content, ending) => {
+      // Clean up the content string
+      const cleaned = content
+        .replace(/\\/g, '\\\\')  // Escape backslashes first
+        .replace(/"/g, '\\"')    // Escape quotes
+        .replace(/\n/g, '\\n')   // Escape newlines
+        .replace(/\r/g, '\\r')   // Escape carriage returns
+        .replace(/\t/g, '\\t')   // Escape tabs
+        .replace(/[\x00-\x08\x0B\x0C\x0E-\x1F]/g, ''); // Remove other control chars
+      return `: "${cleaned}"${ending}`;
+    });
     
-    // Fix unescaped quotes in strings (common AI mistake)
-    fixed = fixed.replace(/"([^"]*)"([^"]*)"([^"]*)":/g, '"$1\\"$2\\"$3":');
-    
-    // Fix missing commas between object properties (look for }" followed by ")
+    // Fix missing commas between object properties and array elements
     fixed = fixed.replace(/}(\s*")/g, '},$1');
     fixed = fixed.replace(/](\s*")/g, '],$1');
+    fixed = fixed.replace(/"(\s*)}/g, '"$1}'); // Clean up spaces before closing braces
+    fixed = fixed.replace(/"(\s*)]/g, '"$1]'); // Clean up spaces before closing brackets
     
     // Fix missing quotes around property names
     fixed = fixed.replace(/([{,]\s*)([a-zA-Z_][a-zA-Z0-9_]*)\s*:/g, '$1"$2":');
     
-    // Fix control characters within string values
-    fixed = fixed.replace(/:\s*"([^"]*[\x00-\x1F][^"]*)"([,}])/g, (match, content, ending) => {
-      const cleaned = content
-        .replace(/\n/g, '\\n')
-        .replace(/\t/g, '\\t')
-        .replace(/\r/g, '\\r')
-        .replace(/[\x00-\x08\x0B\x0C\x0E-\x1F]/g, ''); // Remove other control chars
-      return `: "${cleaned}"${ending}`;
-    });
+    // Fix multiple consecutive commas
+    fixed = fixed.replace(/,+/g, ',');
+    
+    // Fix spaces around colons and commas for better parsing
+    fixed = fixed.replace(/\s*:\s*/g, ':');
+    fixed = fixed.replace(/\s*,\s*/g, ',');
     
     return fixed;
   }

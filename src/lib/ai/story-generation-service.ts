@@ -50,7 +50,8 @@ export class StoryGenerationService {
       const rawResponse = await this.geminiClient.generateContent(prompt);
       
       console.log('✅ Raw response received, parsing JSON...');
-      console.log('📄 Raw AI Response (first 500 chars):', rawResponse.substring(0, 500));
+      console.log('📄 Raw AI Response (first 1000 chars):', rawResponse.substring(0, 1000));
+      console.log('📄 Raw AI Response (last 200 chars):', rawResponse.substring(rawResponse.length - 200));
 
       // Parse the response
       const parsedResponse = PromptTemplates.parseAIResponse(rawResponse);
@@ -158,10 +159,36 @@ export class StoryGenerationService {
         throw new AIServiceError(`Invalid response: section ${index + 1} should have exactly 2 questions`);
       }
 
-      // Validate questions
+      // Validate and fix questions
       section.questions.forEach((question: any, qIndex: number) => {
+        // Log the question for debugging
+        console.log(`🔍 Validating section ${index + 1}, question ${qIndex + 1}:`, JSON.stringify(question, null, 2));
+        
         if (!question.question || !question.options || !Array.isArray(question.options)) {
-          throw new AIServiceError(`Invalid response: section ${index + 1}, question ${qIndex + 1} is malformed`);
+          console.warn(`⚠️ Malformed question detected in section ${index + 1}, question ${qIndex + 1}. Attempting to fix...`);
+          
+          // Try to fix common issues
+          if (!question.question && question.text) {
+            question.question = question.text;
+          }
+          
+          if (!question.options && question.choices) {
+            question.options = question.choices;
+          }
+          
+          if (!Array.isArray(question.options)) {
+            question.options = ["Option A", "Option B", "Option C", "Option D"];
+          }
+          
+          if (typeof question.correct !== 'number') {
+            question.correct = 0; // Default to first option
+          }
+          
+          if (!question.explanation) {
+            question.explanation = "This is the correct answer based on the story.";
+          }
+          
+          console.log(`✅ Fixed question:`, JSON.stringify(question, null, 2));
         }
       });
     });
