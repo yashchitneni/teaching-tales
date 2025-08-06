@@ -34,6 +34,11 @@ import {
   defaultAdaptiveStoryProgressionService,
   StoryProgressionStrategy
 } from '../branching/adaptive-story-progression';
+import {
+  ValidationPipeline,
+  defaultValidationPipeline,
+  PipelineValidationResult
+} from '../validators/validation-pipeline';
 import { DEFAULT_QTI_OPTIONS } from '../index';
 
 /**
@@ -64,6 +69,8 @@ export interface GeneratedQTIPackage {
     /** Number of sections generated */
     sectionCount: number;
   };
+  /** Validation results (if validation enabled) */
+  validation?: PipelineValidationResult;
 }
 
 /**
@@ -78,19 +85,22 @@ export class QTIGenerator {
   private branchRuleEngine: BranchRuleEngine;
   private navigationService: ConditionalNavigationService;
   private storyProgressionService: AdaptiveStoryProgressionService;
+  private validationPipeline: ValidationPipeline;
 
   constructor(
     transformer?: AIToQTITransformer,
     templateLoader?: TemplateLoader,
     branchRuleEngine?: BranchRuleEngine,
     navigationService?: ConditionalNavigationService,
-    storyProgressionService?: AdaptiveStoryProgressionService
+    storyProgressionService?: AdaptiveStoryProgressionService,
+    validationPipeline?: ValidationPipeline
   ) {
     this.transformer = transformer || defaultAIToQTITransformer;
     this.templateLoader = templateLoader || defaultTemplateLoader;
     this.branchRuleEngine = branchRuleEngine || defaultBranchRuleEngine;
     this.navigationService = navigationService || defaultConditionalNavigationService;
     this.storyProgressionService = storyProgressionService || defaultAdaptiveStoryProgressionService;
+    this.validationPipeline = validationPipeline || defaultValidationPipeline;
   }
 
   /**
@@ -153,6 +163,85 @@ export class QTIGenerator {
       throw new QTIError(
         `Failed to generate QTI package: ${error instanceof Error ? error.message : 'Unknown error'}`,
         QTIErrorType.GENERATION_ERROR,
+        { 
+          storyTitle: storyResponse.title,
+          generationTime: Date.now() - startTime,
+          error 
+        }
+      );
+    }
+  }
+
+  /**
+   * Generate a validated QTI package with comprehensive validation and compliance reporting
+   * 
+   * @param storyResponse - AI-generated story with sections and questions
+   * @param options - QTI generation options
+   * @param enableValidation - Whether to run validation pipeline
+   * @returns Complete generated QTI package with validation results
+   */
+  async generateValidatedPackage(
+    storyResponse: StoryGenerationResponse,
+    options: QTIGenerationOptions = {},
+    enableValidation: boolean = true
+  ): Promise<GeneratedQTIPackage> {
+    const startTime = Date.now();
+    
+    try {
+      console.log('🚀 Starting validated QTI package generation...');
+      console.log('📖 Story:', storyResponse.title);
+      console.log('🔍 Validation enabled:', enableValidation);
+      
+      // Step 1: Generate the basic QTI package
+      const generatedPackage = await this.generatePackage(storyResponse, options);
+
+      // Step 2: Run validation pipeline if enabled
+      if (enableValidation) {
+        console.log('🔄 Running validation pipeline...');
+        
+        // Initialize validation pipeline if needed
+        await this.validationPipeline.initialize();
+        
+        // Run comprehensive validation
+        const validationResult = await this.validationPipeline.validatePackageGeneration(
+          storyResponse,
+          generatedPackage,
+          {
+            strictMode: false,
+            validateReferences: true,
+            checkAccessibility: true,
+            performanceAnalysis: true,
+            generateSuggestions: true,
+            schemaVersion: '3.0'
+          }
+        );
+
+        // Add validation results to the package
+        generatedPackage.validation = validationResult;
+
+        console.log('📊 Validation Summary:');
+        console.log(`  - Success: ${validationResult.success ? 'YES' : 'NO'}`);
+        console.log(`  - Total Time: ${validationResult.performance.totalTime}ms`);
+        
+        if (validationResult.complianceReport) {
+          console.log(`  - Compliance Score: ${validationResult.complianceReport.overallScore}/100`);
+          console.log(`  - Critical Issues: ${validationResult.complianceReport.summary.criticalIssues}`);
+        }
+
+        if (validationResult.autoFixesApplied.length > 0) {
+          console.log(`  - Auto-fixes Applied: ${validationResult.autoFixesApplied.length}`);
+        }
+      }
+
+      const totalTime = Date.now() - startTime;
+      console.log(`✅ Validated QTI package generation completed in ${totalTime}ms!`);
+
+      return generatedPackage;
+
+    } catch (error) {
+      throw new QTIError(
+        `Failed to generate validated QTI package: ${error instanceof Error ? error.message : 'Unknown error'}`,
+        QTIErrorType.VALIDATION_ERROR,
         { 
           storyTitle: storyResponse.title,
           generationTime: Date.now() - startTime,

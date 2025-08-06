@@ -42,8 +42,10 @@ export * from './branching/branch-rule-engine';
 export * from './branching/conditional-navigation';
 export * from './branching/adaptive-story-progression';
 
-// Validators (will be implemented in Phase 5)
-// export * from './validators/qti-validator';
+// Validators & Compliance
+export * from './validators/qti-validator';
+export * from './validators/compliance-reporter';
+export * from './validators/validation-pipeline';
 
 /**
  * QTI Module version

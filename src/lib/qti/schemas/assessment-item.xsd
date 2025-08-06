@@ -1,0 +1,223 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  QTI 3.0 Assessment Item Schema (Placeholder)
+  
+  This is a placeholder schema file for QTI 3.0 Assessment Item validation.
+  In a production implementation, this would be the official QTI 3.0 XSD schema
+  from IMS Global Learning Consortium.
+  
+  Official schemas should be downloaded from:
+  https://www.imsglobal.org/question/qtiv3p0/imsqti_v3p0.html
+-->
+<xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema"
+           targetNamespace="http://www.imsglobal.org/xsd/imsqtiasi_v3p0"
+           xmlns:qti="http://www.imsglobal.org/xsd/imsqtiasi_v3p0"
+           elementFormDefault="qualified">
+
+  <!-- Root element for QTI Assessment Item -->
+  <xs:element name="qti-assessment-item" type="qti:AssessmentItemType"/>
+
+  <!-- Assessment Item Type Definition -->
+  <xs:complexType name="AssessmentItemType">
+    <xs:sequence>
+      <xs:element name="qti-response-declaration" type="qti:ResponseDeclarationType" minOccurs="0" maxOccurs="unbounded"/>
+      <xs:element name="qti-outcome-declaration" type="qti:OutcomeDeclarationType" minOccurs="0" maxOccurs="unbounded"/>
+      <xs:element name="qti-item-body" type="qti:ItemBodyType" minOccurs="1"/>
+      <xs:element name="qti-response-processing" type="qti:ResponseProcessingType" minOccurs="0"/>
+    </xs:sequence>
+    <xs:attribute name="identifier" type="xs:string" use="required"/>
+    <xs:attribute name="title" type="xs:string" use="optional"/>
+    <xs:attribute name="adaptive" type="xs:boolean" use="optional"/>
+    <xs:attribute name="time-dependent" type="xs:boolean" use="optional"/>
+  </xs:complexType>
+
+  <!-- Response Declaration Type Definition -->
+  <xs:complexType name="ResponseDeclarationType">
+    <xs:sequence>
+      <xs:element name="qti-correct-response" type="qti:CorrectResponseType" minOccurs="0"/>
+      <xs:element name="qti-mapping" type="qti:MappingType" minOccurs="0"/>
+    </xs:sequence>
+    <xs:attribute name="identifier" type="xs:string" use="required"/>
+    <xs:attribute name="base-type" type="xs:string" use="required"/>
+    <xs:attribute name="cardinality" type="xs:string" use="required"/>
+  </xs:complexType>
+
+  <!-- Outcome Declaration Type Definition -->
+  <xs:complexType name="OutcomeDeclarationType">
+    <xs:sequence>
+      <xs:element name="qti-default-value" type="qti:DefaultValueType" minOccurs="0"/>
+    </xs:sequence>
+    <xs:attribute name="identifier" type="xs:string" use="required"/>
+    <xs:attribute name="base-type" type="xs:string" use="required"/>
+    <xs:attribute name="cardinality" type="xs:string" use="optional"/>
+  </xs:complexType>
+
+  <!-- Item Body Type Definition -->
+  <xs:complexType name="ItemBodyType" mixed="true">
+    <xs:choice minOccurs="0" maxOccurs="unbounded">
+      <xs:element name="qti-choice-interaction" type="qti:ChoiceInteractionType"/>
+      <xs:element name="qti-text-entry-interaction" type="qti:TextEntryInteractionType"/>
+      <xs:element name="qti-extended-text-interaction" type="qti:ExtendedTextInteractionType"/>
+      <xs:element name="div" type="qti:DivType"/>
+      <xs:element name="p" type="qti:PType"/>
+      <xs:element name="h1" type="xs:string"/>
+      <xs:element name="h2" type="xs:string"/>
+      <xs:element name="h3" type="xs:string"/>
+    </xs:choice>
+  </xs:complexType>
+
+  <!-- Choice Interaction Type Definition -->
+  <xs:complexType name="ChoiceInteractionType">
+    <xs:sequence>
+      <xs:element name="qti-prompt" type="xs:string" minOccurs="0"/>
+      <xs:element name="qti-simple-choice" type="qti:SimpleChoiceType" minOccurs="2" maxOccurs="unbounded"/>
+    </xs:sequence>
+    <xs:attribute name="response-identifier" type="xs:string" use="required"/>
+    <xs:attribute name="max-choices" type="xs:int" use="optional"/>
+    <xs:attribute name="shuffle" type="xs:boolean" use="optional"/>
+  </xs:complexType>
+
+  <!-- Text Entry Interaction Type Definition -->
+  <xs:complexType name="TextEntryInteractionType">
+    <xs:attribute name="response-identifier" type="xs:string" use="required"/>
+    <xs:attribute name="expected-length" type="xs:int" use="optional"/>
+    <xs:attribute name="pattern-mask" type="xs:string" use="optional"/>
+  </xs:complexType>
+
+  <!-- Extended Text Interaction Type Definition -->
+  <xs:complexType name="ExtendedTextInteractionType">
+    <xs:sequence>
+      <xs:element name="qti-prompt" type="xs:string" minOccurs="0"/>
+    </xs:sequence>
+    <xs:attribute name="response-identifier" type="xs:string" use="required"/>
+    <xs:attribute name="expected-lines" type="xs:int" use="optional"/>
+    <xs:attribute name="max-strings" type="xs:int" use="optional"/>
+    <xs:attribute name="format" type="xs:string" use="optional"/>
+  </xs:complexType>
+
+  <!-- Simple Choice Type Definition -->
+  <xs:complexType name="SimpleChoiceType" mixed="true">
+    <xs:choice minOccurs="0" maxOccurs="unbounded">
+      <xs:element name="div" type="qti:DivType"/>
+      <xs:element name="p" type="qti:PType"/>
+      <xs:element name="span" type="xs:string"/>
+    </xs:choice>
+    <xs:attribute name="identifier" type="xs:string" use="required"/>
+    <xs:attribute name="fixed" type="xs:boolean" use="optional"/>
+  </xs:complexType>
+
+  <!-- Response Processing Type Definition -->
+  <xs:complexType name="ResponseProcessingType">
+    <xs:sequence>
+      <xs:element name="qti-response-condition" type="qti:ResponseConditionType" minOccurs="0" maxOccurs="unbounded"/>
+    </xs:sequence>
+    <xs:attribute name="template" type="xs:anyURI" use="optional"/>
+  </xs:complexType>
+
+  <!-- Response Condition Type Definition -->
+  <xs:complexType name="ResponseConditionType">
+    <xs:sequence>
+      <xs:element name="qti-response-if" type="qti:ResponseIfType"/>
+      <xs:element name="qti-response-else-if" type="qti:ResponseElseIfType" minOccurs="0" maxOccurs="unbounded"/>
+      <xs:element name="qti-response-else" type="qti:ResponseElseType" minOccurs="0"/>
+    </xs:sequence>
+  </xs:complexType>
+
+  <!-- Response If Type Definition -->
+  <xs:complexType name="ResponseIfType">
+    <xs:sequence>
+      <xs:element name="qti-match" type="qti:MatchType"/>
+      <xs:element name="qti-set-outcome-value" type="qti:SetOutcomeValueType"/>
+    </xs:sequence>
+  </xs:complexType>
+
+  <!-- Response Else If Type Definition -->
+  <xs:complexType name="ResponseElseIfType">
+    <xs:sequence>
+      <xs:element name="qti-match" type="qti:MatchType"/>
+      <xs:element name="qti-set-outcome-value" type="qti:SetOutcomeValueType"/>
+    </xs:sequence>
+  </xs:complexType>
+
+  <!-- Response Else Type Definition -->
+  <xs:complexType name="ResponseElseType">
+    <xs:sequence>
+      <xs:element name="qti-set-outcome-value" type="qti:SetOutcomeValueType"/>
+    </xs:sequence>
+  </xs:complexType>
+
+  <!-- Match Type Definition -->
+  <xs:complexType name="MatchType">
+    <xs:sequence>
+      <xs:element name="qti-variable" type="qti:VariableType"/>
+      <xs:element name="qti-correct" type="qti:CorrectType"/>
+    </xs:sequence>
+  </xs:complexType>
+
+  <!-- Set Outcome Value Type Definition -->
+  <xs:complexType name="SetOutcomeValueType">
+    <xs:sequence>
+      <xs:element name="qti-base-value" type="qti:BaseValueType"/>
+    </xs:sequence>
+    <xs:attribute name="identifier" type="xs:string" use="required"/>
+  </xs:complexType>
+
+  <!-- Supporting Type Definitions -->
+  <xs:complexType name="CorrectResponseType">
+    <xs:sequence>
+      <xs:element name="qti-value" type="xs:string" maxOccurs="unbounded"/>
+    </xs:sequence>
+  </xs:complexType>
+
+  <xs:complexType name="MappingType">
+    <xs:sequence>
+      <xs:element name="qti-map-entry" type="qti:MapEntryType" maxOccurs="unbounded"/>
+    </xs:sequence>
+    <xs:attribute name="default-value" type="xs:double" use="optional"/>
+  </xs:complexType>
+
+  <xs:complexType name="MapEntryType">
+    <xs:attribute name="map-key" type="xs:string" use="required"/>
+    <xs:attribute name="mapped-value" type="xs:double" use="required"/>
+  </xs:complexType>
+
+  <xs:complexType name="DefaultValueType">
+    <xs:sequence>
+      <xs:element name="qti-value" type="xs:string" maxOccurs="unbounded"/>
+    </xs:sequence>
+  </xs:complexType>
+
+  <xs:complexType name="VariableType">
+    <xs:attribute name="identifier" type="xs:string" use="required"/>
+  </xs:complexType>
+
+  <xs:complexType name="CorrectType">
+    <xs:attribute name="identifier" type="xs:string" use="required"/>
+  </xs:complexType>
+
+  <xs:complexType name="BaseValueType">
+    <xs:simpleContent>
+      <xs:extension base="xs:string">
+        <xs:attribute name="base-type" type="xs:string" use="required"/>
+      </xs:extension>
+    </xs:simpleContent>
+  </xs:complexType>
+
+  <xs:complexType name="DivType" mixed="true">
+    <xs:choice minOccurs="0" maxOccurs="unbounded">
+      <xs:element name="p" type="qti:PType"/>
+      <xs:element name="span" type="xs:string"/>
+    </xs:choice>
+    <xs:attribute name="class" type="xs:string" use="optional"/>
+  </xs:complexType>
+
+  <xs:complexType name="PType" mixed="true">
+    <xs:choice minOccurs="0" maxOccurs="unbounded">
+      <xs:element name="span" type="xs:string"/>
+      <xs:element name="strong" type="xs:string"/>
+      <xs:element name="em" type="xs:string"/>
+    </xs:choice>
+    <xs:attribute name="class" type="xs:string" use="optional"/>
+  </xs:complexType>
+
+</xs:schema>
