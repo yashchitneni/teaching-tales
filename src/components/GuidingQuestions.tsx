@@ -29,7 +29,7 @@ export function GuidingQuestions({
     <div className="p-6">
       {/* Header */}
       <div className="mb-6">
-        <h2 className="text-xl font-bold mb-2">Guiding Questions</h2>
+        <h2 className="text-xl font-bold mb-2 text-gray-900">Guiding Questions</h2>
         <p className="text-sm text-gray-600">
           Answer questions as you read to unlock deeper understanding
         </p>
@@ -51,7 +51,7 @@ export function GuidingQuestions({
 
       {/* Current Question */}
       <div className="mb-6">
-        <h3 className="font-medium mb-4">{currentQuestion.text}</h3>
+        <h3 className="font-medium mb-4 text-gray-900">{currentQuestion.text}</h3>
         <div className="space-y-3">
           {currentQuestion.options.map((option, index) => (
             <button
@@ -69,8 +69,8 @@ export function GuidingQuestions({
               } ${hasAnswered ? 'cursor-not-allowed' : 'cursor-pointer'}`}
             >
               <div className="flex items-start">
-                <span className="mr-3 font-medium">{String.fromCharCode(65 + index)}.</span>
-                <span>{option}</span>
+                <span className="mr-3 font-medium text-gray-900">{String.fromCharCode(65 + index)}.</span>
+                <span className="text-gray-900">{option}</span>
               </div>
             </button>
           ))}
@@ -94,9 +94,9 @@ export function GuidingQuestions({
 
       {/* Tips Section */}
       <div className="mt-8 p-4 bg-blue-50 rounded-lg">
-        <h4 className="font-medium text-blue-900 mb-2">💡 Reading Tip</h4>
+        <h4 className="font-medium text-gray-900 mb-2">💡 Reading Tip</h4>
         <p className="text-sm text-blue-800">
-          Look for vocabulary words highlighted in yellow. Hover over them to see their definitions!
+          Look for vocabulary words highlighted in blue. Hover over them to see their definitions!
         </p>
       </div>
     </div>

@@ -52,6 +52,78 @@ interface AssessmentTest {
   updatedAt: string;
 }
 
+// QTI Stimuli interfaces
+interface Stimulus {
+  id: string;
+  identifier: string;
+  title: string;
+  description?: string;
+  content: string;
+  mediaType: string;
+  language?: string;
+  metadata?: Record<string, any>;
+  createdAt: string;
+  updatedAt: string;
+}
+
+interface CreateStimulusRequest {
+  identifier: string;
+  title: string;
+  description?: string;
+  content: string;
+  mediaType: string;
+  language?: string;
+  metadata?: Record<string, any>;
+}
+
+interface UpdateStimulusRequest {
+  identifier?: string;
+  title?: string;
+  description?: string;
+  content?: string;
+  mediaType?: string;
+  language?: string;
+  metadata?: Record<string, any>;
+}
+
+interface StimuliListResponse {
+  stimuli: Stimulus[];
+  total: number;
+  page: number;
+  pageSize: number;
+}
+
+// QTI Assessment Test interfaces for questions
+interface CreateAssessmentTestRequest {
+  identifier: string;
+  title: string;
+  description?: string;
+  language?: string;
+  duration?: number;
+  metadata?: Record<string, any>;
+}
+
+interface AssessmentTestResponse {
+  id: string;
+  identifier: string;
+  title: string;
+  description?: string;
+  language?: string;
+  duration?: number;
+  status: string;
+  createdAt: string;
+  updatedAt: string;
+  metadata?: Record<string, any>;
+}
+
+interface CreateTestItemRequest {
+  identifier: string;
+  title: string;
+  interactionType: string;
+  xmlContent: string;
+  sequence?: number;
+}
+
 interface AssessmentTestsResponse {
   tests: AssessmentTest[];
   pagination: {
@@ -232,6 +304,226 @@ export async function loadCompleteAssessmentTest(testId: string): Promise<TestPa
     return testData;
   } catch (error) {
     console.error('Failed to load assessment test:', error);
+    throw error;
+  }
+}
+
+// QTI Stimuli API functions
+
+/**
+ * Get list of stimuli
+ */
+export async function listStimuli(page: number = 1, pageSize: number = 20): Promise<StimuliListResponse> {
+  try {
+    const response = await fetch(`/api/ims/qti/v3p0/stimuli?page=${page}&pageSize=${pageSize}`, {
+      method: 'GET',
+      credentials: 'include',  // Include HttpOnly cookies
+      headers: {
+        'Content-Type': 'application/json',
+      },
+    });
+
+    if (!response.ok) {
+      throw new Error(`Failed to fetch stimuli: ${response.status} ${response.statusText}`);
+    }
+
+    return await response.json();
+  } catch (error) {
+    console.error('Failed to list stimuli:', error);
+    throw error;
+  }
+}
+
+/**
+ * Create a new stimulus (story)
+ */
+export async function createStimulus(stimulusData: CreateStimulusRequest): Promise<Stimulus> {
+  try {
+    const response = await fetch(`/api/ims/qti/v3p0/stimuli`, {
+      method: 'POST',
+      credentials: 'include',  // Include HttpOnly cookies
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(stimulusData),
+    });
+
+    if (!response.ok) {
+      throw new Error(`Failed to create stimulus: ${response.status} ${response.statusText}`);
+    }
+
+    return await response.json();
+  } catch (error) {
+    console.error('Failed to create stimulus:', error);
+    throw error;
+  }
+}
+
+/**
+ * Get a specific stimulus by ID
+ */
+export async function getStimulus(stimulusId: string): Promise<Stimulus> {
+  try {
+    const response = await fetch(`/api/ims/qti/v3p0/stimuli/${stimulusId}`, {
+      method: 'GET',
+      credentials: 'include',  // Include HttpOnly cookies
+      headers: {
+        'Content-Type': 'application/json',
+      },
+    });
+
+    if (!response.ok) {
+      throw new Error(`Failed to fetch stimulus: ${response.status} ${response.statusText}`);
+    }
+
+    return await response.json();
+  } catch (error) {
+    console.error('Failed to get stimulus:', error);
+    throw error;
+  }
+}
+
+/**
+ * Update a stimulus
+ */
+export async function updateStimulus(stimulusId: string, updateData: UpdateStimulusRequest): Promise<Stimulus> {
+  try {
+    const response = await fetch(`/api/ims/qti/v3p0/stimuli/${stimulusId}`, {
+      method: 'PUT',
+      credentials: 'include',  // Include HttpOnly cookies
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(updateData),
+    });
+
+    if (!response.ok) {
+      throw new Error(`Failed to update stimulus: ${response.status} ${response.statusText}`);
+    }
+
+    return await response.json();
+  } catch (error) {
+    console.error('Failed to update stimulus:', error);
+    throw error;
+  }
+}
+
+/**
+ * Delete a stimulus
+ */
+export async function deleteStimulus(stimulusId: string): Promise<void> {
+  try {
+    const response = await fetch(`/api/ims/qti/v3p0/stimuli/${stimulusId}`, {
+      method: 'DELETE',
+      credentials: 'include',  // Include HttpOnly cookies
+      headers: {
+        'Content-Type': 'application/json',
+      },
+    });
+
+    if (!response.ok) {
+      throw new Error(`Failed to delete stimulus: ${response.status} ${response.statusText}`);
+    }
+  } catch (error) {
+    console.error('Failed to delete stimulus:', error);
+    throw error;
+  }
+}
+
+// QTI Assessment Tests API functions (for storing comprehension questions)
+
+/**
+ * Create a new assessment test for story comprehension questions
+ */
+export async function createAssessmentTest(testData: CreateAssessmentTestRequest): Promise<AssessmentTestResponse> {
+  try {
+    const response = await fetch(`/api/ims/qti/v3p0/assessment-tests`, {
+      method: 'POST',
+      credentials: 'include',  // Include HttpOnly cookies
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(testData),
+    });
+
+    if (!response.ok) {
+      throw new Error(`Failed to create assessment test: ${response.status} ${response.statusText}`);
+    }
+
+    return await response.json();
+  } catch (error) {
+    console.error('Failed to create assessment test:', error);
+    throw error;
+  }
+}
+
+/**
+ * Get an assessment test by ID
+ */
+export async function getAssessmentTest(testId: string): Promise<AssessmentTestResponse> {
+  try {
+    const response = await fetch(`/api/ims/qti/v3p0/assessment-tests/${testId}`, {
+      method: 'GET',
+      credentials: 'include',  // Include HttpOnly cookies
+      headers: {
+        'Content-Type': 'application/json',
+      },
+    });
+
+    if (!response.ok) {
+      throw new Error(`Failed to fetch assessment test: ${response.status} ${response.statusText}`);
+    }
+
+    return await response.json();
+  } catch (error) {
+    console.error('Failed to get assessment test:', error);
+    throw error;
+  }
+}
+
+/**
+ * Update an assessment test
+ */
+export async function updateAssessmentTest(testId: string, updateData: Partial<CreateAssessmentTestRequest>): Promise<AssessmentTestResponse> {
+  try {
+    const response = await fetch(`/api/ims/qti/v3p0/assessment-tests/${testId}`, {
+      method: 'PUT',
+      credentials: 'include',  // Include HttpOnly cookies
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(updateData),
+    });
+
+    if (!response.ok) {
+      throw new Error(`Failed to update assessment test: ${response.status} ${response.statusText}`);
+    }
+
+    return await response.json();
+  } catch (error) {
+    console.error('Failed to update assessment test:', error);
+    throw error;
+  }
+}
+
+/**
+ * Delete an assessment test
+ */
+export async function deleteAssessmentTest(testId: string): Promise<void> {
+  try {
+    const response = await fetch(`/api/ims/qti/v3p0/assessment-tests/${testId}`, {
+      method: 'DELETE',
+      credentials: 'include',  // Include HttpOnly cookies
+      headers: {
+        'Content-Type': 'application/json',
+      },
+    });
+
+    if (!response.ok) {
+      throw new Error(`Failed to delete assessment test: ${response.status} ${response.statusText}`);
+    }
+  } catch (error) {
+    console.error('Failed to delete assessment test:', error);
     throw error;
   }
 }

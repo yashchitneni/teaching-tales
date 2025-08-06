@@ -1,7 +1,6 @@
 'use client'
 
 import { Button } from '@/components/ui/button'
-import { useState } from 'react'
 
 interface Question {
   id: string
@@ -25,39 +24,18 @@ export function AssessmentResults({
   wordsPerMinute,
   onContinue
 }: AssessmentResultsProps) {
-  const [satisfaction, setSatisfaction] = useState<number | null>(null)
-
-  const emojis = ['😞', '😕', '😐', '😊', '😄']
 
   return (
     <div className="p-6">
       {/* Header */}
       <div className="mb-6">
-        <h2 className="text-xl font-bold mb-2">Story Assessment</h2>
+        <h2 className="text-xl font-bold mb-2 text-gray-900">Story Assessment</h2>
         <p className="text-sm text-gray-600">
           Great job completing the chapter!
         </p>
       </div>
 
-      {/* Satisfaction Rating */}
-      <div className="mb-6">
-        <h3 className="font-medium mb-3">How did you enjoy this story?</h3>
-        <div className="flex justify-center gap-3">
-          {emojis.map((emoji, index) => (
-            <button
-              key={index}
-              onClick={() => setSatisfaction(index)}
-              className={`text-3xl p-2 rounded-lg transition-all ${
-                satisfaction === index
-                  ? 'bg-blue-100 ring-2 ring-blue-500'
-                  : 'hover:bg-gray-100'
-              }`}
-            >
-              {emoji}
-            </button>
-          ))}
-        </div>
-      </div>
+
 
       {/* Performance Metrics */}
       <div className="grid grid-cols-2 gap-4 mb-6">
@@ -85,7 +63,7 @@ export function AssessmentResults({
               />
             </svg>
             <div className="absolute inset-0 flex items-center justify-center">
-              <span className="text-2xl font-bold">{accuracy}%</span>
+              <span className="text-2xl font-bold text-gray-900">{accuracy}%</span>
             </div>
           </div>
           <p className="text-sm text-gray-600">Quiz Accuracy</p>
@@ -115,7 +93,7 @@ export function AssessmentResults({
               />
             </svg>
             <div className="absolute inset-0 flex items-center justify-center">
-              <span className="text-2xl font-bold">{wordsPerMinute}</span>
+              <span className="text-2xl font-bold text-gray-900">{wordsPerMinute}</span>
             </div>
           </div>
           <p className="text-sm text-gray-600">Words/Minute</p>
@@ -124,7 +102,7 @@ export function AssessmentResults({
 
       {/* Question Results */}
       <div className="mb-6">
-        <h3 className="font-medium mb-3">Question Results</h3>
+        <h3 className="font-medium mb-3 text-gray-900">Question Results</h3>
         <div className="space-y-3">
           {questions.map((question, index) => {
             const isCorrect = answers[index] === question.correctAnswer
@@ -139,7 +117,7 @@ export function AssessmentResults({
               >
                 <div className="flex items-start justify-between">
                   <div className="flex-1">
-                    <p className="text-sm font-medium mb-1">{question.text}</p>
+                    <p className="text-sm font-medium mb-1 text-gray-900">{question.text}</p>
                     <p className="text-xs text-gray-600">
                       Your answer: {question.options[answers[index]]}
                     </p>
@@ -167,15 +145,15 @@ export function AssessmentResults({
       <Button
         onClick={onContinue}
         className="w-full bg-blue-600 hover:bg-blue-700 text-white"
-        disabled={satisfaction === null}
+
       >
-        Continue to Next Chapter
+Continue to Next Section
       </Button>
 
       {/* Achievement Notification */}
       {accuracy >= 80 && (
-        <div className="mt-4 p-4 bg-yellow-50 border border-yellow-200 rounded-lg">
-          <p className="text-sm text-yellow-800 font-medium">
+        <div className="mt-4 p-4 bg-green-50 border border-green-200 rounded-lg">
+          <p className="text-sm text-green-800 font-medium">
             🏆 Great job! You earned 50 coins for high accuracy!
           </p>
         </div>

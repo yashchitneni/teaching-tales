@@ -2,12 +2,14 @@
 
 export const dynamic = 'force-dynamic'
 
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useRef } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { TopNavWithTabs } from '@/components/TopNavWithTabs'
 import { FeedbackButton } from '@/components/FeedbackButton'
 import { useAuth } from '@/contexts/AuthContext'
 import { fetchUsers } from '@/lib/api/oneroster-client'
+import { StoryStorageService } from '@/lib/services/story-storage-service'
+
 
 const loadingMessages = [
   "Gathering magical ingredients...",
@@ -27,6 +29,7 @@ export default function StoryLoadingPage() {
   const [messageIndex, setMessageIndex] = useState(0)
   const [bookId, setBookId] = useState<string | null>(null)
   const [error, setError] = useState<string | null>(null)
+  const isGeneratingRef = useRef(false)
 
   const universe = searchParams.get('universe') || ''
   const character = searchParams.get('character') || ''
@@ -38,7 +41,14 @@ export default function StoryLoadingPage() {
       return
     }
 
-    // Start the story generation process
+    // Prevent multiple calls by checking if generation is already in progress
+    if (isGeneratingRef.current) {
+      console.log('Story generation already in progress, skipping...')
+      return
+    }
+
+    // Mark as generating and start the story generation process
+    isGeneratingRef.current = true
     generateStory()
   }, [user])
 
@@ -101,24 +111,51 @@ export default function StoryLoadingPage() {
         createdAt: new Date().toISOString()
       }
       
-      // Store in localStorage (temporary solution)
-      const existingStories = JSON.parse(localStorage.getItem('teaching-tales-stories') || '[]')
-      existingStories.push(storyMetadata)
-      localStorage.setItem('teaching-tales-stories', JSON.stringify(existingStories))
+      // Note: We'll save to QTI API after successful generation
+      // No need to store initial metadata since we save complete stories
       
-      // Simulate AI story generation
-      setTimeout(() => {
-        // Update story status to completed
-        const updatedStories = existingStories.map(story => 
-          story.id === storyId 
-            ? { ...story, status: 'completed', wordCount: 250, readingTime: '2 minutes' }
-            : story
-        )
-        localStorage.setItem('teaching-tales-stories', JSON.stringify(updatedStories))
-        
-        // Navigate to reading interface
-        router.push(`/book/${storyId}/chapter/1`)
-      }, 5000)
+      // Generate real AI story using our server-side API
+      console.log('🎭 Starting AI story generation...')
+      
+      const response = await fetch('/api/generate-story', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          universe: universe,
+          character: character,
+          spark: spark,
+          gradeLevel: targetStudent.grades?.[0] || '4-5', // Default to 4-5 if no grade available
+          studentId: targetStudent.sourcedId
+        })
+      })
+      
+      if (!response.ok) {
+        const errorData = await response.json()
+        throw new Error(`API Error: ${errorData.error} - ${errorData.details}`)
+      }
+      
+      const storyResponse = await response.json()
+      
+      console.log('✅ AI story generation completed!')
+      
+      // Save complete story to QTI Stimuli API and create assessment tests
+      console.log('💾 Saving story to QTI API...')
+      const { stimulus: savedStimulus, assessments } = await StoryStorageService.saveStory(storyResponse, {
+        universe: universe,
+        character: character,
+        spark: spark,
+        gradeLevel: targetStudent.grades?.[0] || '4-5',
+        studentId: targetStudent.sourcedId,
+        storyId: storyId
+      })
+      
+      console.log('✅ Story and assessments saved to QTI API successfully!')
+      console.log(`📚 Created ${assessments.length} assessment tests`)
+      
+      // Navigate to reading interface using the stimulus ID
+      router.push(`/book/${savedStimulus.id}`)
 
     } catch (error) {
       console.error('Error generating story:', error)
