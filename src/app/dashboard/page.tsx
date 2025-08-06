@@ -140,10 +140,7 @@ export default function DashboardPage() {
         </div>
       </main>
 
-      {/* Debug info */}
-      <div className="fixed bottom-20 left-4 bg-red-500 text-white p-2 rounded z-50">
-        Modal State: {showCreateModal ? 'OPEN' : 'CLOSED'}
-      </div>
+
 
       {/* Create Child Modal */}
       {showCreateModal && (

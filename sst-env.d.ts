@@ -5,6 +5,14 @@
 
 declare module "sst" {
   export interface Resource {
+    "GOOGLE_AI_API_KEY": {
+      "type": "sst.sst.Secret"
+      "value": string
+    }
+    "REPLICATE_API_TOKEN": {
+      "type": "sst.sst.Secret"
+      "value": string
+    }
     "TeachingTalesApp": {
       "type": "sst.aws.Nextjs"
       "url": string

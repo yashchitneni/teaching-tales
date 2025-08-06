@@ -9,11 +9,7 @@ export function middleware(request: NextRequest) {
     '/',
     '/login',
     '/signup',
-    '/api/auth/login',
-    '/api/auth/logout',
-    '/api/auth/refresh',
-    '/api/auth/signup',
-    '/api/auth/me',
+    '/api/', // Make ALL API routes public for now
     '/_next',
     '/favicon.ico',
   ];

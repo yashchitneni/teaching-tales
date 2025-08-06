@@ -8,7 +8,7 @@ const path = require('path');
 const s3Client = new S3Client({});
 
 // Get bucket name from SST environment
-const BUCKET_NAME = process.env.TEACHING_TALES_BUCKET_NAME || process.env.BUCKET_NAME || 'teaching-tales-duff-teachingtalesbucketbucket-zwfotuof';
+const BUCKET_NAME = process.env.TEACHING_TALES_BUCKET_NAME || process.env.BUCKET_NAME || 'teaching-tales-production-teachingtalesbucketbucket-ncvkkabz';
 
 const imagesDir = path.join(__dirname, 'teachtales_images_library');
 

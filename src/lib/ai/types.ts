@@ -79,6 +79,8 @@ export interface StoryGenerationResponse {
   wordCount: number;
   /** Estimated reading time (e.g., "4 minutes") */
   readingTime: string;
+  /** URL of the generated story illustration image (optional) */
+  imageUrl?: string;
   /** Optional metadata about the story generation */
   metadata?: {
     /** Universe used for generation */

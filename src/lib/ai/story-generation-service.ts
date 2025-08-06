@@ -1,5 +1,7 @@
 import { GeminiClient } from './gemini-client';
+import { ReplicateClient } from './replicate-client';
 import { PromptTemplates } from './prompt-templates';
+import { S3Service } from '@/lib/services/s3-service';
 import { 
   StoryGenerationRequest, 
   StoryGenerationResponse, 
@@ -28,13 +30,17 @@ import {
  */
 export class StoryGenerationService {
   private geminiClient: GeminiClient;
+  private replicateClient: ReplicateClient;
+  private s3Service: S3Service;
 
   /**
    * Creates a new StoryGenerationService instance
-   * Initializes the internal Gemini client for AI communication
+   * Initializes the internal AI clients for story and image generation
    */
   constructor() {
     this.geminiClient = new GeminiClient();
+    this.replicateClient = new ReplicateClient();
+    this.s3Service = new S3Service();
   }
 
   /**
@@ -105,12 +111,17 @@ export class StoryGenerationService {
       // Validate and transform the response
       const storyResponse = this.validateAndTransformResponse(parsedResponse, sanitizedRequest);
 
+      // TODO: Re-enable image generation after fixing CloudFront timeout
+      // For now, skip image generation to avoid 30-second CloudFront timeout
+      console.log('⏭️ Skipping image generation to avoid timeout issues');
+
       console.log('🎉 Story generation completed successfully!');
       console.log('📊 Generated:', {
         title: storyResponse.title,
         sections: storyResponse.sections.length,
         wordCount: storyResponse.wordCount,
-        readingTime: storyResponse.readingTime
+        readingTime: storyResponse.readingTime,
+        hasImage: !!storyResponse.imageUrl
       });
 
       return storyResponse;
@@ -332,11 +343,51 @@ export class StoryGenerationService {
   }
 
   /**
-   * Test the connection to the AI service
+   * Generate an illustration image for the story
+   * 
+   * Creates a child-safe, educational image based on the story content
+   * and uploads it to S3 for permanent storage.
+   * 
+   * @param storyResponse - The generated story response
+   * @param request - Original story generation request
+   * @returns Promise resolving to the S3 URL of the generated image
+   * @throws {AIServiceError} When image generation or upload fails
+   * @private
+   */
+  private async generateStoryImage(
+    storyResponse: StoryGenerationResponse, 
+    request: StoryGenerationRequest
+  ): Promise<string> {
+    // Create image prompt based on story content
+    const imagePrompt = `${storyResponse.title}, featuring ${request.character} in ${request.universe}, ${request.spark}`;
+    
+    console.log('🎨 Generating story illustration...');
+    console.log('📝 Image prompt:', imagePrompt);
+    
+    // Generate image with Replicate
+    const imageUrl = await this.replicateClient.generateImage(imagePrompt, {
+      gradeLevel: request.gradeLevel,
+      width: 1024,
+      height: 768
+    });
+    
+    // Generate safe filename for S3
+    const fileName = this.s3Service.generateFileName(storyResponse.title, request.studentId);
+    
+    // Download and upload to S3
+    const s3Url = await this.s3Service.downloadAndUpload(imageUrl, fileName);
+    
+    return s3Url;
+  }
+
+  /**
+   * Test the connection to the AI services
    */
   async testConnection(): Promise<boolean> {
     try {
-      return await this.geminiClient.validateConnection();
+      const geminiTest = await this.geminiClient.validateConnection();
+      const replicateTest = await this.replicateClient.validateConnection();
+      return geminiTest; // Gemini is required, Replicate is optional
     } catch (error) {
       console.error('Connection test failed:', error);
       return false;
