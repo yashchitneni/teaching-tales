@@ -28,11 +28,11 @@ export * from './utils/template-loader';
 export * from './utils/identifier-generator';
 export * from './utils/xml-builder';
 
-// Main generator (will be implemented in Phase 2)
-// export * from './generators/qti-generator';
+// Main generator
+export * from './generators/qti-generator';
 
-// Transformers (will be implemented in Phase 2)
-// export * from './transformers/ai-to-qti-transformer';
+// Transformers
+export * from './transformers/ai-to-qti-transformer';
 
 // Validators (will be implemented in Phase 5)
 // export * from './validators/qti-validator';
