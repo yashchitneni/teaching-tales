@@ -92,7 +92,7 @@ export default function DashboardPage() {
                     </Button>
                     <Button 
                       variant="outline" 
-                      className="flex-1 text-sm"
+                      className="flex-1 text-sm text-gray-900"
                     >
                       View Books
                     </Button>

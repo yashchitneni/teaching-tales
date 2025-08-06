@@ -76,7 +76,7 @@ export default function CharacterSelectionPage() {
             <div className="flex flex-col gap-3 max-h-full">
               <div className="flex justify-between items-center py-3 sticky top-0 z-10 bg-white">
                 <div className="flex-col justify-start items-start gap-2 inline-flex">
-                  <div className="text-xl font-semibold text-left max-lg:text-base max-lg:font-bold">
+                  <div className="text-xl font-semibold text-left max-lg:text-base max-lg:font-bold text-gray-900">
                     Who will take the lead in your {universeName} adventure?
                   </div>
                   <div className="text-sm leading-5 max-w-[834px] text-neutral-800 text-opacity-70 text-left max-lg:hidden">
