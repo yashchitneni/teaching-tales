@@ -17,7 +17,7 @@ export default $config({
     });
 
     // Get TimeBack configuration from environment or secrets
-const timebackApiUrl = process.env.NEXT_PUBLIC_TIMEBACK_API_URL || "http://localhost:8081";
+const timebackApiUrl = process.env.NEXT_PUBLIC_TIMEBACK_API_URL || "http://localhost:8080";
 
     // Create the Next.js app
     const site = new sst.aws.Nextjs("TeachingTalesApp", {
