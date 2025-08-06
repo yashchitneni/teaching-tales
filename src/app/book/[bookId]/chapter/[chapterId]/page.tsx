@@ -150,7 +150,7 @@ export default function ReadingPage() {
           <div className="max-w-3xl mx-auto">
             {/* Chapter Header */}
             <div className="mb-6">
-              <h1 className="text-3xl font-bold mb-2">{chapter.title}</h1>
+              <h1 className="text-3xl font-bold mb-2 text-gray-900">{chapter.title}</h1>
               <div className="flex items-center gap-4 text-sm text-gray-600">
                 <span>Chapter {chapterId}</span>
                 <span>•</span>

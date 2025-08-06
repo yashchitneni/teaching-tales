@@ -33,7 +33,7 @@ export function AssessmentResults({
     <div className="p-6">
       {/* Header */}
       <div className="mb-6">
-        <h2 className="text-xl font-bold mb-2">Story Assessment</h2>
+        <h2 className="text-xl font-bold mb-2 text-gray-900">Story Assessment</h2>
         <p className="text-sm text-gray-600">
           Great job completing the chapter!
         </p>
@@ -41,7 +41,7 @@ export function AssessmentResults({
 
       {/* Satisfaction Rating */}
       <div className="mb-6">
-        <h3 className="font-medium mb-3">How did you enjoy this story?</h3>
+        <h3 className="font-medium mb-3 text-gray-900">How did you enjoy this story?</h3>
         <div className="flex justify-center gap-3">
           {emojis.map((emoji, index) => (
             <button
@@ -124,7 +124,7 @@ export function AssessmentResults({
 
       {/* Question Results */}
       <div className="mb-6">
-        <h3 className="font-medium mb-3">Question Results</h3>
+        <h3 className="font-medium mb-3 text-gray-900">Question Results</h3>
         <div className="space-y-3">
           {questions.map((question, index) => {
             const isCorrect = answers[index] === question.correctAnswer
@@ -174,8 +174,8 @@ export function AssessmentResults({
 
       {/* Achievement Notification */}
       {accuracy >= 80 && (
-        <div className="mt-4 p-4 bg-yellow-50 border border-yellow-200 rounded-lg">
-          <p className="text-sm text-yellow-800 font-medium">
+        <div className="mt-4 p-4 bg-green-50 border border-green-200 rounded-lg">
+          <p className="text-sm text-green-800 font-medium">
             🏆 Great job! You earned 50 coins for high accuracy!
           </p>
         </div>
