@@ -1,0 +1,162 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  IMS Content Packaging Manifest Schema (Placeholder)
+  
+  This is a placeholder schema file for IMS Content Packaging 1.1.2 validation.
+  In a production implementation, this would be the official IMS CP XSD schema.
+  
+  Official schemas should be downloaded from:
+  https://www.imsglobal.org/content/packaging/
+-->
+<xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema"
+           targetNamespace="http://www.imsglobal.org/xsd/imscp_v1p1"
+           xmlns:imscp="http://www.imsglobal.org/xsd/imscp_v1p1"
+           xmlns:imsqti="http://www.imsglobal.org/xsd/imsqti_v3p0"
+           elementFormDefault="qualified">
+
+  <!-- Root element for IMS Content Package Manifest -->
+  <xs:element name="manifest" type="imscp:ManifestType"/>
+
+  <!-- Manifest Type Definition -->
+  <xs:complexType name="ManifestType">
+    <xs:sequence>
+      <xs:element name="metadata" type="imscp:MetadataType" minOccurs="0"/>
+      <xs:element name="organizations" type="imscp:OrganizationsType" minOccurs="0"/>
+      <xs:element name="resources" type="imscp:ResourcesType" minOccurs="1"/>
+      <xs:element name="manifest" type="imscp:ManifestType" minOccurs="0" maxOccurs="unbounded"/>
+    </xs:sequence>
+    <xs:attribute name="identifier" type="xs:string" use="required"/>
+    <xs:attribute name="version" type="xs:string" use="optional"/>
+    <xs:attribute name="xml:base" type="xs:anyURI" use="optional"/>
+  </xs:complexType>
+
+  <!-- Metadata Type Definition -->
+  <xs:complexType name="MetadataType">
+    <xs:sequence>
+      <xs:element name="schema" type="xs:string" minOccurs="0"/>
+      <xs:element name="schemaversion" type="xs:string" minOccurs="0"/>
+      <xs:any namespace="##other" processContents="lax" minOccurs="0" maxOccurs="unbounded"/>
+    </xs:sequence>
+  </xs:complexType>
+
+  <!-- Organizations Type Definition -->
+  <xs:complexType name="OrganizationsType">
+    <xs:sequence>
+      <xs:element name="organization" type="imscp:OrganizationType" minOccurs="0" maxOccurs="unbounded"/>
+    </xs:sequence>
+    <xs:attribute name="default" type="xs:string" use="optional"/>
+  </xs:complexType>
+
+  <!-- Organization Type Definition -->
+  <xs:complexType name="OrganizationType">
+    <xs:sequence>
+      <xs:element name="title" type="xs:string" minOccurs="0"/>
+      <xs:element name="item" type="imscp:ItemType" minOccurs="0" maxOccurs="unbounded"/>
+      <xs:element name="metadata" type="imscp:MetadataType" minOccurs="0"/>
+    </xs:sequence>
+    <xs:attribute name="identifier" type="xs:string" use="required"/>
+    <xs:attribute name="structure" type="xs:string" use="optional"/>
+  </xs:complexType>
+
+  <!-- Item Type Definition -->
+  <xs:complexType name="ItemType">
+    <xs:sequence>
+      <xs:element name="title" type="xs:string" minOccurs="0"/>
+      <xs:element name="item" type="imscp:ItemType" minOccurs="0" maxOccurs="unbounded"/>
+      <xs:element name="metadata" type="imscp:MetadataType" minOccurs="0"/>
+    </xs:sequence>
+    <xs:attribute name="identifier" type="xs:string" use="required"/>
+    <xs:attribute name="identifierref" type="xs:string" use="optional"/>
+    <xs:attribute name="isvisible" type="xs:boolean" use="optional"/>
+    <xs:attribute name="parameters" type="xs:string" use="optional"/>
+  </xs:complexType>
+
+  <!-- Resources Type Definition -->
+  <xs:complexType name="ResourcesType">
+    <xs:sequence>
+      <xs:element name="resource" type="imscp:ResourceType" minOccurs="0" maxOccurs="unbounded"/>
+    </xs:sequence>
+    <xs:attribute name="xml:base" type="xs:anyURI" use="optional"/>
+  </xs:complexType>
+
+  <!-- Resource Type Definition -->
+  <xs:complexType name="ResourceType">
+    <xs:sequence>
+      <xs:element name="metadata" type="imscp:MetadataType" minOccurs="0"/>
+      <xs:element name="file" type="imscp:FileType" minOccurs="0" maxOccurs="unbounded"/>
+      <xs:element name="dependency" type="imscp:DependencyType" minOccurs="0" maxOccurs="unbounded"/>
+    </xs:sequence>
+    <xs:attribute name="identifier" type="xs:string" use="required"/>
+    <xs:attribute name="type" type="xs:string" use="required"/>
+    <xs:attribute name="href" type="xs:anyURI" use="optional"/>
+    <xs:attribute name="xml:base" type="xs:anyURI" use="optional"/>
+    <xs:attribute name="adlcp:scormtype" type="xs:string" use="optional"/>
+  </xs:complexType>
+
+  <!-- File Type Definition -->
+  <xs:complexType name="FileType">
+    <xs:sequence>
+      <xs:element name="metadata" type="imscp:MetadataType" minOccurs="0"/>
+    </xs:sequence>
+    <xs:attribute name="href" type="xs:anyURI" use="required"/>
+  </xs:complexType>
+
+  <!-- Dependency Type Definition -->
+  <xs:complexType name="DependencyType">
+    <xs:attribute name="identifierref" type="xs:string" use="required"/>
+  </xs:complexType>
+
+  <!-- QTI-specific Resource Types -->
+  <xs:simpleType name="QTIResourceType">
+    <xs:restriction base="xs:string">
+      <xs:enumeration value="imsqti_test_xmlv3p0"/>
+      <xs:enumeration value="imsqti_assessment_xmlv3p0"/>
+      <xs:enumeration value="imsqti_item_xmlv3p0"/>
+      <xs:enumeration value="webcontent"/>
+      <xs:enumeration value="associatedcontent/imsqti_item_xmlv3p0"/>
+    </xs:restriction>
+  </xs:simpleType>
+
+  <!-- Common MIME Types for QTI Resources -->
+  <xs:simpleType name="MimeType">
+    <xs:restriction base="xs:string">
+      <xs:enumeration value="text/xml"/>
+      <xs:enumeration value="application/xml"/>
+      <xs:enumeration value="text/html"/>
+      <xs:enumeration value="application/xhtml+xml"/>
+      <xs:enumeration value="text/css"/>
+      <xs:enumeration value="application/javascript"/>
+      <xs:enumeration value="image/png"/>
+      <xs:enumeration value="image/jpeg"/>
+      <xs:enumeration value="image/gif"/>
+      <xs:enumeration value="image/svg+xml"/>
+      <xs:enumeration value="audio/mpeg"/>
+      <xs:enumeration value="audio/wav"/>
+      <xs:enumeration value="video/mp4"/>
+      <xs:enumeration value="video/webm"/>
+    </xs:restriction>
+  </xs:simpleType>
+
+  <!-- Language Code Type -->
+  <xs:simpleType name="LanguageType">
+    <xs:restriction base="xs:language"/>
+  </xs:simpleType>
+
+  <!-- Duration Type (ISO 8601) -->
+  <xs:simpleType name="DurationType">
+    <xs:restriction base="xs:duration"/>
+  </xs:simpleType>
+
+  <!-- Identifier Type -->
+  <xs:simpleType name="IdentifierType">
+    <xs:restriction base="xs:string">
+      <xs:pattern value="[A-Za-z][A-Za-z0-9_\-\.]*"/>
+    </xs:restriction>
+  </xs:simpleType>
+
+  <!-- URI Reference Type -->
+  <xs:simpleType name="URIType">
+    <xs:restriction base="xs:anyURI"/>
+  </xs:simpleType>
+
+</xs:schema>

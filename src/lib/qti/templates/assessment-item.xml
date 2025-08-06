@@ -1,0 +1,179 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<qti-assessment-item
+    xmlns="http://www.imsglobal.org/xsd/imsqtiasi_v3p0"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xsi:schemaLocation="http://www.imsglobal.org/xsd/imsqtiasi_v3p0 https://purl.imsglobal.org/spec/qti/v3p0/schema/xsd/imsqti_asiv3p0.xsd"
+    identifier="{{ITEM_IDENTIFIER}}"
+    title="{{ITEM_TITLE}}"
+    adaptive="false"
+    time-dependent="false">
+
+    <!-- Response declaration for student answers -->
+    <qti-response-declaration identifier="RESPONSE" cardinality="{{RESPONSE_CARDINALITY}}" base-type="{{RESPONSE_BASE_TYPE}}">
+        {{#if CORRECT_RESPONSE}}
+        <qti-correct-response>
+            {{#each CORRECT_RESPONSE.values}}
+            <qti-value>{{this}}</qti-value>
+            {{/each}}
+        </qti-correct-response>
+        {{/if}}
+        
+        {{#if MAPPING}}
+        <qti-mapping default-value="{{MAPPING.defaultValue}}" {{#if MAPPING.lowerBound}}lower-bound="{{MAPPING.lowerBound}}"{{/if}} {{#if MAPPING.upperBound}}upper-bound="{{MAPPING.upperBound}}"{{/if}}>
+            {{#each MAPPING.mapEntries}}
+            <qti-map-entry map-key="{{this.mapKey}}" mapped-value="{{this.mappedValue}}" {{#if this.caseSensitive}}case-sensitive="{{this.caseSensitive}}"{{/if}} />
+            {{/each}}
+        </qti-mapping>
+        {{/if}}
+    </qti-response-declaration>
+
+    <!-- Outcome declaration for scoring -->
+    <qti-outcome-declaration identifier="SCORE" cardinality="single" base-type="float">
+        <qti-default-value>
+            <qti-value>0</qti-value>
+        </qti-default-value>
+    </qti-outcome-declaration>
+
+    <qti-outcome-declaration identifier="MAXSCORE" cardinality="single" base-type="float">
+        <qti-default-value>
+            <qti-value>{{MAX_SCORE}}</qti-value>
+        </qti-default-value>
+    </qti-outcome-declaration>
+
+    <!-- Feedback outcome declarations -->
+    {{#if INCLUDE_FEEDBACK}}
+    <qti-outcome-declaration identifier="FEEDBACK" cardinality="single" base-type="identifier">
+        <qti-default-value>
+            <qti-value>none</qti-value>
+        </qti-default-value>
+    </qti-outcome-declaration>
+    {{/if}}
+
+    <!-- Time limits for this item (optional) -->
+    {{#if TIME_LIMITS}}
+    <qti-time-limits max-time="{{TIME_LIMITS}}" />
+    {{/if}}
+
+    <!-- Item body containing the question and interaction -->
+    <qti-item-body>
+        <!-- Story context (if applicable) -->
+        {{#if STORY_CONTEXT}}
+        <div class="story-context">
+            <h3>Story Section</h3>
+            <div class="story-content">
+                {{STORY_CONTEXT}}
+            </div>
+        </div>
+        {{/if}}
+
+        <!-- Question prompt -->
+        <div class="question-prompt">
+            <p><strong>{{QUESTION_TEXT}}</strong></p>
+        </div>
+
+        <!-- Interaction based on type -->
+        {{#if_eq INTERACTION_TYPE "choiceInteraction"}}
+        <qti-choice-interaction response-identifier="RESPONSE" max-choices="{{MAX_CHOICES}}" {{#if MIN_CHOICES}}min-choices="{{MIN_CHOICES}}"{{/if}} {{#if SHUFFLE}}shuffle="{{SHUFFLE}}"{{/if}}>
+            {{#if PROMPT}}
+            <qti-prompt>{{PROMPT}}</qti-prompt>
+            {{/if}}
+            {{#each SIMPLE_CHOICES}}
+            <qti-simple-choice identifier="{{this.identifier}}" {{#if this.fixed}}fixed="{{this.fixed}}"{{/if}}>
+                {{this.content}}
+            </qti-simple-choice>
+            {{/each}}
+        </qti-choice-interaction>
+        {{/if_eq}}
+
+        {{#if_eq INTERACTION_TYPE "textEntryInteraction"}}
+        <qti-text-entry-interaction response-identifier="RESPONSE" {{#if EXPECTED_LENGTH}}expected-length="{{EXPECTED_LENGTH}}"{{/if}} {{#if PATTERN_MASK}}pattern-mask="{{PATTERN_MASK}}"{{/if}}>
+            {{#if PLACEHOLDER_TEXT}}
+            <qti-prompt>{{PLACEHOLDER_TEXT}}</qti-prompt>
+            {{/if}}
+        </qti-text-entry-interaction>
+        {{/if_eq}}
+
+        {{#if_eq INTERACTION_TYPE "extendedTextInteraction"}}
+        <qti-extended-text-interaction response-identifier="RESPONSE" {{#if EXPECTED_LINES}}expected-lines="{{EXPECTED_LINES}}"{{/if}} {{#if MAX_STRINGS}}max-strings="{{MAX_STRINGS}}"{{/if}} {{#if MIN_STRINGS}}min-strings="{{MIN_STRINGS}}"{{/if}}>
+            {{#if PLACEHOLDER_TEXT}}
+            <qti-prompt>{{PLACEHOLDER_TEXT}}</qti-prompt>
+            {{/if}}
+        </qti-extended-text-interaction>
+        {{/if_eq}}
+    </qti-item-body>
+
+    <!-- Response processing for scoring -->
+    <qti-response-processing>
+        {{#if RESPONSE_PROCESSING_TEMPLATE}}
+        <!-- Use template-based processing -->
+        <qti-response-processing-template identifier="{{RESPONSE_PROCESSING_TEMPLATE}}" />
+        {{else}}
+        <!-- Custom response processing -->
+        <qti-response-condition>
+            <qti-response-if>
+                {{#if_eq INTERACTION_TYPE "choiceInteraction"}}
+                <qti-match>
+                    <qti-variable identifier="RESPONSE" />
+                    <qti-correct />
+                </qti-match>
+                {{/if_eq}}
+                {{#if_eq INTERACTION_TYPE "textEntryInteraction"}}
+                <qti-string-match case-sensitive="false">
+                    <qti-variable identifier="RESPONSE" />
+                    <qti-correct />
+                </qti-string-match>
+                {{/if_eq}}
+                {{#if_eq INTERACTION_TYPE "extendedTextInteraction"}}
+                <!-- Extended text items typically require manual scoring -->
+                <qti-gte>
+                    <qti-variable identifier="SCORE" />
+                    <qti-base-value base-type="float">0</qti-base-value>
+                </qti-gte>
+                {{/if_eq}}
+                
+                <!-- Set correct response score -->
+                <qti-set-outcome-value identifier="SCORE">
+                    <qti-variable identifier="MAXSCORE" />
+                </qti-set-outcome-value>
+                
+                {{#if INCLUDE_FEEDBACK}}
+                <qti-set-outcome-value identifier="FEEDBACK">
+                    <qti-base-value base-type="identifier">correct</qti-base-value>
+                </qti-set-outcome-value>
+                {{/if}}
+            </qti-response-if>
+            
+            <qti-response-else>
+                <!-- Set incorrect response score -->
+                <qti-set-outcome-value identifier="SCORE">
+                    <qti-base-value base-type="float">0</qti-base-value>
+                </qti-set-outcome-value>
+                
+                {{#if INCLUDE_FEEDBACK}}
+                <qti-set-outcome-value identifier="FEEDBACK">
+                    <qti-base-value base-type="identifier">incorrect</qti-base-value>
+                </qti-set-outcome-value>
+                {{/if}}
+            </qti-response-else>
+        </qti-response-condition>
+        {{/if}}
+    </qti-response-processing>
+
+    <!-- Feedback (optional) -->
+    {{#if INCLUDE_FEEDBACK}}
+    <qti-modal-feedback outcome-identifier="FEEDBACK" identifier="correct" show-hide="show">
+        <div class="feedback correct">
+            <h4>Correct!</h4>
+            <p>{{FEEDBACK_CORRECT}}</p>
+        </div>
+    </qti-modal-feedback>
+
+    <qti-modal-feedback outcome-identifier="FEEDBACK" identifier="incorrect" show-hide="show">
+        <div class="feedback incorrect">
+            <h4>Not quite right</h4>
+            <p>{{FEEDBACK_INCORRECT}}</p>
+        </div>
+    </qti-modal-feedback>
+    {{/if}}
+
+</qti-assessment-item>
