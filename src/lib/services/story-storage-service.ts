@@ -8,6 +8,7 @@ import {
   type CreateStimulusRequest 
 } from '@/lib/api/qti-client';
 import type { StoryGenerationResponse } from '@/lib/ai/types';
+import { AssessmentService, type StoryAssessment } from './assessment-service';
 
 export interface StoredStory {
   id: string;
@@ -23,13 +24,14 @@ export interface StoredStory {
   wordCount?: number;
   readingTime?: string;
   sections?: any[];
+  assessments?: StoryAssessment[];
   metadata?: Record<string, any>;
 }
 
 export class StoryStorageService {
   
   /**
-   * Save a generated story to QTI Stimuli API
+   * Save a generated story to QTI Stimuli API and create assessment tests
    */
   static async saveStory(
     storyResponse: StoryGenerationResponse,
@@ -41,7 +43,7 @@ export class StoryStorageService {
       studentId: string;
       storyId: string;
     }
-  ): Promise<Stimulus> {
+  ): Promise<{ stimulus: Stimulus; assessments: StoryAssessment[] }> {
     try {
       // Convert story to QTI Stimulus format
       const stimulusData: CreateStimulusRequest = {
@@ -49,7 +51,11 @@ export class StoryStorageService {
         title: storyResponse.title,
         description: `A ${storyMetadata.universe} adventure featuring ${storyMetadata.character} - ${storyMetadata.spark}`,
         content: JSON.stringify({
-          sections: storyResponse.sections,
+          sections: storyResponse.sections.map(section => ({
+            ...section,
+            // Remove questions from sections since they'll be stored separately as assessments
+            questions: []
+          })),
           wordCount: storyResponse.wordCount,
           readingTime: storyResponse.readingTime,
         }),
@@ -90,7 +96,43 @@ export class StoryStorageService {
       
       console.log('✅ Story saved successfully to QTI API:', savedStimulus.id);
       
-      return savedStimulus;
+      // Create assessment tests for comprehension questions
+      console.log('📝 Creating assessment tests for story sections...');
+      const assessments = await AssessmentService.createStoryAssessments(
+        storyMetadata.storyId,
+        savedStimulus.id,
+        storyResponse.title,
+        storyResponse.sections,
+        {
+          universe: storyMetadata.universe,
+          character: storyMetadata.character,
+          spark: storyMetadata.spark,
+          gradeLevel: storyMetadata.gradeLevel,
+          studentId: storyMetadata.studentId
+        }
+      );
+      
+      console.log(`✅ Created ${assessments.length} assessment tests for story`);
+      
+      // Update stimulus metadata with assessment IDs for future retrieval
+      if (assessments.length > 0) {
+        console.log('📝 Updating stimulus with assessment IDs...');
+        try {
+          await updateStimulus(savedStimulus.id, {
+            metadata: {
+              ...savedStimulus.metadata,
+              assessmentIds: assessments.map(a => a.id),
+              hasAssessments: true
+            }
+          });
+          console.log('✅ Stimulus updated with assessment IDs');
+        } catch (updateError) {
+          console.warn('⚠️ Failed to update stimulus with assessment IDs:', updateError);
+          // Don't fail the whole operation for this
+        }
+      }
+      
+      return { stimulus: savedStimulus, assessments };
     } catch (error) {
       console.error('❌ Failed to save story to QTI API:', error);
       throw error;
@@ -98,12 +140,50 @@ export class StoryStorageService {
   }
 
   /**
-   * Get a story by stimulus ID
+   * Get a story by stimulus ID with its assessments
    */
   static async getStory(stimulusId: string): Promise<StoredStory | null> {
     try {
+      console.log('📖 Loading story from QTI API:', stimulusId);
+      
       const stimulus = await getStimulus(stimulusId);
-      return this.convertStimulusToStory(stimulus);
+      const story = this.convertStimulusToStory(stimulus);
+      
+      if (!story) {
+        return null;
+      }
+      
+      // Load assessments if they exist
+      if (stimulus.metadata?.assessmentIds && Array.isArray(stimulus.metadata.assessmentIds)) {
+        console.log('📝 Loading assessments for story...');
+        try {
+          const assessmentPromises = stimulus.metadata.assessmentIds.map((id: string) => 
+            AssessmentService.getSectionAssessment(id)
+          );
+          
+          const assessments = await Promise.all(assessmentPromises);
+          const validAssessments = assessments.filter(a => a !== null) as StoryAssessment[];
+          
+          // Add questions back to sections from assessments
+          if (validAssessments.length > 0 && story.sections) {
+            story.sections = story.sections.map((section, index) => {
+              const assessment = validAssessments.find(a => a.metadata?.sectionIndex === index);
+              return {
+                ...section,
+                questions: assessment?.questions || []
+              };
+            });
+          }
+          
+          story.assessments = validAssessments;
+          console.log(`✅ Loaded ${validAssessments.length} assessments for story`);
+        } catch (assessmentError) {
+          console.warn('⚠️ Failed to load assessments, story will have no questions:', assessmentError);
+          story.assessments = [];
+        }
+      }
+      
+      return story;
     } catch (error) {
       console.error('Failed to get story:', error);
       return null;
@@ -138,11 +218,28 @@ export class StoryStorageService {
   }
 
   /**
-   * Delete a story
+   * Delete a story and its assessments
    */
   static async deleteStory(stimulusId: string): Promise<void> {
     try {
       console.log('🗑️ Deleting story from QTI API:', stimulusId);
+      
+      // First, get the story to find assessment IDs
+      const stimulus = await getStimulus(stimulusId);
+      
+      // Delete assessments if they exist
+      if (stimulus.metadata?.assessmentIds && Array.isArray(stimulus.metadata.assessmentIds)) {
+        console.log('📝 Deleting story assessments...');
+        try {
+          await AssessmentService.deleteStoryAssessments(stimulus.metadata.assessmentIds);
+          console.log('✅ Story assessments deleted successfully');
+        } catch (assessmentError) {
+          console.warn('⚠️ Failed to delete some assessments:', assessmentError);
+          // Continue with story deletion even if assessment deletion fails
+        }
+      }
+      
+      // Delete the story stimulus
       await deleteStimulus(stimulusId);
       console.log('✅ Story deleted successfully');
     } catch (error) {

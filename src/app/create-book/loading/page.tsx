@@ -140,9 +140,9 @@ export default function StoryLoadingPage() {
       
       console.log('✅ AI story generation completed!')
       
-      // Save complete story to QTI Stimuli API
+      // Save complete story to QTI Stimuli API and create assessment tests
       console.log('💾 Saving story to QTI API...')
-      const savedStimulus = await StoryStorageService.saveStory(storyResponse, {
+      const { stimulus: savedStimulus, assessments } = await StoryStorageService.saveStory(storyResponse, {
         universe: universe,
         character: character,
         spark: spark,
@@ -151,7 +151,8 @@ export default function StoryLoadingPage() {
         storyId: storyId
       })
       
-      console.log('✅ Story saved to QTI API successfully!')
+      console.log('✅ Story and assessments saved to QTI API successfully!')
+      console.log(`📚 Created ${assessments.length} assessment tests`)
       
       // Navigate to reading interface using the stimulus ID
       router.push(`/book/${savedStimulus.id}`)
