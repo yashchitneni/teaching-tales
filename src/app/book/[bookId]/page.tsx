@@ -193,17 +193,7 @@ export default function StoryReadingPage() {
               ))}
             </div>
 
-            {/* Continue Button - Only show if current section is complete and not on assessment */}
-            {!showAssessment && currentSectionIndex < story.sections.length - 1 && (
-              <div className="mt-8 text-center">
-                <Button
-                  onClick={handleContinueToNextSection}
-                  className="bg-blue-600 hover:bg-blue-700 text-white px-8 py-3"
-                >
-                  Continue to Next Section
-                </Button>
-              </div>
-            )}
+
 
             {/* Story Complete Message */}
             {showAssessment && currentSectionIndex === story.sections.length - 1 && (
