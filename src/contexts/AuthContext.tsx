@@ -29,23 +29,38 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const checkAuth = async () => {
     setIsLoading(true);
     try {
+      // First try to get user from server using HttpOnly cookies
+      const response = await fetch('/api/auth/me', {
+        credentials: 'include'
+      });
+      
+      if (response.ok) {
+        const data = await response.json();
+        if (data.success && data.data && data.data.user) {
+          console.log('[AuthContext] Got user from server:', data.data.user);
+          setUser(data.data.user);
+          return;
+        }
+      }
+      
+      // Fallback to localStorage token check
       const token = sso.getToken();
       if (token) {
-        const response = await sso.request('/api/auth/me');
-        if (response.ok) {
-          const data = await response.json();
+        const ssoResponse = await sso.request('/api/auth/me');
+        if (ssoResponse.ok) {
+          const data = await ssoResponse.json();
           setUser(data.data.user);
           // Set cookie for middleware
           document.cookie = `timeback_token=${token}; path=/; max-age=86400`;
         } else {
           // Token is invalid or expired
-          console.log('Auth check failed, clearing token. Status:', response.status);
+          console.log('Auth check failed, clearing token. Status:', ssoResponse.status);
           setUser(null);
           sso.clearToken();
           document.cookie = 'timeback_token=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT';
           
           // If we get a 401, don't try SSO check, just stay logged out
-          if (response.status === 401) {
+          if (ssoResponse.status === 401) {
             return;
           }
         }
@@ -72,20 +87,27 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const login = async (email: string, password: string) => {
     console.log('[AuthContext] Login called with:', { email, password: '***' });
     try {
-      console.log('[AuthContext] Calling sso.login...');
-      const result = await sso.login(email, password);
-      console.log('[AuthContext] SSO login result:', result);
-      if (result.success && result.user) {
+      // Use server API route which sets HttpOnly cookies
+      const response = await fetch('/api/auth/login', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ email, password }),
+        credentials: 'include'
+      });
+      
+      const data = await response.json();
+      console.log('[AuthContext] Login response:', data);
+      
+      if (data.success && data.data && data.data.user) {
         console.log('[AuthContext] Login successful, setting user');
-        setUser(result.user);
-        // Set cookie for middleware
-        if (result.token) {
-          document.cookie = `timeback_token=${result.token}; path=/; max-age=86400`;
-        }
+        setUser(data.data.user);
         return { success: true };
       }
-      console.log('[AuthContext] Login failed - no success or user');
-      return { success: false, error: 'Invalid credentials' };
+      
+      console.log('[AuthContext] Login failed');
+      return { success: false, error: data.error?.message || 'Invalid credentials' };
     } catch (error) {
       console.error('[AuthContext] Login error:', error);
       return { success: false, error: 'Login failed' };

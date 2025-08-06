@@ -14,7 +14,7 @@ interface CreateChildModalProps {
 
 export function CreateChildModal({ onClose }: CreateChildModalProps) {
   const router = useRouter()
-  const { user } = useAuth()
+  const { user, isLoading: authLoading } = useAuth()
   const [isLoading, setIsLoading] = useState(false)
   const [formData, setFormData] = useState({
     firstName: '',
@@ -52,9 +52,28 @@ export function CreateChildModal({ onClose }: CreateChildModalProps) {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
+    console.log('Form submitted!');
+    console.log('Form data:', formData);
+    console.log('User:', user);
     
-    if (!validateForm() || !user) return
+    if (!validateForm()) {
+      console.log('Form validation failed');
+      return;
+    }
+    
+    if (authLoading) {
+      console.log('Auth is still loading!');
+      alert('Please wait for authentication to complete');
+      return;
+    }
+    
+    if (!user) {
+      console.log('No user found!');
+      alert('You must be logged in to create a student account. Please refresh the page and try logging in again.');
+      return;
+    }
 
+    console.log('Starting student creation...');
     setIsLoading(true)
     try {
       // Create student profile using OneRoster API (TimeBack v1.2 format)
@@ -73,12 +92,16 @@ export function CreateChildModal({ onClose }: CreateChildModalProps) {
         }
       }
 
-      await apiClient.createOneRosterUser(studentData)
+      const response = await apiClient.createOneRosterUser(studentData)
+      console.log('Student created successfully:', response)
 
       // Navigate to book creation
       router.push('/create-book/universe')
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error creating student:', error)
+      console.error('Error details:', error.response?.data || error.message)
+      // Show error to user
+      alert(`Failed to create student: ${error.response?.data?.error?.message || error.message || 'Unknown error'}`)
     } finally {
       setIsLoading(false)
     }
@@ -196,6 +219,12 @@ export function CreateChildModal({ onClose }: CreateChildModalProps) {
 
             <Button
               type="submit"
+              onClick={(e) => {
+                console.log('Create Account button clicked!');
+                console.log('isFormValid:', isFormValid);
+                console.log('isLoading:', isLoading);
+                // Let the form's onSubmit handle it
+              }}
               className={`w-full ${
                 isFormValid 
                   ? 'bg-blue-600 hover:bg-blue-700' 

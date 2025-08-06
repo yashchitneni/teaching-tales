@@ -47,7 +47,7 @@ class ApiClient {
 
   constructor() {
     this.client = axios.create({
-      baseURL: process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080',
+      baseURL: process.env.NEXT_PUBLIC_API_URL || '/api',
       timeout: 30000,
       headers: {
         'Content-Type': 'application/json',
@@ -58,29 +58,9 @@ class ApiClient {
     // Request interceptor
     this.client.interceptors.request.use(
       async (config) => {
-        // Try to get TimeBack token from cookies (SSO)
-        if (typeof window !== 'undefined') {
-          try {
-            // First check for Timeback access token in cookies
-            const cookies = document.cookie.split(';');
-            const timebackToken = cookies
-              .find(cookie => cookie.trim().startsWith('timeback-access-token='))
-              ?.split('=')[1];
-            
-            if (timebackToken) {
-              config.headers.Authorization = `Bearer ${timebackToken}`;
-            } else {
-              // Fallback: check localStorage for any stored tokens
-              const storageKey = 'timeback-auth-token';
-              const storedToken = localStorage.getItem(storageKey);
-              if (storedToken) {
-                config.headers.Authorization = `Bearer ${storedToken}`;
-              }
-            }
-          } catch (e) {
-            // Ignore errors, server will handle auth via cookies
-          }
-        }
+        // HttpOnly cookies are automatically sent by the browser
+        // No need to manually add them to headers
+        // The server will read the cookies and handle authentication
         return config;
       },
       (error) => {
