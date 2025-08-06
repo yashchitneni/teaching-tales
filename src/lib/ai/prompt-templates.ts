@@ -292,7 +292,13 @@ GRADE 6-8 SPECIFIC REQUIREMENTS:
         try {
           return JSON.parse(codeBlockMatch[1]);
         } catch (innerError) {
-          throw new Error(`Failed to parse JSON from code block: ${innerError.message}`);
+          // Try to fix common JSON issues in code blocks
+          const fixedJson = this.fixCommonJsonIssues(codeBlockMatch[1]);
+          try {
+            return JSON.parse(fixedJson);
+          } catch (finalError) {
+            throw new Error(`Failed to parse JSON from code block: ${finalError.message}`);
+          }
         }
       }
       
@@ -302,11 +308,56 @@ GRADE 6-8 SPECIFIC REQUIREMENTS:
         try {
           return JSON.parse(jsonMatch[0]);
         } catch (innerError) {
-          throw new Error(`Failed to parse extracted JSON: ${innerError.message}`);
+          // Try to fix common JSON issues in extracted content
+          const fixedJson = this.fixCommonJsonIssues(jsonMatch[0]);
+          try {
+            return JSON.parse(fixedJson);
+          } catch (finalError) {
+            throw new Error(`Failed to parse extracted JSON: ${finalError.message}`);
+          }
         }
       }
       
       throw new Error(`No valid JSON found in response: ${error.message}`);
     }
+  }
+
+  private static fixCommonJsonIssues(jsonStr: string): string {
+    let fixed = jsonStr;
+    
+    // Remove trailing commas before closing braces/brackets
+    fixed = fixed.replace(/,(\s*[}\]])/g, '$1');
+    
+    // Fix unescaped control characters in strings
+    fixed = fixed.replace(/\\n/g, '\\\\n');  // Fix literal \n
+    fixed = fixed.replace(/\\t/g, '\\\\t');  // Fix literal \t
+    fixed = fixed.replace(/\\r/g, '\\\\r');  // Fix literal \r
+    
+    // Fix unescaped newlines and tabs in JSON strings
+    fixed = fixed.replace(/"([^"]*)\n([^"]*)":/g, '"$1\\n$2":');
+    fixed = fixed.replace(/"([^"]*)\t([^"]*)":/g, '"$1\\t$2":');
+    fixed = fixed.replace(/"([^"]*)\r([^"]*)":/g, '"$1\\r$2":');
+    
+    // Fix unescaped quotes in strings (common AI mistake)
+    fixed = fixed.replace(/"([^"]*)"([^"]*)"([^"]*)":/g, '"$1\\"$2\\"$3":');
+    
+    // Fix missing commas between object properties (look for }" followed by ")
+    fixed = fixed.replace(/}(\s*")/g, '},$1');
+    fixed = fixed.replace(/](\s*")/g, '],$1');
+    
+    // Fix missing quotes around property names
+    fixed = fixed.replace(/([{,]\s*)([a-zA-Z_][a-zA-Z0-9_]*)\s*:/g, '$1"$2":');
+    
+    // Fix control characters within string values
+    fixed = fixed.replace(/:\s*"([^"]*[\x00-\x1F][^"]*)"([,}])/g, (match, content, ending) => {
+      const cleaned = content
+        .replace(/\n/g, '\\n')
+        .replace(/\t/g, '\\t')
+        .replace(/\r/g, '\\r')
+        .replace(/[\x00-\x08\x0B\x0C\x0E-\x1F]/g, ''); // Remove other control chars
+      return `: "${cleaned}"${ending}`;
+    });
+    
+    return fixed;
   }
 }

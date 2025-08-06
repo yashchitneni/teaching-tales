@@ -50,6 +50,7 @@ export class StoryGenerationService {
       const rawResponse = await this.geminiClient.generateContent(prompt);
       
       console.log('✅ Raw response received, parsing JSON...');
+      console.log('📄 Raw AI Response (first 500 chars):', rawResponse.substring(0, 500));
 
       // Parse the response
       const parsedResponse = PromptTemplates.parseAIResponse(rawResponse);
