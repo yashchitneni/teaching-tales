@@ -37,7 +37,8 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const { accessToken, idToken, refreshToken, expiresIn } = loginData.data.tokens;
+    // TimeBack API returns tokens directly in data, not in data.tokens (per api-spec.json)
+    const { accessToken, idToken, refreshToken, expiresIn } = loginData.data;
 
     // Get user info from TimeBack
     const userResponse = await fetch(`${TIMEBACK_API_URL}/api/auth/me`, {
