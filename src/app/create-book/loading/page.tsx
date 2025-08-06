@@ -2,7 +2,7 @@
 
 export const dynamic = 'force-dynamic'
 
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useRef } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { TopNavWithTabs } from '@/components/TopNavWithTabs'
 import { FeedbackButton } from '@/components/FeedbackButton'
@@ -28,6 +28,7 @@ export default function StoryLoadingPage() {
   const [messageIndex, setMessageIndex] = useState(0)
   const [bookId, setBookId] = useState<string | null>(null)
   const [error, setError] = useState<string | null>(null)
+  const isGeneratingRef = useRef(false)
 
   const universe = searchParams.get('universe') || ''
   const character = searchParams.get('character') || ''
@@ -39,7 +40,14 @@ export default function StoryLoadingPage() {
       return
     }
 
-    // Start the story generation process
+    // Prevent multiple calls by checking if generation is already in progress
+    if (isGeneratingRef.current) {
+      console.log('Story generation already in progress, skipping...')
+      return
+    }
+
+    // Mark as generating and start the story generation process
+    isGeneratingRef.current = true
     generateStory()
   }, [user])
 
