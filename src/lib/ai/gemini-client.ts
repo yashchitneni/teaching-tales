@@ -1,6 +1,7 @@
 import { GoogleGenerativeAI, GenerativeModel, GenerationConfig, SafetySetting } from '@google/generative-ai';
 import { GEMINI_CONFIG } from '@/lib/config';
 import { GeminiGenerationConfig, GeminiSafetySettings, AIServiceError } from './types';
+import { RetryManager } from './retry-manager';
 
 export class GeminiClient {
   private genAI: GoogleGenerativeAI;
@@ -53,63 +54,71 @@ export class GeminiClient {
     prompt: string,
     config?: GeminiGenerationConfig
   ): Promise<string> {
-    try {
-      // Create a new model instance with custom config if provided
-      const modelToUse = config 
-        ? this.genAI.getGenerativeModel({
-            model: GEMINI_CONFIG.MODEL_NAME,
-            generationConfig: { ...this.getDefaultGenerationConfig(), ...config },
-            safetySettings: this.getDefaultSafetySettings(),
-          })
-        : this.model;
+    const retryOptions = RetryManager.createRetryOptions({
+      maxRetries: GEMINI_CONFIG.MAX_RETRIES,
+      baseDelay: GEMINI_CONFIG.BASE_DELAY,
+      maxDelay: GEMINI_CONFIG.MAX_DELAY
+    });
 
-      const result = await modelToUse.generateContent(prompt);
-      const response = await result.response;
-      
-      if (!response) {
-        throw this.createAIServiceError('No response received from Gemini API', 'NO_RESPONSE', false);
-      }
+    return RetryManager.executeWithRetry(async () => {
+      try {
+        // Create a new model instance with custom config if provided
+        const modelToUse = config 
+          ? this.genAI.getGenerativeModel({
+              model: GEMINI_CONFIG.MODEL_NAME,
+              generationConfig: { ...this.getDefaultGenerationConfig(), ...config },
+              safetySettings: this.getDefaultSafetySettings(),
+            })
+          : this.model;
 
-      const text = response.text();
-      
-      if (!text || text.trim().length === 0) {
-        throw this.createAIServiceError('Empty response received from Gemini API', 'EMPTY_RESPONSE', true);
-      }
-
-      return text;
-    } catch (error) {
-      if (error instanceof Error) {
-        // Handle specific Gemini API errors
-        if (error.message.includes('API_KEY')) {
-          throw this.createAIServiceError('Invalid API key', 'INVALID_API_KEY', false, error);
-        }
+        const result = await modelToUse.generateContent(prompt);
+        const response = await result.response;
         
-        if (error.message.includes('quota') || error.message.includes('rate limit')) {
-          throw this.createAIServiceError('Rate limit exceeded', 'RATE_LIMIT', true, error);
+        if (!response) {
+          throw this.createAIServiceError('No response received from Gemini API', 'NO_RESPONSE', false);
         }
+
+        const text = response.text();
         
-        if (error.message.includes('safety') || error.message.includes('blocked')) {
-          throw this.createAIServiceError('Content blocked by safety filters', 'CONTENT_BLOCKED', false, error);
+        if (!text || text.trim().length === 0) {
+          throw this.createAIServiceError('Empty response received from Gemini API', 'EMPTY_RESPONSE', true);
         }
 
-        if (error.message.includes('timeout') || error.message.includes('network')) {
-          throw this.createAIServiceError('Network error', 'NETWORK_ERROR', true, error);
+        return text;
+      } catch (error) {
+        if (error instanceof Error) {
+          // Handle specific Gemini API errors
+          if (error.message.includes('API_KEY')) {
+            throw this.createAIServiceError('Invalid API key', 'INVALID_API_KEY', false, error);
+          }
+          
+          if (error.message.includes('quota') || error.message.includes('rate limit')) {
+            throw this.createAIServiceError('Rate limit exceeded', 'RATE_LIMIT', true, error);
+          }
+          
+          if (error.message.includes('safety') || error.message.includes('blocked')) {
+            throw this.createAIServiceError('Content blocked by safety filters', 'CONTENT_BLOCKED', false, error);
+          }
+
+          if (error.message.includes('timeout') || error.message.includes('network')) {
+            throw this.createAIServiceError('Network error', 'NETWORK_ERROR', true, error);
+          }
         }
-      }
 
-      // Re-throw if it's already an AIServiceError
-      if (this.isAIServiceError(error)) {
-        throw error;
-      }
+        // Re-throw if it's already an AIServiceError
+        if (this.isAIServiceError(error)) {
+          throw error;
+        }
 
-      // Generic error handling
-      throw this.createAIServiceError(
-        `Gemini API error: ${error instanceof Error ? error.message : 'Unknown error'}`,
-        'GEMINI_API_ERROR',
-        true,
-        error
-      );
-    }
+        // Generic error handling
+        throw this.createAIServiceError(
+          `Gemini API error: ${error instanceof Error ? error.message : 'Unknown error'}`,
+          'GEMINI_API_ERROR',
+          true,
+          error
+        );
+      }
+    }, retryOptions);
   }
 
   async validateConnection(): Promise<boolean> {
