@@ -69,7 +69,7 @@ export function TopNavWithTabs() {
             </button>
 
             {/* Level */}
-            <Link href="/my-stats" className="min-w-8 h-9 max-sm:h-7 p-2 cursor-pointer bg-blue-100 rounded-full border border-yellow-500/20 justify-start items-center gap-1.5 inline-flex" title="Level 0: 30/60 XP">
+            <Link href="/my-stats" className="min-w-8 h-9 max-sm:h-7 p-2 cursor-pointer bg-blue-100 rounded-full border border-gray-300/20 justify-start items-center gap-1.5 inline-flex" title="Level 0: 30/60 XP">
               <div className="w-6 h-6 relative">
                 <div className="shrink-0 self-start w-4 aspect-square absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2">
                   <svg className="w-full h-full" viewBox="0 0 16 16" fill="#FFC107">
@@ -85,14 +85,14 @@ export function TopNavWithTabs() {
             </Link>
 
             {/* Coins */}
-            <Link href="/redeem-rewards" className="min-w-8 h-9 max-sm:h-7 p-2 cursor-pointer bg-yellow-100 hover:bg-yellow-200 rounded-full border border-yellow-500/20 justify-start items-center gap-1.5 inline-flex transition-colors" title="Redeem coins for Robux">
+            <Link href="/redeem-rewards" className="min-w-8 h-9 max-sm:h-7 p-2 cursor-pointer bg-gray-100 hover:bg-gray-200 rounded-full border border-gray-300/20 justify-start items-center gap-1.5 inline-flex transition-colors" title="Redeem coins for Robux">
               <div className="w-4 h-4 relative">
                 <svg className="w-full h-full" viewBox="0 0 16 16" fill="#FFC107">
                   <circle cx="8" cy="8" r="7" />
                   <text x="8" y="11" textAnchor="middle" fill="#FFF" fontSize="10" fontWeight="bold">$</text>
                 </svg>
               </div>
-              <div className="text-center text-yellow-600 text-base font-bold">867</div>
+                              <div className="text-center text-gray-900 text-base font-bold">867</div>
             </Link>
 
             {/* Notification Bell */}

@@ -35,7 +35,7 @@ const choices: ChapterChoice[] = [
 export function ChapterChoices({ onChoiceSelect }: ChapterChoicesProps) {
   return (
     <div className="mt-8">
-      <h2 className="text-2xl font-bold mb-6">What Happens Next?</h2>
+      <h2 className="text-2xl font-bold mb-6 text-gray-900">What Happens Next?</h2>
       
       <div className="grid gap-4">
         {choices.map((choice) => (
@@ -49,7 +49,7 @@ export function ChapterChoices({ onChoiceSelect }: ChapterChoicesProps) {
                 {choice.icon}
               </div>
               <div className="flex-1">
-                <h3 className="font-semibold text-lg mb-1 group-hover:text-blue-600">
+                <h3 className="font-semibold text-lg mb-1 text-gray-900 group-hover:text-blue-600">
                   {choice.title}
                 </h3>
                 <p className="text-gray-600 text-sm">

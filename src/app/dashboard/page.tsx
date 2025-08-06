@@ -55,7 +55,7 @@ export default function DashboardPage() {
       <main className="min-h-[calc(100vh-64px)] px-4 py-8">
         <div className="max-w-4xl mx-auto">
           <div className="flex justify-between items-center mb-6">
-            <h1 className="text-2xl font-bold">Student Dashboard</h1>
+            <h1 className="text-2xl font-bold text-gray-900">Student Dashboard</h1>
             <Button 
               onClick={() => setShowCreateModal(true)}
               className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2"
@@ -79,7 +79,7 @@ export default function DashboardPage() {
                       </span>
                     </div>
                     <div>
-                      <h3 className="font-medium">{student.givenName} {student.familyName}</h3>
+                      <h3 className="font-medium text-gray-900">{student.givenName} {student.familyName}</h3>
                       <p className="text-sm text-gray-500">{student.grades?.[0] || 'No grade'}</p>
                     </div>
                   </div>
@@ -92,7 +92,7 @@ export default function DashboardPage() {
                     </Button>
                     <Button 
                       variant="outline" 
-                      className="flex-1 text-sm"
+                      className="flex-1 text-sm text-gray-900"
                     >
                       View Books
                     </Button>
@@ -111,13 +111,13 @@ export default function DashboardPage() {
                   <div className="w-20 h-24 bg-red-100 rounded-lg border-2 border-red-300 flex items-center justify-center">
                     <div className="w-12 h-12 bg-red-300 rounded-full"></div>
                   </div>
-                  <div className="w-20 h-24 bg-yellow-100 rounded-lg border-2 border-yellow-300 flex items-center justify-center">
-                    <div className="w-12 h-12 bg-yellow-300 rounded-full"></div>
+                  <div className="w-20 h-24 bg-green-100 rounded-lg border-2 border-green-300 flex items-center justify-center">
+                    <div className="w-12 h-12 bg-green-300 rounded-full"></div>
                   </div>
                 </div>
               </div>
 
-              <h2 className="text-xl font-bold mb-4">No Students Yet</h2>
+              <h2 className="text-xl font-bold mb-4 text-gray-900">No Students Yet</h2>
               <p className="text-gray-600 mb-6">
                 Get started by creating an account for a student. This will allow them to 
                 explore and enjoy personalized content tailored to their interests and 

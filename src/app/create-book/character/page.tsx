@@ -76,7 +76,7 @@ export default function CharacterSelectionPage() {
             <div className="flex flex-col gap-3 max-h-full">
               <div className="flex justify-between items-center py-3 sticky top-0 z-10 bg-white">
                 <div className="flex-col justify-start items-start gap-2 inline-flex">
-                  <div className="text-xl font-semibold text-left max-lg:text-base max-lg:font-bold">
+                  <div className="text-xl font-semibold text-left max-lg:text-base max-lg:font-bold text-gray-900">
                     Who will take the lead in your {universeName} adventure?
                   </div>
                   <div className="text-sm leading-5 max-w-[834px] text-neutral-800 text-opacity-70 text-left max-lg:hidden">
@@ -202,7 +202,7 @@ export default function CharacterSelectionPage() {
                                   <div className="relative mb-auto text-left text-base font-medium flex items-end gap-2">
                                     {character.name}
                                     {character.isSpecial && (
-                                      <svg className="text-yellow-400 mb-1 w-4 h-4" fill="currentColor" viewBox="0 0 576 512">
+                                      <svg className="text-gray-400 mb-1 w-4 h-4" fill="currentColor" viewBox="0 0 576 512">
                                         <path d="M309 106c11.4-7 19-19.7 19-34c0-22.1-17.9-40-40-40s-40 17.9-40 40c0 14.4 7.6 27 19 34L209.7 220.6c-9.1 18.2-32.7 23.4-48.6 10.7L72 160c5-6.7 8-15 8-24c0-22.1-17.9-40-40-40S0 113.9 0 136s17.9 40 40 40c.2 0 .5 0 .7 0L86.4 427.4c5.5 30.4 32 52.6 63 52.6H426.6c30.9 0 57.4-22.1 63-52.6L535.3 176c.2 0 .5 0 .7 0c22.1 0 40-17.9 40-40s-17.9-40-40-40s-40 17.9-40 40c0 9 3 17.3 8 24l-89.1 71.3c-15.9 12.7-39.5 7.5-48.6-10.7L309 106z"/>
                                       </svg>
                                     )}

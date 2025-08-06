@@ -100,7 +100,7 @@ export default function UniverseSelectionPage() {
           <div className="flex-1 flex flex-col gap-5 px-4 overflow-hidden bg-white border-b border-solid border-gray-200 border-opacity-30">
             <div className="flex justify-between items-center py-3 sticky top-0 z-10 bg-white">
               <div className="flex-col justify-start items-start gap-2 inline-flex">
-                <div className="text-xl font-semibold text-left max-lg:text-base max-lg:font-bold">
+                <div className="text-xl font-semibold text-left max-lg:text-base max-lg:font-bold text-gray-900">
                   Pick your Book's Universe
                 </div>
                 <div className="text-sm leading-5 max-w-[834px] text-neutral-800 text-opacity-70 text-left max-lg:hidden">

@@ -1,4 +1,4 @@
-import { getAuthToken } from '@/lib/auth/sso';
+import { getAuthToken } from '@/lib/auth/timeback-sso';
 import { authEvents } from '@/lib/auth/auth-events';
 
 interface FetchOptions extends RequestInit {
