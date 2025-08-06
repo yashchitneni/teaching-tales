@@ -1,6 +1,5 @@
-import { API_CONFIG } from '@/lib/config';
-import { getAuthToken } from '@/lib/auth/timeback-sso';
-import { authFetch } from './auth-fetch';
+// Updated to use server-side proxy routes for security
+// See docs/AUTHENTICATION_ARCHITECTURE.md for details
 
 interface TestPart {
   id: string;
@@ -136,8 +135,14 @@ interface AssessmentTestsResponse {
 }
 
 export async function fetchAssessmentTests(limit: number = 100, offset: number = 0): Promise<AssessmentTestsResponse> {
-  const response = await authFetch(
-    `${API_CONFIG.BASE_URL}${API_CONFIG.QTI_BASE_PATH}/assessment-tests?limit=${limit}&offset=${offset}`
+  const response = await fetch(
+    `/api/ims/qti/v3p0/assessment-tests?limit=${limit}&offset=${offset}`,
+    {
+      credentials: 'include',  // Include HttpOnly cookies
+      headers: {
+        'Accept': 'application/json',
+      }
+    }
   );
 
   if (!response.ok) {
@@ -148,8 +153,14 @@ export async function fetchAssessmentTests(limit: number = 100, offset: number =
 }
 
 export async function fetchTestHierarchy(testId: string): Promise<TestPartsResponse> {
-  const response = await authFetch(
-    `${API_CONFIG.BASE_URL}${API_CONFIG.QTI_BASE_PATH}/assessment-tests/${testId}/test-parts`
+  const response = await fetch(
+    `/api/ims/qti/v3p0/assessment-tests/${testId}/test-parts`,
+    {
+      credentials: 'include',  // Include HttpOnly cookies
+      headers: {
+        'Accept': 'application/json',
+      }
+    }
   );
 
   if (!response.ok) {
@@ -161,8 +172,14 @@ export async function fetchTestHierarchy(testId: string): Promise<TestPartsRespo
 
 export async function fetchItemDetails(itemId: string): Promise<ItemDetails> {
   console.log('Fetching item details for:', itemId);
-  const response = await authFetch(
-    `${API_CONFIG.BASE_URL}${API_CONFIG.QTI_BASE_PATH}/assessment-items/${itemId}`
+  const response = await fetch(
+    `/api/ims/qti/v3p0/assessment-items/${itemId}`,
+    {
+      credentials: 'include',  // Include HttpOnly cookies
+      headers: {
+        'Accept': 'application/json',
+      }
+    }
   );
 
   if (!response.ok) {
@@ -298,8 +315,9 @@ export async function loadCompleteAssessmentTest(testId: string): Promise<TestPa
  */
 export async function listStimuli(page: number = 1, pageSize: number = 20): Promise<StimuliListResponse> {
   try {
-    const response = await authFetch(`${API_CONFIG.BASE_URL}${API_CONFIG.QTI_BASE_PATH}/stimuli?page=${page}&pageSize=${pageSize}`, {
+    const response = await fetch(`/api/ims/qti/v3p0/stimuli?page=${page}&pageSize=${pageSize}`, {
       method: 'GET',
+      credentials: 'include',  // Include HttpOnly cookies
       headers: {
         'Content-Type': 'application/json',
       },
@@ -321,8 +339,9 @@ export async function listStimuli(page: number = 1, pageSize: number = 20): Prom
  */
 export async function createStimulus(stimulusData: CreateStimulusRequest): Promise<Stimulus> {
   try {
-    const response = await authFetch(`${API_CONFIG.BASE_URL}${API_CONFIG.QTI_BASE_PATH}/stimuli`, {
+    const response = await fetch(`/api/ims/qti/v3p0/stimuli`, {
       method: 'POST',
+      credentials: 'include',  // Include HttpOnly cookies
       headers: {
         'Content-Type': 'application/json',
       },
@@ -345,8 +364,9 @@ export async function createStimulus(stimulusData: CreateStimulusRequest): Promi
  */
 export async function getStimulus(stimulusId: string): Promise<Stimulus> {
   try {
-    const response = await authFetch(`${API_CONFIG.BASE_URL}${API_CONFIG.QTI_BASE_PATH}/stimuli/${stimulusId}`, {
+    const response = await fetch(`/api/ims/qti/v3p0/stimuli/${stimulusId}`, {
       method: 'GET',
+      credentials: 'include',  // Include HttpOnly cookies
       headers: {
         'Content-Type': 'application/json',
       },
@@ -368,8 +388,9 @@ export async function getStimulus(stimulusId: string): Promise<Stimulus> {
  */
 export async function updateStimulus(stimulusId: string, updateData: UpdateStimulusRequest): Promise<Stimulus> {
   try {
-    const response = await authFetch(`${API_CONFIG.BASE_URL}${API_CONFIG.QTI_BASE_PATH}/stimuli/${stimulusId}`, {
+    const response = await fetch(`/api/ims/qti/v3p0/stimuli/${stimulusId}`, {
       method: 'PUT',
+      credentials: 'include',  // Include HttpOnly cookies
       headers: {
         'Content-Type': 'application/json',
       },
@@ -392,8 +413,9 @@ export async function updateStimulus(stimulusId: string, updateData: UpdateStimu
  */
 export async function deleteStimulus(stimulusId: string): Promise<void> {
   try {
-    const response = await authFetch(`${API_CONFIG.BASE_URL}${API_CONFIG.QTI_BASE_PATH}/stimuli/${stimulusId}`, {
+    const response = await fetch(`/api/ims/qti/v3p0/stimuli/${stimulusId}`, {
       method: 'DELETE',
+      credentials: 'include',  // Include HttpOnly cookies
       headers: {
         'Content-Type': 'application/json',
       },
@@ -415,8 +437,9 @@ export async function deleteStimulus(stimulusId: string): Promise<void> {
  */
 export async function createAssessmentTest(testData: CreateAssessmentTestRequest): Promise<AssessmentTestResponse> {
   try {
-    const response = await authFetch(`${API_CONFIG.BASE_URL}${API_CONFIG.QTI_BASE_PATH}/assessment-tests`, {
+    const response = await fetch(`/api/ims/qti/v3p0/assessment-tests`, {
       method: 'POST',
+      credentials: 'include',  // Include HttpOnly cookies
       headers: {
         'Content-Type': 'application/json',
       },
@@ -439,8 +462,9 @@ export async function createAssessmentTest(testData: CreateAssessmentTestRequest
  */
 export async function getAssessmentTest(testId: string): Promise<AssessmentTestResponse> {
   try {
-    const response = await authFetch(`${API_CONFIG.BASE_URL}${API_CONFIG.QTI_BASE_PATH}/assessment-tests/${testId}`, {
+    const response = await fetch(`/api/ims/qti/v3p0/assessment-tests/${testId}`, {
       method: 'GET',
+      credentials: 'include',  // Include HttpOnly cookies
       headers: {
         'Content-Type': 'application/json',
       },
@@ -462,8 +486,9 @@ export async function getAssessmentTest(testId: string): Promise<AssessmentTestR
  */
 export async function updateAssessmentTest(testId: string, updateData: Partial<CreateAssessmentTestRequest>): Promise<AssessmentTestResponse> {
   try {
-    const response = await authFetch(`${API_CONFIG.BASE_URL}${API_CONFIG.QTI_BASE_PATH}/assessment-tests/${testId}`, {
+    const response = await fetch(`/api/ims/qti/v3p0/assessment-tests/${testId}`, {
       method: 'PUT',
+      credentials: 'include',  // Include HttpOnly cookies
       headers: {
         'Content-Type': 'application/json',
       },
@@ -486,8 +511,9 @@ export async function updateAssessmentTest(testId: string, updateData: Partial<C
  */
 export async function deleteAssessmentTest(testId: string): Promise<void> {
   try {
-    const response = await authFetch(`${API_CONFIG.BASE_URL}${API_CONFIG.QTI_BASE_PATH}/assessment-tests/${testId}`, {
+    const response = await fetch(`/api/ims/qti/v3p0/assessment-tests/${testId}`, {
       method: 'DELETE',
+      credentials: 'include',  // Include HttpOnly cookies
       headers: {
         'Content-Type': 'application/json',
       },

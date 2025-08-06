@@ -286,17 +286,22 @@ GRADE 6-8 SPECIFIC REQUIREMENTS:
       // First, try parsing as-is
       return JSON.parse(response);
     } catch (error) {
+      console.log('🔧 Initial JSON parse failed, trying fallbacks...');
+      
       // If that fails, try to extract JSON from markdown code blocks
       const codeBlockMatch = response.match(/```(?:json)?\s*([\s\S]*?)\s*```/);
       if (codeBlockMatch) {
         try {
           return JSON.parse(codeBlockMatch[1]);
         } catch (innerError) {
+          console.log('🔧 Code block JSON parse failed, trying fixes...');
           // Try to fix common JSON issues in code blocks
           const fixedJson = this.fixCommonJsonIssues(codeBlockMatch[1]);
           try {
             return JSON.parse(fixedJson);
           } catch (finalError) {
+            console.error('❌ Fixed code block JSON still invalid:', finalError.message);
+            console.error('🔍 Problematic JSON around position:', codeBlockMatch[1].substring(Math.max(0, 2900), 2950));
             throw new Error(`Failed to parse JSON from code block: ${finalError.message}`);
           }
         }
@@ -308,16 +313,20 @@ GRADE 6-8 SPECIFIC REQUIREMENTS:
         try {
           return JSON.parse(jsonMatch[0]);
         } catch (innerError) {
+          console.log('🔧 Extracted JSON parse failed, trying fixes...');
           // Try to fix common JSON issues in extracted content
           const fixedJson = this.fixCommonJsonIssues(jsonMatch[0]);
           try {
             return JSON.parse(fixedJson);
           } catch (finalError) {
+            console.error('❌ Fixed extracted JSON still invalid:', finalError.message);
+            console.error('🔍 Problematic JSON around position:', jsonMatch[0].substring(Math.max(0, 2900), 2950));
             throw new Error(`Failed to parse extracted JSON: ${finalError.message}`);
           }
         }
       }
       
+      console.error('❌ No JSON content found in response');
       throw new Error(`No valid JSON found in response: ${error.message}`);
     }
   }
@@ -332,24 +341,26 @@ GRADE 6-8 SPECIFIC REQUIREMENTS:
     // This handles: class="vocabulary" -> class=\"vocabulary\"
     fixed = fixed.replace(/([a-zA-Z-]+)="([^"]*?)"/g, '$1=\\"$2\\"');
     
-    // Fix unescaped control characters in strings - more comprehensive approach
-    fixed = fixed.replace(/:\s*"([^"]*)"([,}\]])/g, (match, content, ending) => {
-      // Clean up the content string
+    // More aggressive string content cleaning for large responses
+    fixed = fixed.replace(/:\s*"([^"]*?)"(?=\s*[,}\]])/g, (match, content) => {
+      // More comprehensive content cleaning
       const cleaned = content
         .replace(/\\/g, '\\\\')  // Escape backslashes first
         .replace(/"/g, '\\"')    // Escape quotes
         .replace(/\n/g, '\\n')   // Escape newlines
         .replace(/\r/g, '\\r')   // Escape carriage returns
         .replace(/\t/g, '\\t')   // Escape tabs
-        .replace(/[\x00-\x08\x0B\x0C\x0E-\x1F]/g, ''); // Remove other control chars
-      return `: "${cleaned}"${ending}`;
+        .replace(/[\x00-\x08\x0B\x0C\x0E-\x1F]/g, '') // Remove control chars
+        .replace(/\u2018|\u2019/g, "'")  // Replace smart quotes
+        .replace(/\u201C|\u201D/g, '\\"'); // Replace smart double quotes
+      return `: "${cleaned}"`;
     });
     
     // Fix missing commas between object properties and array elements
-    fixed = fixed.replace(/}(\s*")/g, '},$1');
-    fixed = fixed.replace(/](\s*")/g, '],$1');
-    fixed = fixed.replace(/"(\s*)}/g, '"$1}'); // Clean up spaces before closing braces
-    fixed = fixed.replace(/"(\s*)]/g, '"$1]'); // Clean up spaces before closing brackets
+    fixed = fixed.replace(/}(\s*"[^"]*"\s*:)/g, '},$1');
+    fixed = fixed.replace(/](\s*"[^"]*"\s*:)/g, '],$1');
+    fixed = fixed.replace(/}(\s*{)/g, '},$1');
+    fixed = fixed.replace(/](\s*\[)/g, '],$1');
     
     // Fix missing quotes around property names
     fixed = fixed.replace(/([{,]\s*)([a-zA-Z_][a-zA-Z0-9_]*)\s*:/g, '$1"$2":');
@@ -357,9 +368,11 @@ GRADE 6-8 SPECIFIC REQUIREMENTS:
     // Fix multiple consecutive commas
     fixed = fixed.replace(/,+/g, ',');
     
-    // Fix spaces around colons and commas for better parsing
-    fixed = fixed.replace(/\s*:\s*/g, ':');
-    fixed = fixed.replace(/\s*,\s*/g, ',');
+    // Remove commas before closing brackets/braces (again, more thorough)
+    fixed = fixed.replace(/,(\s*[}\]])/g, '$1');
+    
+    // Fix incomplete string values (missing closing quotes)
+    fixed = fixed.replace(/:\s*"([^"]*?)(?=\s*[,}\]])/g, ': "$1"');
     
     return fixed;
   }

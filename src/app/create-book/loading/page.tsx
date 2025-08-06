@@ -122,6 +122,7 @@ export default function StoryLoadingPage() {
         headers: {
           'Content-Type': 'application/json',
         },
+        credentials: 'include', // Include HttpOnly cookies for authentication
         body: JSON.stringify({
           universe: universe,
           character: character,

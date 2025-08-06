@@ -28,6 +28,7 @@ interface Story {
   sections: StorySection[]
   wordCount: number
   readingTime: string
+  imageUrl?: string
 }
 
 export default function StoryReadingPage() {
@@ -45,8 +46,8 @@ export default function StoryReadingPage() {
 
   // Function to convert vocabulary markdown to HTML with hover tooltips
   const processVocabularyWords = (content: string) => {
-    // Convert **word** (meaning: definition) to HTML spans with hover tooltips
-    return content.replace(/\*\*([^*]+)\*\* \(meaning: ([^)]+)\)/g, 
+    // Convert **word** (meaning: definition) or **word** (definition) to HTML spans with hover tooltips
+    return content.replace(/\*\*([^*]+)\*\* \((?:meaning: )?([^)]+)\)/g, 
       '<span class="vocabulary" data-word="$1" data-definition="$2">$1</span>'
     )
   }
@@ -79,7 +80,8 @@ export default function StoryReadingPage() {
             }))
           })),
           wordCount: storedStory.wordCount || 0,
-          readingTime: storedStory.readingTime || '5 minutes'
+          readingTime: storedStory.readingTime || '5 minutes',
+          imageUrl: storedStory.imageUrl
         }
         setStory(transformedStory)
         console.log('✅ Story loaded from QTI API successfully')
@@ -107,7 +109,8 @@ export default function StoryReadingPage() {
                 }))
               })),
               wordCount: foundStory.wordCount || 0,
-              readingTime: foundStory.readingTime || '5 minutes'
+              readingTime: foundStory.readingTime || '5 minutes',
+              imageUrl: foundStory.imageUrl
             }
             setStory(transformedStory)
             console.log('📱 Story loaded from localStorage fallback')
@@ -143,7 +146,8 @@ export default function StoryReadingPage() {
               }))
             })),
             wordCount: foundStory.wordCount || 0,
-            readingTime: foundStory.readingTime || '5 minutes'
+            readingTime: foundStory.readingTime || '5 minutes',
+            imageUrl: foundStory.imageUrl
           }
           setStory(transformedStory)
           console.log('📱 Story loaded from localStorage after API error')
@@ -237,13 +241,28 @@ export default function StoryReadingPage() {
             {/* Story Header */}
             <div className="mb-8">
               <h1 className="text-3xl font-bold mb-2 text-gray-900">{story.title}</h1>
-              <div className="flex items-center gap-4 text-sm text-gray-600">
+              <div className="flex items-center gap-4 text-sm text-gray-600 mb-4">
                 <span>{story.wordCount} words</span>
                 <span>•</span>
                 <span>{story.readingTime}</span>
                 <span>•</span>
                 <span>Section {currentSectionIndex + 1} of {story.sections.length}</span>
               </div>
+              
+              {/* Story Illustration */}
+              {story.imageUrl && (
+                <div className="mb-6">
+                  <img 
+                    src={story.imageUrl} 
+                    alt={`Illustration for ${story.title}`}
+                    className="w-full max-w-2xl h-64 object-cover rounded-lg shadow-lg"
+                    onError={(e) => {
+                      console.warn('Failed to load story image:', story.imageUrl);
+                      e.currentTarget.style.display = 'none';
+                    }}
+                  />
+                </div>
+              )}
             </div>
 
             {/* Story Sections - Progressive Reveal */}

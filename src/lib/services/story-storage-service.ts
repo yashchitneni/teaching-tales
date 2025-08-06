@@ -24,6 +24,7 @@ export interface StoredStory {
   wordCount?: number;
   readingTime?: string;
   sections?: any[];
+  imageUrl?: string;
   assessments?: StoryAssessment[];
   metadata?: Record<string, any>;
 }
@@ -400,7 +401,8 @@ export class StoryStorageService {
     console.log('🏠 💾 SAVING STORY TO LOCALSTORAGE (not QTI API)...', {
       title: storyResponse.title,
       universe: storyMetadata.universe,
-      character: storyMetadata.character
+      character: storyMetadata.character,
+      imageUrl: storyResponse.imageUrl
     });
 
     const story: StoredStory = {
@@ -417,6 +419,7 @@ export class StoryStorageService {
       wordCount: storyResponse.wordCount,
       readingTime: storyResponse.readingTime,
       sections: storyResponse.sections,
+      imageUrl: storyResponse.imageUrl,
       metadata: {
         ...storyResponse.metadata,
         appName: 'Teaching Tales',

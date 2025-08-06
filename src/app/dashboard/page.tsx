@@ -57,7 +57,10 @@ export default function DashboardPage() {
           <div className="flex justify-between items-center mb-6">
             <h1 className="text-2xl font-bold text-gray-900">Student Dashboard</h1>
             <Button 
-              onClick={() => setShowCreateModal(true)}
+              onClick={() => {
+                console.log('Add Student button clicked, showing modal');
+                setShowCreateModal(true);
+              }}
               className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2"
             >
               Add Student
@@ -124,7 +127,10 @@ export default function DashboardPage() {
                 reading level.
               </p>
               <Button 
-                onClick={() => setShowCreateModal(true)}
+                onClick={() => {
+                  console.log('Create First Student button clicked, showing modal');
+                  setShowCreateModal(true);
+                }}
                 className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2"
               >
                 Create First Student
@@ -134,12 +140,18 @@ export default function DashboardPage() {
         </div>
       </main>
 
+
+
       {/* Create Child Modal */}
       {showCreateModal && (
-        <CreateChildModal onClose={() => {
-          setShowCreateModal(false)
-          loadStudents() // Refresh students list after creating a new one
-        }} />
+        <>
+          {console.log('Rendering CreateChildModal, showCreateModal =', showCreateModal)}
+          <CreateChildModal onClose={() => {
+            console.log('Modal close button clicked');
+            setShowCreateModal(false)
+            loadStudents() // Refresh students list after creating a new one
+          }} />
+        </>
       )}
 
       {/* Feedback Button */}

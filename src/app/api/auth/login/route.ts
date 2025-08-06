@@ -37,7 +37,8 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const { accessToken, idToken, refreshToken, expiresIn } = loginData.data.tokens;
+    // TimeBack API returns tokens directly in data, not in data.tokens (per api-spec.json)
+    const { accessToken, idToken, refreshToken, expiresIn } = loginData.data;
 
     // Get user info from TimeBack
     const userResponse = await fetch(`${TIMEBACK_API_URL}/api/auth/me`, {
@@ -83,6 +84,7 @@ export async function POST(request: NextRequest) {
     });
 
     // Return success response with TimeBack user data
+    // IMPORTANT: Do NOT return tokens to client (they're in HttpOnly cookies)
     return NextResponse.json({
       success: true,
       data: {
@@ -93,11 +95,7 @@ export async function POST(request: NextRequest) {
           role: timebackUser.role || 'parent',
           name: timebackUser.name || email.split('@')[0],
         },
-        tokens: {
-          accessToken,
-          idToken,
-          expiresIn: expiresIn || 3600,
-        },
+        // Tokens removed - they're securely stored in HttpOnly cookies
         message: 'Login successful'
       }
     });
