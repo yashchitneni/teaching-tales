@@ -26,20 +26,26 @@ http://localhost:3000/auth/callback
 https://your-production-domain.com/auth/callback
 ```
 
-### **Step 3: Supabase Configuration**
+### **Step 3: AWS Cognito Configuration**
 
-1. **Go to your Supabase project:** https://gccgwmuyzlsazkliswjp.supabase.co
-2. **Navigate to:** Authentication → Providers
-3. **Enable Google provider**
-4. **Add your Google credentials:**
+1. **Go to AWS Console:** [AWS Cognito Console](https://console.aws.amazon.com/cognito/)
+2. **Navigate to:** User Pools → Identity Providers
+3. **Add Google as Identity Provider**
+4. **Configure Google provider:**
    - Client ID: `[from Google Cloud Console]`
    - Client Secret: `[from Google Cloud Console]`
+   - Authorize scopes: `email`, `openid`, `profile`
 
 ### **Step 4: Environment Variables**
 
 #### **Local Development (.env.local):**
 ```env
-# Add these after getting credentials from Google
+# AWS Cognito Configuration
+COGNITO_USER_POOL_ID=your_user_pool_id_here
+COGNITO_CLIENT_ID=your_client_id_here
+AWS_REGION=us-east-1
+
+# Google OAuth (for Cognito)
 GOOGLE_CLIENT_ID=your_google_client_id_here
 GOOGLE_CLIENT_SECRET=your_google_client_secret_here
 ```
@@ -66,9 +72,9 @@ GOOGLE_CLIENT_SECRET=your_google_client_secret_here
      - `http://localhost:3000/auth/callback`
      - `https://your-production-domain.com/auth/callback`
 
-### **Step 3: Supabase Apple Configuration**
+### **Step 3: AWS Cognito Apple Configuration**
 
-1. **In Supabase:** Authentication → Providers → Apple
+1. **In AWS Cognito:** Navigate to Identity Providers → Apple
 2. **Add your Apple credentials:**
    - Services ID: `[from Apple Developer]`
    - Secret Key: `[from Apple Developer]`
@@ -100,9 +106,10 @@ GOOGLE_CLIENT_SECRET=your_google_client_secret_here
 - Check that environment variables are set in your hosting platform
 - Ensure HTTPS is enabled for production
 
-**Supabase auth not working:**
-- Verify that your Supabase Site URL is set correctly in Authentication → Settings
-- Check that redirect URLs are configured in Supabase
+**AWS Cognito auth not working:**
+- Verify that your User Pool domain is configured correctly
+- Check that redirect URLs are configured in App Client settings
+- Ensure Identity Providers are properly linked to your User Pool
 
 ## **Security Notes**
 
@@ -115,7 +122,7 @@ GOOGLE_CLIENT_SECRET=your_google_client_secret_here
 ## **Next Steps After Setup**
 
 1. **Test authentication flow**
-2. **Set up user profiles** (already handled in our schema)
-3. **Configure email templates** in Supabase
+2. **Set up user profiles** (handled by AWS Cognito user attributes)
+3. **Configure email templates** in AWS Cognito
 4. **Set up error handling** for auth failures
 5. **Add logout functionality** 

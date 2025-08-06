@@ -98,7 +98,7 @@ All screens from the provided screenshots have been successfully implemented:
 
 ## Database Integration Points
 
-### Required Supabase Tables (Already Created)
+### Required Database Tables
 - `profiles` - Parent user accounts
 - `children` - Child profiles
 - `books` - Created books with universe/character/spark
@@ -137,7 +137,7 @@ src/
 │   ├── AssessmentResults.tsx ✅
 │   └── ChapterChoices.tsx ✅
 └── lib/
-    └── supabase.ts ✅
+    └── database.ts ✅
 ```
 
 ## Next Steps for Full Functionality
@@ -147,10 +147,10 @@ src/
    - Implement dynamic question generation
    - Add personalized content based on child profile
 
-2. **Supabase Integration**
+2. **Database Integration**
    - Connect all components to real data
    - Implement real-time progress tracking
-   - Add user authentication flow
+   - Complete user authentication flow
 
 3. **Additional Features**
    - My Stories page
@@ -164,5 +164,5 @@ src/
 - [x] Responsive design implemented
 - [x] Interactive elements have proper hover states
 - [x] Progress indicators function correctly
-- [ ] Data persists to Supabase (pending integration)
+- [ ] Data persists to database (pending integration)
 - [ ] AI story generation works (pending integration) 
