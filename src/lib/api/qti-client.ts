@@ -298,7 +298,7 @@ export async function loadCompleteAssessmentTest(testId: string): Promise<TestPa
  */
 export async function listStimuli(page: number = 1, pageSize: number = 20): Promise<StimuliListResponse> {
   try {
-    const response = await authFetch(`${API_CONFIG.BASE_URL}/qti/v3.0/stimuli?page=${page}&pageSize=${pageSize}`, {
+    const response = await authFetch(`${API_CONFIG.BASE_URL}${API_CONFIG.QTI_BASE_PATH}/stimuli?page=${page}&pageSize=${pageSize}`, {
       method: 'GET',
       headers: {
         'Content-Type': 'application/json',
@@ -321,7 +321,7 @@ export async function listStimuli(page: number = 1, pageSize: number = 20): Prom
  */
 export async function createStimulus(stimulusData: CreateStimulusRequest): Promise<Stimulus> {
   try {
-    const response = await authFetch(`${API_CONFIG.BASE_URL}/qti/v3.0/stimuli`, {
+    const response = await authFetch(`${API_CONFIG.BASE_URL}${API_CONFIG.QTI_BASE_PATH}/stimuli`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -345,7 +345,7 @@ export async function createStimulus(stimulusData: CreateStimulusRequest): Promi
  */
 export async function getStimulus(stimulusId: string): Promise<Stimulus> {
   try {
-    const response = await authFetch(`${API_CONFIG.BASE_URL}/qti/v3.0/stimuli/${stimulusId}`, {
+    const response = await authFetch(`${API_CONFIG.BASE_URL}${API_CONFIG.QTI_BASE_PATH}/stimuli/${stimulusId}`, {
       method: 'GET',
       headers: {
         'Content-Type': 'application/json',
@@ -368,7 +368,7 @@ export async function getStimulus(stimulusId: string): Promise<Stimulus> {
  */
 export async function updateStimulus(stimulusId: string, updateData: UpdateStimulusRequest): Promise<Stimulus> {
   try {
-    const response = await authFetch(`${API_CONFIG.BASE_URL}/qti/v3.0/stimuli/${stimulusId}`, {
+    const response = await authFetch(`${API_CONFIG.BASE_URL}${API_CONFIG.QTI_BASE_PATH}/stimuli/${stimulusId}`, {
       method: 'PUT',
       headers: {
         'Content-Type': 'application/json',
@@ -392,7 +392,7 @@ export async function updateStimulus(stimulusId: string, updateData: UpdateStimu
  */
 export async function deleteStimulus(stimulusId: string): Promise<void> {
   try {
-    const response = await authFetch(`${API_CONFIG.BASE_URL}/qti/v3.0/stimuli/${stimulusId}`, {
+    const response = await authFetch(`${API_CONFIG.BASE_URL}${API_CONFIG.QTI_BASE_PATH}/stimuli/${stimulusId}`, {
       method: 'DELETE',
       headers: {
         'Content-Type': 'application/json',
@@ -415,7 +415,7 @@ export async function deleteStimulus(stimulusId: string): Promise<void> {
  */
 export async function createAssessmentTest(testData: CreateAssessmentTestRequest): Promise<AssessmentTestResponse> {
   try {
-    const response = await authFetch(`${API_CONFIG.BASE_URL}/qti/v3.0/assessment-tests`, {
+    const response = await authFetch(`${API_CONFIG.BASE_URL}${API_CONFIG.QTI_BASE_PATH}/assessment-tests`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -439,7 +439,7 @@ export async function createAssessmentTest(testData: CreateAssessmentTestRequest
  */
 export async function getAssessmentTest(testId: string): Promise<AssessmentTestResponse> {
   try {
-    const response = await authFetch(`${API_CONFIG.BASE_URL}/qti/v3.0/assessment-tests/${testId}`, {
+    const response = await authFetch(`${API_CONFIG.BASE_URL}${API_CONFIG.QTI_BASE_PATH}/assessment-tests/${testId}`, {
       method: 'GET',
       headers: {
         'Content-Type': 'application/json',
@@ -462,7 +462,7 @@ export async function getAssessmentTest(testId: string): Promise<AssessmentTestR
  */
 export async function updateAssessmentTest(testId: string, updateData: Partial<CreateAssessmentTestRequest>): Promise<AssessmentTestResponse> {
   try {
-    const response = await authFetch(`${API_CONFIG.BASE_URL}/qti/v3.0/assessment-tests/${testId}`, {
+    const response = await authFetch(`${API_CONFIG.BASE_URL}${API_CONFIG.QTI_BASE_PATH}/assessment-tests/${testId}`, {
       method: 'PUT',
       headers: {
         'Content-Type': 'application/json',
@@ -486,7 +486,7 @@ export async function updateAssessmentTest(testId: string, updateData: Partial<C
  */
 export async function deleteAssessmentTest(testId: string): Promise<void> {
   try {
-    const response = await authFetch(`${API_CONFIG.BASE_URL}/qti/v3.0/assessment-tests/${testId}`, {
+    const response = await authFetch(`${API_CONFIG.BASE_URL}${API_CONFIG.QTI_BASE_PATH}/assessment-tests/${testId}`, {
       method: 'DELETE',
       headers: {
         'Content-Type': 'application/json',

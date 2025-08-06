@@ -30,8 +30,11 @@ export interface StoredStory {
 
 export class StoryStorageService {
   
+  private static readonly STORAGE_KEY = 'teaching-tales-stories';
+  private static readonly USE_LOCAL_STORAGE = true; // Toggle for development
+  
   /**
-   * Save a generated story to QTI Stimuli API and create assessment tests
+   * Save a generated story locally or to QTI API
    */
   static async saveStory(
     storyResponse: StoryGenerationResponse,
@@ -45,6 +48,11 @@ export class StoryStorageService {
     }
   ): Promise<{ stimulus: Stimulus; assessments: StoryAssessment[] }> {
     try {
+      // Use local storage for development
+      if (this.USE_LOCAL_STORAGE) {
+        return await this.saveStoryLocally(storyResponse, storyMetadata);
+      }
+      
       // Convert story to QTI Stimulus format
       const stimulusData: CreateStimulusRequest = {
         identifier: `story-${storyMetadata.storyId}`,
@@ -144,6 +152,12 @@ export class StoryStorageService {
    */
   static async getStory(stimulusId: string): Promise<StoredStory | null> {
     try {
+      // Use local storage for development
+      if (this.USE_LOCAL_STORAGE) {
+        console.log('📖 Loading story from localStorage:', stimulusId);
+        return this.getStoryFromLocalStorage(stimulusId);
+      }
+      
       console.log('📖 Loading story from QTI API:', stimulusId);
       
       const stimulus = await getStimulus(stimulusId);
@@ -195,6 +209,11 @@ export class StoryStorageService {
    */
   static async getUserStories(page: number = 1, pageSize: number = 20): Promise<StoredStory[]> {
     try {
+      // Use local storage for development
+      if (this.USE_LOCAL_STORAGE) {
+        return this.getStoriesFromLocalStorage();
+      }
+      
       console.log('📚 Loading user stories from QTI API...');
       
       const response = await listStimuli(page, pageSize);
@@ -222,6 +241,16 @@ export class StoryStorageService {
    */
   static async deleteStory(stimulusId: string): Promise<void> {
     try {
+      // Use local storage for development
+      if (this.USE_LOCAL_STORAGE) {
+        console.log('🗑️ Deleting story from localStorage:', stimulusId);
+        const success = this.deleteStoryFromLocalStorage(stimulusId);
+        if (!success) {
+          throw new Error('Failed to delete story from localStorage');
+        }
+        return;
+      }
+      
       console.log('🗑️ Deleting story from QTI API:', stimulusId);
       
       // First, get the story to find assessment IDs
@@ -351,6 +380,121 @@ export class StoryStorageService {
     } catch (error) {
       console.error('❌ Migration failed:', error);
       throw error;
+    }
+  }
+
+  /**
+   * Save story to localStorage for development
+   */
+  private static async saveStoryLocally(
+    storyResponse: StoryGenerationResponse,
+    storyMetadata: {
+      universe: string;
+      character: string;
+      spark: string;
+      gradeLevel: string;
+      studentId: string;
+      storyId: string;
+    }
+  ): Promise<{ stimulus: Stimulus; assessments: StoryAssessment[] }> {
+    console.log('🏠 💾 SAVING STORY TO LOCALSTORAGE (not QTI API)...', {
+      title: storyResponse.title,
+      universe: storyMetadata.universe,
+      character: storyMetadata.character
+    });
+
+    const story: StoredStory = {
+      id: storyMetadata.storyId,
+      title: storyResponse.title,
+      universe: storyMetadata.universe,
+      character: storyMetadata.character,
+      spark: storyMetadata.spark,
+      gradeLevel: storyMetadata.gradeLevel,
+      studentId: storyMetadata.studentId,
+      status: 'completed',
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+      wordCount: storyResponse.wordCount,
+      readingTime: storyResponse.readingTime,
+      sections: storyResponse.sections,
+      metadata: {
+        ...storyResponse.metadata,
+        appName: 'Teaching Tales',
+        contentType: 'ai-generated-story'
+      }
+    };
+
+    // Get existing stories
+    const existingStories = this.getStoriesFromLocalStorage();
+    
+    // Add or update the story
+    const updatedStories = existingStories.filter(s => s.id !== story.id);
+    updatedStories.unshift(story); // Add to beginning
+
+    // Save to localStorage
+    localStorage.setItem(this.STORAGE_KEY, JSON.stringify(updatedStories));
+    
+    console.log('✅ Story saved successfully to localStorage:', story.id);
+
+    // Return mock objects to satisfy the interface
+    const mockStimulus: Stimulus = {
+      id: story.id,
+      identifier: `story-${story.id}`,
+      title: story.title,
+      description: `A ${story.universe} adventure featuring ${story.character} - ${story.spark}`,
+      content: JSON.stringify(story),
+      metadata: story.metadata,
+      createdAt: story.createdAt,
+      updatedAt: story.updatedAt
+    };
+
+    const mockAssessments: StoryAssessment[] = [];
+
+    return { stimulus: mockStimulus, assessments: mockAssessments };
+  }
+
+  /**
+   * Get stories from localStorage
+   */
+  private static getStoriesFromLocalStorage(): StoredStory[] {
+    try {
+      console.log('🏠 📚 LOADING STORIES FROM LOCALSTORAGE (not QTI API)...');
+      const stored = localStorage.getItem(this.STORAGE_KEY);
+      if (!stored) {
+        console.log('📚 No stories found in localStorage');
+        return [];
+      }
+
+      const stories: StoredStory[] = JSON.parse(stored);
+      console.log(`✅ Loaded ${stories.length} stories from localStorage`);
+      return stories;
+    } catch (error) {
+      console.error('Failed to load stories from localStorage:', error);
+      return [];
+    }
+  }
+
+  /**
+   * Get a single story from localStorage
+   */
+  static getStoryFromLocalStorage(storyId: string): StoredStory | null {
+    const stories = this.getStoriesFromLocalStorage();
+    return stories.find(story => story.id === storyId) || null;
+  }
+
+  /**
+   * Delete a story from localStorage
+   */
+  static deleteStoryFromLocalStorage(storyId: string): boolean {
+    try {
+      const stories = this.getStoriesFromLocalStorage();
+      const updatedStories = stories.filter(story => story.id !== storyId);
+      localStorage.setItem(this.STORAGE_KEY, JSON.stringify(updatedStories));
+      console.log('🗑️ Story deleted from localStorage:', storyId);
+      return true;
+    } catch (error) {
+      console.error('Failed to delete story from localStorage:', error);
+      return false;
     }
   }
 }
