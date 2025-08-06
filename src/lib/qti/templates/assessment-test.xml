@@ -1,0 +1,67 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<qti-assessment-test 
+    xmlns="http://www.imsglobal.org/xsd/imsqtiasi_v3p0"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xsi:schemaLocation="http://www.imsglobal.org/xsd/imsqtiasi_v3p0 https://purl.imsglobal.org/spec/qti/v3p0/schema/xsd/imsqti_asiv3p0.xsd"
+    identifier="{{TEST_IDENTIFIER}}"
+    title="{{TEST_TITLE}}">
+    
+    <!-- Test-level outcome declarations for overall scoring -->
+    <qti-outcome-declaration identifier="SCORE" cardinality="single" base-type="float">
+        <qti-default-value>
+            <qti-value>0</qti-value>
+        </qti-default-value>
+    </qti-outcome-declaration>
+    
+    <qti-outcome-declaration identifier="MAXSCORE" cardinality="single" base-type="float">
+        <qti-default-value>
+            <qti-value>{{MAX_SCORE}}</qti-value>
+        </qti-default-value>
+    </qti-outcome-declaration>
+    
+    <qti-outcome-declaration identifier="PERCENT" cardinality="single" base-type="float">
+        <qti-default-value>
+            <qti-value>0</qti-value>
+        </qti-default-value>
+    </qti-outcome-declaration>
+
+    <!-- Test part containing all assessment sections -->
+    <qti-test-part identifier="{{TEST_PART_IDENTIFIER}}" navigation-mode="{{NAVIGATION_MODE}}" submission-mode="{{SUBMISSION_MODE}}">
+        
+        <!-- Time limits for the entire test (optional) -->
+        {{#if TIME_LIMITS}}
+        <qti-time-limits max-time="{{TIME_LIMITS}}" />
+        {{/if}}
+        
+        <!-- Assessment sections will be inserted here -->
+        {{ASSESSMENT_SECTIONS}}
+        
+    </qti-test-part>
+    
+    <!-- Test-level outcome processing for final score calculation -->
+    <qti-outcome-processing>
+        <qti-set-outcome-value identifier="SCORE">
+            <qti-sum>
+                {{#each SECTION_SCORE_VARIABLES}}
+                <qti-variable identifier="{{this}}" />
+                {{/each}}
+            </qti-sum>
+        </qti-set-outcome-value>
+        
+        <qti-set-outcome-value identifier="PERCENT">
+            <qti-divide>
+                <qti-variable identifier="SCORE" />
+                <qti-variable identifier="MAXSCORE" />
+            </qti-divide>
+        </qti-set-outcome-value>
+        
+        <!-- Convert to percentage -->
+        <qti-set-outcome-value identifier="PERCENT">
+            <qti-product>
+                <qti-variable identifier="PERCENT" />
+                <qti-base-value base-type="float">100</qti-base-value>
+            </qti-product>
+        </qti-set-outcome-value>
+    </qti-outcome-processing>
+
+</qti-assessment-test>
