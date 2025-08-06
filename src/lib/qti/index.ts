@@ -3,21 +3,54 @@
  * 
  * This module provides comprehensive functionality for transforming AI-generated
  * story content into QTI 3.0 compliant assessment packages. It includes template
- * processing, XML generation, validation, and error handling.
+ * processing, XML generation, validation, error handling, and quality assurance.
  * 
- * @example
+ * ## Features
+ * - **AI-to-QTI Transformation**: Convert story content to QTI assessments
+ * - **Template System**: Handlebars-based XML template processing
+ * - **Validation Pipeline**: Schema validation and compliance checking
+ * - **Error Handling**: Comprehensive error recovery and fallback strategies
+ * - **Branching Logic**: Adaptive assessment paths and conditional navigation
+ * - **Quality Assurance**: Testing framework and performance benchmarks
+ * 
+ * ## Documentation
+ * - **Technical Architecture**: `Trevor docs/QTI_TECHNICAL_ARCHITECTURE_DOCUMENTATION.md`
+ * - **API Reference**: `Trevor docs/QTI_API_REFERENCE.md`
+ * - **User Guide**: `Trevor docs/QTI_USER_GUIDE.md`
+ * - **Integration Guide**: `Trevor docs/QTI_INTEGRATION_GUIDE.md`
+ * - **Troubleshooting**: `Trevor docs/QTI_TROUBLESHOOTING_GUIDE.md`
+ * 
+ * @example Basic Usage
  * ```typescript
- * import { QTIGenerator, QTIGenerationOptions } from '@/lib/qti';
+ * import { QTIGenerator } from '@/lib/qti';
  * 
  * const generator = new QTIGenerator();
- * const options: QTIGenerationOptions = {
- *   includeBranching: true,
- *   shuffleChoices: true,
- *   validateXML: true
- * };
- * 
- * const qtiPackage = await generator.generateFromStory(storyResponse, options);
+ * const qtiPackage = await generator.generatePackage(storyResponse, {
+ *   timeLimit: 1800,
+ *   enableBranching: true,
+ *   shuffleChoices: true
+ * });
  * ```
+ * 
+ * @example Advanced Usage with Validation
+ * ```typescript
+ * import { QTIGenerator, FallbackLevel } from '@/lib/qti';
+ * 
+ * const generator = new QTIGenerator();
+ * const qtiPackage = await generator.generateResilientPackage(
+ *   storyResponse,
+ *   { enableBranching: true },
+ *   FallbackLevel.STANDARD,
+ *   true // Enable validation
+ * );
+ * 
+ * if (qtiPackage.validation?.success) {
+ *   console.log(`Compliance Score: ${qtiPackage.validation.complianceReport?.overallScore}/100`);
+ * }
+ * ```
+ * 
+ * @version 1.0.0
+ * @since 2024-12
  */
 
 // Core types and interfaces
@@ -164,6 +197,115 @@ export function getQTIModuleInfo() {
     namespaces: QTI_NAMESPACES,
     schemaLocations: QTI_SCHEMA_LOCATIONS,
     supportedInteractionTypes: Object.keys(INTERACTION_TYPE_MAPPINGS),
-    ready: isQTIModuleReady()
+    ready: isQTIModuleReady(),
+    features: {
+      aiToQtiTransformation: true,
+      templateSystem: true,
+      validationPipeline: true,
+      errorHandling: true,
+      branchingLogic: true,
+      adaptiveProgression: true,
+      qualityAssurance: true,
+      testingFramework: true,
+      performanceBenchmarks: true,
+      complianceReporting: true
+    },
+    documentation: {
+      technicalArchitecture: 'Trevor docs/QTI_TECHNICAL_ARCHITECTURE_DOCUMENTATION.md',
+      apiReference: 'Trevor docs/QTI_API_REFERENCE.md',
+      userGuide: 'Trevor docs/QTI_USER_GUIDE.md',
+      integrationGuide: 'Trevor docs/QTI_INTEGRATION_GUIDE.md',
+      troubleshooting: 'Trevor docs/QTI_TROUBLESHOOTING_GUIDE.md',
+      phaseDocumentation: {
+        phase1: 'Trevor docs/QTI_PHASE_1_FOUNDATION_DOCUMENTATION.md',
+        phase2: 'Trevor docs/QTI_PHASE_2_TRANSFORMATION_DOCUMENTATION.md',
+        phase3: 'Trevor docs/QTI_PHASE_3_MAPPING_DOCUMENTATION.md',
+        phase4: 'Trevor docs/QTI_PHASE_4_BRANCHING_DOCUMENTATION.md',
+        phase5: 'Trevor docs/QTI_PHASE_5_VALIDATION_DOCUMENTATION.md',
+        phase6: 'Trevor docs/QTI_PHASE_6_ERROR_HANDLING_DOCUMENTATION.md',
+        phase7: 'Trevor docs/QTI_PHASE_7_TESTING_DOCUMENTATION.md'
+      }
+    }
+  };
+}
+
+/**
+ * System integration helper for connecting QTI with story generation
+ */
+export async function integrateWithStoryGeneration(
+  storyGenerationService: any,
+  options: {
+    enableValidation?: boolean;
+    fallbackLevel?: string;
+    cacheResults?: boolean;
+  } = {}
+) {
+  const qtiGenerator = new (await import('./generators/qti-generator')).QTIGenerator();
+  
+  return {
+    async generateQTIFromPrompt(prompt: string, generationOptions: any = {}) {
+      // Generate story using provided service
+      const storyResponse = await storyGenerationService.generateStory(prompt, generationOptions);
+      
+      // Transform to QTI
+      const qtiOptions = {
+        timeLimit: generationOptions.timeLimit || 1800,
+        enableBranching: generationOptions.enableBranching !== false,
+        shuffleChoices: generationOptions.shuffleChoices !== false
+      };
+      
+      if (options.enableValidation) {
+        return await qtiGenerator.generateValidatedPackage(storyResponse, qtiOptions);
+      } else {
+        return await qtiGenerator.generatePackage(storyResponse, qtiOptions);
+      }
+    },
+    
+    async generateResilientQTI(storyResponse: any, qtiOptions: any = {}) {
+      const { FallbackLevel } = await import('./errors/fallback-recovery');
+      const fallbackLevel = options.fallbackLevel ? 
+        FallbackLevel[options.fallbackLevel as keyof typeof FallbackLevel] : 
+        FallbackLevel.STANDARD;
+      
+      return await qtiGenerator.generateResilientPackage(
+        storyResponse,
+        qtiOptions,
+        fallbackLevel,
+        options.enableValidation !== false
+      );
+    }
+  };
+}
+
+/**
+ * Performance monitoring integration
+ */
+export function createPerformanceMonitor() {
+  return {
+    async measureGeneration<T>(operation: () => Promise<T>): Promise<{
+      result: T;
+      metrics: {
+        duration: number;
+        memoryUsed: number;
+        timestamp: Date;
+      };
+    }> {
+      const startTime = Date.now();
+      const startMemory = process.memoryUsage().heapUsed;
+      
+      const result = await operation();
+      
+      const endTime = Date.now();
+      const endMemory = process.memoryUsage().heapUsed;
+      
+      return {
+        result,
+        metrics: {
+          duration: endTime - startTime,
+          memoryUsed: endMemory - startMemory,
+          timestamp: new Date()
+        }
+      };
+    }
   };
 }
