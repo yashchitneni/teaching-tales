@@ -1,7 +1,6 @@
 'use client'
 
 import { Button } from '@/components/ui/button'
-import { useState } from 'react'
 
 interface Question {
   id: string
@@ -25,9 +24,6 @@ export function AssessmentResults({
   wordsPerMinute,
   onContinue
 }: AssessmentResultsProps) {
-  const [satisfaction, setSatisfaction] = useState<number | null>(null)
-
-  const emojis = ['😞', '😕', '😐', '😊', '😄']
 
   return (
     <div className="p-6">
@@ -39,25 +35,7 @@ export function AssessmentResults({
         </p>
       </div>
 
-      {/* Satisfaction Rating */}
-      <div className="mb-6">
-        <h3 className="font-medium mb-3 text-gray-900">How did you enjoy this story?</h3>
-        <div className="flex justify-center gap-3">
-          {emojis.map((emoji, index) => (
-            <button
-              key={index}
-              onClick={() => setSatisfaction(index)}
-              className={`text-3xl p-2 rounded-lg transition-all ${
-                satisfaction === index
-                  ? 'bg-blue-100 ring-2 ring-blue-500'
-                  : 'hover:bg-gray-100'
-              }`}
-            >
-              {emoji}
-            </button>
-          ))}
-        </div>
-      </div>
+
 
       {/* Performance Metrics */}
       <div className="grid grid-cols-2 gap-4 mb-6">
@@ -167,7 +145,7 @@ export function AssessmentResults({
       <Button
         onClick={onContinue}
         className="w-full bg-blue-600 hover:bg-blue-700 text-white"
-        disabled={satisfaction === null}
+
       >
 Continue to Next Section
       </Button>
