@@ -69,8 +69,8 @@ export function GuidingQuestions({
               } ${hasAnswered ? 'cursor-not-allowed' : 'cursor-pointer'}`}
             >
               <div className="flex items-start">
-                <span className="mr-3 font-medium">{String.fromCharCode(65 + index)}.</span>
-                <span>{option}</span>
+                <span className="mr-3 font-medium text-gray-900">{String.fromCharCode(65 + index)}.</span>
+                <span className="text-gray-900">{option}</span>
               </div>
             </button>
           ))}

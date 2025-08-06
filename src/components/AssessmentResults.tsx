@@ -85,7 +85,7 @@ export function AssessmentResults({
               />
             </svg>
             <div className="absolute inset-0 flex items-center justify-center">
-              <span className="text-2xl font-bold">{accuracy}%</span>
+              <span className="text-2xl font-bold text-gray-900">{accuracy}%</span>
             </div>
           </div>
           <p className="text-sm text-gray-600">Quiz Accuracy</p>
@@ -115,7 +115,7 @@ export function AssessmentResults({
               />
             </svg>
             <div className="absolute inset-0 flex items-center justify-center">
-              <span className="text-2xl font-bold">{wordsPerMinute}</span>
+              <span className="text-2xl font-bold text-gray-900">{wordsPerMinute}</span>
             </div>
           </div>
           <p className="text-sm text-gray-600">Words/Minute</p>
