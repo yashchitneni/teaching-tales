@@ -150,7 +150,7 @@ export default function StoryLoadingPage() {
       localStorage.setItem('teaching-tales-stories', JSON.stringify(updatedStories))
       
       // Navigate to reading interface
-      router.push(`/book/${storyId}/chapter/1`)
+      router.push(`/book/${storyId}`)
 
     } catch (error) {
       console.error('Error generating story:', error)
