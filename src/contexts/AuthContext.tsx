@@ -1,7 +1,8 @@
 'use client';
 
 import { createContext, useContext, useState, useEffect, ReactNode } from 'react';
-import { sso } from '@/lib/auth/timeback-sso';
+// NOTE: SSO class is deprecated - we use server-side auth only
+// import { sso } from '@/lib/auth/timeback-sso';  // DEPRECATED
 import { authEvents } from '@/lib/auth/auth-events';
 
 interface User {
@@ -29,56 +30,30 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const checkAuth = async () => {
     setIsLoading(true);
     try {
-      // First try to get user from server using HttpOnly cookies
+      // ONLY use server-side authentication via HttpOnly cookies
       const response = await fetch('/api/auth/me', {
-        credentials: 'include'
+        credentials: 'include'  // Includes HttpOnly cookies
       });
       
       if (response.ok) {
         const data = await response.json();
         if (data.success && data.data && data.data.user) {
-          console.log('[AuthContext] Got user from server:', data.data.user);
+          console.log('[AuthContext] Authenticated user:', data.data.user);
           setUser(data.data.user);
-          return;
-        }
-      }
-      
-      // Fallback to localStorage token check
-      const token = sso.getToken();
-      if (token) {
-        const ssoResponse = await sso.request('/api/auth/me');
-        if (ssoResponse.ok) {
-          const data = await ssoResponse.json();
-          setUser(data.data.user);
-          // Set cookie for middleware
-          document.cookie = `timeback_token=${token}; path=/; max-age=86400`;
         } else {
-          // Token is invalid or expired
-          console.log('Auth check failed, clearing token. Status:', ssoResponse.status);
+          console.log('[AuthContext] No user in response');
           setUser(null);
-          sso.clearToken();
-          document.cookie = 'timeback_token=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT';
-          
-          // If we get a 401, don't try SSO check, just stay logged out
-          if (ssoResponse.status === 401) {
-            return;
-          }
         }
+      } else if (response.status === 401) {
+        console.log('[AuthContext] Not authenticated');
+        setUser(null);
       } else {
-        // Check for SSO session
-        const result = await sso.checkSession();
-        if (result.authenticated && result.user) {
-          setUser(result.user);
-          if (result.token) {
-            document.cookie = `timeback_token=${result.token}; path=/; max-age=86400`;
-          }
-        }
+        console.error('[AuthContext] Auth check failed with status:', response.status);
+        setUser(null);
       }
     } catch (error) {
-      console.error('Auth check failed:', error);
+      console.error('[AuthContext] Auth check error:', error);
       setUser(null);
-      sso.clearToken();
-      document.cookie = 'timeback_token=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT';
     } finally {
       setIsLoading(false);
     }
@@ -128,12 +103,23 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const logout = async () => {
     try {
-      await sso.logout();
+      // Use server-side logout
+      const response = await fetch('/api/auth/logout', {
+        method: 'POST',
+        credentials: 'include'
+      });
+      
+      if (response.ok) {
+        console.log('[AuthContext] Logout successful');
+      }
+      
       setUser(null);
-      // Clear cookie for middleware
-      document.cookie = 'timeback_token=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT';
+      // Emit logout event for other tabs/windows
+      authEvents.emitLogout();
     } catch (error) {
-      console.error('Logout error:', error);
+      console.error('[AuthContext] Logout error:', error);
+      // Even if logout fails, clear local state
+      setUser(null);
     }
   };
 

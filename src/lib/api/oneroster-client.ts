@@ -1,7 +1,8 @@
-import { API_CONFIG } from '@/lib/config';
-import { getAuthToken } from '@/lib/auth/timeback-sso';
+// Updated to use server-side proxy routes for security
+// See docs/AUTHENTICATION_ARCHITECTURE.md for details
 
-const ONEROSTER_BASE_URL = `${API_CONFIG.BASE_URL}${API_CONFIG.ONEROSTER_BASE_PATH}`;
+// All requests now go through Next.js API routes
+const ONEROSTER_BASE_URL = '/api/ims/oneroster/rostering/v1p2';
 
 // Base response interfaces
 interface Organization {
@@ -160,17 +161,13 @@ interface EnrollmentResponse {
   enrollment: Enrollment;
 }
 
-// Common fetch options
+// Common fetch options - no token needed, cookies are sent automatically
 const getFetchOptions = (): RequestInit => {
-  const token = getAuthToken();
-  if (!token) {
-    throw new Error('Authentication required');
-  }
-  
   return {
+    credentials: 'include',  // Include HttpOnly cookies
     headers: {
-      'Authorization': `Bearer ${token}`,
       'Accept': 'application/json',
+      'Content-Type': 'application/json',
     },
   };
 };

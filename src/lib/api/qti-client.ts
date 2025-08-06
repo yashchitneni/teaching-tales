@@ -1,6 +1,5 @@
-import { API_CONFIG } from '@/lib/config';
-import { getAuthToken } from '@/lib/auth/sso';
-import { authFetch } from './auth-fetch';
+// Updated to use server-side proxy routes for security
+// See docs/AUTHENTICATION_ARCHITECTURE.md for details
 
 interface TestPart {
   id: string;
@@ -64,8 +63,14 @@ interface AssessmentTestsResponse {
 }
 
 export async function fetchAssessmentTests(limit: number = 100, offset: number = 0): Promise<AssessmentTestsResponse> {
-  const response = await authFetch(
-    `${API_CONFIG.BASE_URL}${API_CONFIG.QTI_BASE_PATH}/assessment-tests?limit=${limit}&offset=${offset}`
+  const response = await fetch(
+    `/api/ims/qti/v3p0/assessment-tests?limit=${limit}&offset=${offset}`,
+    {
+      credentials: 'include',  // Include HttpOnly cookies
+      headers: {
+        'Accept': 'application/json',
+      }
+    }
   );
 
   if (!response.ok) {
@@ -76,8 +81,14 @@ export async function fetchAssessmentTests(limit: number = 100, offset: number =
 }
 
 export async function fetchTestHierarchy(testId: string): Promise<TestPartsResponse> {
-  const response = await authFetch(
-    `${API_CONFIG.BASE_URL}${API_CONFIG.QTI_BASE_PATH}/assessment-tests/${testId}/test-parts`
+  const response = await fetch(
+    `/api/ims/qti/v3p0/assessment-tests/${testId}/test-parts`,
+    {
+      credentials: 'include',  // Include HttpOnly cookies
+      headers: {
+        'Accept': 'application/json',
+      }
+    }
   );
 
   if (!response.ok) {
@@ -89,8 +100,14 @@ export async function fetchTestHierarchy(testId: string): Promise<TestPartsRespo
 
 export async function fetchItemDetails(itemId: string): Promise<ItemDetails> {
   console.log('Fetching item details for:', itemId);
-  const response = await authFetch(
-    `${API_CONFIG.BASE_URL}${API_CONFIG.QTI_BASE_PATH}/assessment-items/${itemId}`
+  const response = await fetch(
+    `/api/ims/qti/v3p0/assessment-items/${itemId}`,
+    {
+      credentials: 'include',  // Include HttpOnly cookies
+      headers: {
+        'Accept': 'application/json',
+      }
+    }
   );
 
   if (!response.ok) {

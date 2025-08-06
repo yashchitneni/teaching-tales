@@ -1,11 +1,16 @@
-// ✅ REAL TimeBack SSO SDK Implementation
+// ⚠️ DEPRECATED - DO NOT USE THIS FILE
 // 
-// SOLUTION FOUND: The SDK source code exists in the GitHub repository!
-// - Repository: https://github.com/this-is-alpha-iota/timeback-sso-auth
-// - Issue: npm installs from GitHub without building the dist/ files
-// - Fix: Using the source code directly until build process is fixed
-//
-// This is the actual TimeBackSSO implementation from the repository
+// This SSO implementation uses localStorage which is insecure (XSS vulnerable).
+// The application now uses server-side authentication with HttpOnly cookies.
+// 
+// See: docs/AUTHENTICATION_ARCHITECTURE.md for the correct approach
+// 
+// Migration Guide:
+// - Use /api/auth/* endpoints instead of SSO class methods
+// - Remove all getAuthToken() calls
+// - Update API clients to use relative URLs through Next.js proxy
+// 
+// This file is kept temporarily for reference during migration
 
 /**
  * Minimal TimeBack SSO SDK
@@ -98,6 +103,7 @@ class TimeBackSSO {
   }
 
   /**
+   * @deprecated Use server-side auth via /api/auth/me instead
    * Get stored token
    */
   getToken(): string | null {
@@ -106,6 +112,7 @@ class TimeBackSSO {
   }
 
   /**
+   * @deprecated Tokens are now stored in HttpOnly cookies server-side
    * Store token
    */
   setToken(token: string): void {
@@ -140,6 +147,7 @@ class TimeBackSSO {
   }
 
   /**
+   * @deprecated Use fetch('/api/auth/login') instead
    * Login with email and password
    */
   async login(email: string, password: string): Promise<{
@@ -287,9 +295,14 @@ export const sso = new TimeBackSSO({
   autoCheck: true,
 });
 
-// Helper to get the current auth token
+/**
+ * @deprecated DO NOT USE - Tokens are in HttpOnly cookies
+ * This function will always return null in the new architecture.
+ * Use server-side proxy routes instead.
+ */
 export function getAuthToken(): string | null {
-  return sso.getToken();
+  console.warn('getAuthToken() is deprecated. Use server-side proxy routes instead.');
+  return null;  // Always return null to force migration
 }
 
 // Helper to check if user is authenticated
