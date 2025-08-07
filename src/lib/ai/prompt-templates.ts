@@ -309,9 +309,15 @@ GRADE 6-8 SPECIFIC REQUIREMENTS:
           try {
             return JSON.parse(fixedJson);
           } catch (finalError) {
-            console.error('❌ Fixed code block JSON still invalid:', finalError.message);
-            console.error('🔍 Problematic JSON around position:', codeBlockMatch[1].substring(Math.max(0, 2900), 2950));
-            throw new Error(`Failed to parse JSON from code block: ${finalError.message}`);
+            console.log('🔧 Trying aggressive repair for code block JSON...');
+            const repaired = this.repairJsonLoose(codeBlockMatch[1]);
+            try {
+              return JSON.parse(repaired);
+            } catch (ultimateError) {
+              console.error('❌ Fixed code block JSON still invalid:', ultimateError.message);
+              console.error('🔍 Problematic JSON around position:', codeBlockMatch[1].substring(Math.max(0, 2900), 2950));
+              throw new Error(`Failed to parse JSON from code block: ${ultimateError.message}`);
+            }
           }
         }
       }
@@ -328,9 +334,15 @@ GRADE 6-8 SPECIFIC REQUIREMENTS:
           try {
             return JSON.parse(fixedJson);
           } catch (finalError) {
-            console.error('❌ Fixed extracted JSON still invalid:', finalError.message);
-            console.error('🔍 Problematic JSON around position:', jsonMatch[0].substring(Math.max(0, 2900), 2950));
-            throw new Error(`Failed to parse extracted JSON: ${finalError.message}`);
+            console.log('🔧 Trying aggressive repair for extracted JSON...');
+            const repaired = this.repairJsonLoose(jsonMatch[0]);
+            try {
+              return JSON.parse(repaired);
+            } catch (ultimateError) {
+              console.error('❌ Fixed extracted JSON still invalid:', ultimateError.message);
+              console.error('🔍 Problematic JSON around position:', jsonMatch[0].substring(Math.max(0, 2900), 2950));
+              throw new Error(`Failed to parse extracted JSON: ${ultimateError.message}`);
+            }
           }
         }
       }
@@ -343,6 +355,16 @@ GRADE 6-8 SPECIFIC REQUIREMENTS:
   private static fixCommonJsonIssues(jsonStr: string): string {
     let fixed = jsonStr;
     
+    // Remove line and block comments
+    fixed = fixed.replace(/\/\*[^]*?\*\//g, '').replace(/(^|\s)\/\/.*$/gm, '');
+
+    // Normalize backticks to quotes
+    fixed = fixed.replace(/`/g, '"');
+
+    // Convert single-quoted keys and values to double-quoted
+    fixed = fixed.replace(/([{,]\s*)'([^']+)'\s*:/g, '$1"$2":');
+    fixed = fixed.replace(/:\s*'([^']*)'(\s*[,}\]])/g, ': "$1"$2');
+
     // Remove trailing commas before closing braces/brackets
     fixed = fixed.replace(/,(\s*[}\]])/g, '$1');
     
@@ -384,5 +406,23 @@ GRADE 6-8 SPECIFIC REQUIREMENTS:
     fixed = fixed.replace(/:\s*"([^"]*?)(?=\s*[,}\]])/g, ': "$1"');
     
     return fixed;
+  }
+
+  // Last-resort aggressive repair for badly formatted JSON-like strings
+  private static repairJsonLoose(jsonStr: string): string {
+    let s = jsonStr.trim();
+    // If wrapped in code fencing artifacts like json:, strip them
+    s = s.replace(/^json\s*/i, '');
+    // Extract content between first { and last }
+    const start = s.indexOf('{');
+    const end = s.lastIndexOf('}');
+    if (start !== -1 && end !== -1 && end > start) {
+      s = s.substring(start, end + 1);
+    }
+    // Apply common fixes and extra lenient rules
+    s = this.fixCommonJsonIssues(s);
+    // Remove stray trailing characters
+    s = s.replace(/^[^\{]*/, '').replace(/[^\}]*$/, '');
+    return s;
   }
 }
