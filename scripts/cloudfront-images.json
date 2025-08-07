@@ -1,0 +1,361 @@
+{
+  "universes": [
+    {
+      "name": "amulet",
+      "filename": "amulet.jpg",
+      "url": "https://d3dp0uoydvg1je.cloudfront.net/universes/amulet.jpg",
+      "category": "universe",
+      "prompt": "A book cover style illustration representing the amulet universe, colorful and appealing to young readers"
+    },
+    {
+      "name": "artemis-fowl",
+      "filename": "artemis-fowl.jpg",
+      "url": "https://d3dp0uoydvg1je.cloudfront.net/universes/artemis-fowl.jpg",
+      "category": "universe",
+      "prompt": "A book cover style illustration representing the artemis-fowl universe, colorful and appealing to young readers"
+    },
+    {
+      "name": "babysitters-club",
+      "filename": "babysitters-club.jpg",
+      "url": "https://d3dp0uoydvg1je.cloudfront.net/universes/babysitters-club.jpg",
+      "category": "universe",
+      "prompt": "A book cover style illustration representing the babysitters-club universe, colorful and appealing to young readers"
+    },
+    {
+      "name": "boss-baby",
+      "filename": "boss-baby.jpg",
+      "url": "https://d3dp0uoydvg1je.cloudfront.net/universes/boss-baby.jpg",
+      "category": "universe",
+      "prompt": "A book cover style illustration representing the boss-baby universe, colorful and appealing to young readers"
+    },
+    {
+      "name": "dc-comics-universe",
+      "filename": "dc-comics-universe.jpg",
+      "url": "https://d3dp0uoydvg1je.cloudfront.net/universes/dc-comics-universe.jpg",
+      "category": "universe",
+      "prompt": "A book cover style illustration representing the dc-comics-universe universe, colorful and appealing to young readers"
+    },
+    {
+      "name": "dog-man",
+      "filename": "dog-man.jpg",
+      "url": "https://d3dp0uoydvg1je.cloudfront.net/universes/dog-man.jpg",
+      "category": "universe",
+      "prompt": "A book cover style illustration representing the dog-man universe, colorful and appealing to young readers"
+    },
+    {
+      "name": "dork-diaries",
+      "filename": "dork-diaries.jpg",
+      "url": "https://d3dp0uoydvg1je.cloudfront.net/universes/dork-diaries.jpg",
+      "category": "universe",
+      "prompt": "A book cover style illustration representing the dork-diaries universe, colorful and appealing to young readers"
+    },
+    {
+      "name": "harry-potter",
+      "filename": "harry-potter.jpg",
+      "url": "https://d3dp0uoydvg1je.cloudfront.net/universes/harry-potter.jpg",
+      "category": "universe",
+      "prompt": "A book cover style illustration representing the harry-potter universe, colorful and appealing to young readers"
+    },
+    {
+      "name": "lord-of-the-rings",
+      "filename": "lord-of-the-rings.jpg",
+      "url": "https://d3dp0uoydvg1je.cloudfront.net/universes/lord-of-the-rings.jpg",
+      "category": "universe",
+      "prompt": "A book cover style illustration representing the lord-of-the-rings universe, colorful and appealing to young readers"
+    },
+    {
+      "name": "mario",
+      "filename": "mario.jpg",
+      "url": "https://d3dp0uoydvg1je.cloudfront.net/universes/mario.jpg",
+      "category": "universe",
+      "prompt": "A book cover style illustration representing the mario universe, colorful and appealing to young readers"
+    },
+    {
+      "name": "marvel",
+      "filename": "marvel.jpg",
+      "url": "https://d3dp0uoydvg1je.cloudfront.net/universes/marvel.jpg",
+      "category": "universe",
+      "prompt": "A book cover style illustration representing the marvel universe, colorful and appealing to young readers"
+    },
+    {
+      "name": "my-hero-academia",
+      "filename": "my-hero-academia.jpg",
+      "url": "https://d3dp0uoydvg1je.cloudfront.net/universes/my-hero-academia.jpg",
+      "category": "universe",
+      "prompt": "A book cover style illustration representing the my-hero-academia universe, colorful and appealing to young readers"
+    },
+    {
+      "name": "one-piece",
+      "filename": "one-piece.jpg",
+      "url": "https://d3dp0uoydvg1je.cloudfront.net/universes/one-piece.jpg",
+      "category": "universe",
+      "prompt": "A book cover style illustration representing the one-piece universe, colorful and appealing to young readers"
+    },
+    {
+      "name": "paw-patrol",
+      "filename": "paw-patrol.jpg",
+      "url": "https://d3dp0uoydvg1je.cloudfront.net/universes/paw-patrol.jpg",
+      "category": "universe",
+      "prompt": "A book cover style illustration representing the paw-patrol universe, colorful and appealing to young readers"
+    },
+    {
+      "name": "percy-jackson",
+      "filename": "percy-jackson.jpg",
+      "url": "https://d3dp0uoydvg1je.cloudfront.net/universes/percy-jackson.jpg",
+      "category": "universe",
+      "prompt": "A book cover style illustration representing the percy-jackson universe, colorful and appealing to young readers"
+    },
+    {
+      "name": "pokemon",
+      "filename": "pokemon.jpg",
+      "url": "https://d3dp0uoydvg1je.cloudfront.net/universes/pokemon.jpg",
+      "category": "universe",
+      "prompt": "A book cover style illustration representing the pokemon universe, colorful and appealing to young readers"
+    },
+    {
+      "name": "star-wars",
+      "filename": "star-wars.jpg",
+      "url": "https://d3dp0uoydvg1je.cloudfront.net/universes/star-wars.jpg",
+      "category": "universe",
+      "prompt": "A book cover style illustration representing the star-wars universe, colorful and appealing to young readers"
+    },
+    {
+      "name": "narnia",
+      "filename": "narnia.jpg",
+      "url": "https://d3dp0uoydvg1je.cloudfront.net/universes/narnia.jpg",
+      "category": "universe",
+      "prompt": "A book cover style illustration representing the narnia universe, colorful and appealing to young readers"
+    },
+    {
+      "name": "wings-of-fire",
+      "filename": "wings-of-fire.jpg",
+      "url": "https://d3dp0uoydvg1je.cloudfront.net/universes/wings-of-fire.jpg",
+      "category": "universe",
+      "prompt": "A book cover style illustration representing the wings-of-fire universe, colorful and appealing to young readers"
+    }
+  ],
+  "characters": [
+    {
+      "name": "Emily Hayes",
+      "filename": "emily-hayes.png",
+      "url": "placeholder-character-url",
+      "category": "character",
+      "universe": "Amulet",
+      "prompt": "A young girl character with magical amulet powers, illustrated in a colorful book style"
+    },
+    {
+      "name": "Navin Hayes",
+      "filename": "navin-hayes.png",
+      "url": "placeholder-character-url",
+      "category": "character",
+      "universe": "Amulet",
+      "prompt": "A young boy character from the Amulet series, illustrated in a colorful book style"
+    },
+    {
+      "name": "Miskit",
+      "filename": "miskit.png",
+      "url": "placeholder-character-url",
+      "category": "character",
+      "universe": "Amulet",
+      "prompt": "A small rabbit-like creature with pink ears from Amulet series, illustrated in a colorful book style"
+    },
+    {
+      "name": "Harry Potter",
+      "filename": "harry-potter.png",
+      "url": "placeholder-character-url",
+      "category": "character",
+      "universe": "Harry Potter",
+      "prompt": "A young wizard boy with glasses and messy hair, illustrated in a colorful book style"
+    },
+    {
+      "name": "Hermione Granger",
+      "filename": "hermione-granger.png",
+      "url": "placeholder-character-url",
+      "category": "character",
+      "universe": "Harry Potter",
+      "prompt": "A young witch girl with bushy brown hair, illustrated in a colorful book style"
+    },
+    {
+      "name": "Spider-Man",
+      "filename": "spider-man.png",
+      "url": "placeholder-character-url",
+      "category": "character",
+      "universe": "Marvel",
+      "prompt": "Spider-Man superhero in red and blue costume, illustrated in a colorful comic book style"
+    },
+    {
+      "name": "Mario",
+      "filename": "mario.png",
+      "url": "placeholder-character-url",
+      "category": "character",
+      "universe": "Mario",
+      "prompt": "Mario character in red hat and overalls, illustrated in a colorful cartoon style"
+    },
+    {
+      "name": "Pikachu",
+      "filename": "pikachu.png",
+      "url": "placeholder-character-url",
+      "category": "character",
+      "universe": "Pokemon",
+      "prompt": "Pikachu yellow electric mouse Pokemon, illustrated in a colorful anime style"
+    }
+  ],
+  "sparks": [
+    {
+      "name": "The Last Train at Midnight",
+      "filename": "last-train-midnight.png",
+      "url": "placeholder-spark-url",
+      "category": "spark",
+      "prompt": "A mysterious train at a dark station at midnight, illustrated in a dramatic book style"
+    },
+    {
+      "name": "Mysterious Map in a Bottle",
+      "filename": "mysterious-map-bottle.png",
+      "url": "placeholder-spark-url",
+      "category": "spark",
+      "prompt": "An old treasure map rolled up inside a glass bottle, illustrated in an adventure book style"
+    },
+    {
+      "name": "The Playground Pact",
+      "filename": "playground-pact.png",
+      "url": "placeholder-spark-url",
+      "category": "spark",
+      "prompt": "Children making a secret pact on a school playground, illustrated in a colorful book style"
+    },
+    {
+      "name": "A rift opens, releasing strange creatures",
+      "filename": "rift-creatures.png",
+      "url": "placeholder-spark-url",
+      "category": "spark",
+      "prompt": "A magical portal opening with fantastical creatures emerging, illustrated in a fantasy book style"
+    },
+    {
+      "name": "The amulet begins to glow",
+      "filename": "amulet-glow.png",
+      "url": "placeholder-spark-url",
+      "category": "spark",
+      "prompt": "A magical amulet glowing with mystical light, illustrated in a fantasy book style"
+    },
+    {
+      "name": "Resistance fighters missing",
+      "filename": "fighters-missing.png",
+      "url": "placeholder-spark-url",
+      "category": "spark",
+      "prompt": "Silhouettes of brave fighters in a mysterious landscape, illustrated in an adventure book style"
+    },
+    {
+      "name": "Ancient artifact discovered",
+      "filename": "ancient-artifact.png",
+      "url": "placeholder-spark-url",
+      "category": "spark",
+      "prompt": "An ancient mystical artifact being discovered, illustrated in an adventure book style"
+    }
+  ],
+  "interests": [
+    {
+      "name": "Sports",
+      "filename": "sports_1024x585.webp",
+      "url": "https://d3dp0uoydvg1je.cloudfront.net/interests/sports_1024x585.webp",
+      "category": "interest",
+      "prompt": "An illustration representing Sports in a colorful, child-friendly style suitable for educational content"
+    },
+    {
+      "name": "Animals",
+      "filename": "animals_1024x585.webp",
+      "url": "https://d3dp0uoydvg1je.cloudfront.net/interests/animals_1024x585.webp",
+      "category": "interest",
+      "prompt": "An illustration representing Animals in a colorful, child-friendly style suitable for educational content"
+    },
+    {
+      "name": "Science & Nature",
+      "filename": "science_nature_1024x585.webp",
+      "url": "https://d3dp0uoydvg1je.cloudfront.net/interests/science_nature_1024x585.webp",
+      "category": "interest",
+      "prompt": "An illustration representing Science & Nature in a colorful, child-friendly style suitable for educational content"
+    },
+    {
+      "name": "History & Culture",
+      "filename": "history_culture_1024x585.webp",
+      "url": "https://d3dp0uoydvg1je.cloudfront.net/interests/history_culture_1024x585.webp",
+      "category": "interest",
+      "prompt": "An illustration representing History & Culture in a colorful, child-friendly style suitable for educational content"
+    },
+    {
+      "name": "Arts & Crafts",
+      "filename": "arts_crafts_1024x585.webp",
+      "url": "https://d3dp0uoydvg1je.cloudfront.net/interests/arts_crafts_1024x585.webp",
+      "category": "interest",
+      "prompt": "An illustration representing Arts & Crafts in a colorful, child-friendly style suitable for educational content"
+    },
+    {
+      "name": "Technology & Innovation",
+      "filename": "technology_innovation_1024x585.webp",
+      "url": "https://d3dp0uoydvg1je.cloudfront.net/interests/technology_innovation_1024x585.webp",
+      "category": "interest",
+      "prompt": "An illustration representing Technology & Innovation in a colorful, child-friendly style suitable for educational content"
+    },
+    {
+      "name": "Literature & Stories",
+      "filename": "literature_stories_1024x585.webp",
+      "url": "https://d3dp0uoydvg1je.cloudfront.net/interests/literature_stories_1024x585.webp",
+      "category": "interest",
+      "prompt": "An illustration representing Literature & Stories in a colorful, child-friendly style suitable for educational content"
+    },
+    {
+      "name": "Travel & Geography",
+      "filename": "travel_geography_1024x585.webp",
+      "url": "https://d3dp0uoydvg1je.cloudfront.net/interests/travel_geography_1024x585.webp",
+      "category": "interest",
+      "prompt": "An illustration representing Travel & Geography in a colorful, child-friendly style suitable for educational content"
+    },
+    {
+      "name": "Team & Sports",
+      "filename": "team_sports_1024x585.webp",
+      "url": "https://d3dp0uoydvg1je.cloudfront.net/interests/team_sports_1024x585.webp",
+      "category": "interest",
+      "prompt": "An illustration representing Team & Sports in a colorful, child-friendly style suitable for educational content"
+    },
+    {
+      "name": "Individual & Sports",
+      "filename": "individual_sports_1024x585.webp",
+      "url": "https://d3dp0uoydvg1je.cloudfront.net/interests/individual_sports_1024x585.webp",
+      "category": "interest",
+      "prompt": "An illustration representing Individual & Sports in a colorful, child-friendly style suitable for educational content"
+    },
+    {
+      "name": "Adventure & Sports",
+      "filename": "adventure_sports_1024x585.webp",
+      "url": "https://d3dp0uoydvg1je.cloudfront.net/interests/adventure_sports_1024x585.webp",
+      "category": "interest",
+      "prompt": "An illustration representing Adventure & Sports in a colorful, child-friendly style suitable for educational content"
+    },
+    {
+      "name": "Water & Sports",
+      "filename": "water_sports_1024x585.webp",
+      "url": "https://d3dp0uoydvg1je.cloudfront.net/interests/water_sports_1024x585.webp",
+      "category": "interest",
+      "prompt": "An illustration representing Water & Sports in a colorful, child-friendly style suitable for educational content"
+    },
+    {
+      "name": "Winter & Sports",
+      "filename": "winter_sports_1024x585.webp",
+      "url": "https://d3dp0uoydvg1je.cloudfront.net/interests/winter_sports_1024x585.webp",
+      "category": "interest",
+      "prompt": "An illustration representing Winter & Sports in a colorful, child-friendly style suitable for educational content"
+    },
+    {
+      "name": "Athletics",
+      "filename": "athletics_1024x585.webp",
+      "url": "https://d3dp0uoydvg1je.cloudfront.net/interests/athletics_1024x585.webp",
+      "category": "interest",
+      "prompt": "An illustration representing Athletics in a colorful, child-friendly style suitable for educational content"
+    },
+    {
+      "name": "Mind & Sports",
+      "filename": "mind_sports_1024x585.webp",
+      "url": "https://d3dp0uoydvg1je.cloudfront.net/interests/mind_sports_1024x585.webp",
+      "category": "interest",
+      "prompt": "An illustration representing Mind & Sports in a colorful, child-friendly style suitable for educational content"
+    }
+  ]
+}

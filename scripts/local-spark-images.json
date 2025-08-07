@@ -1,0 +1,44 @@
+[
+  {
+    "id": "lost-toy",
+    "name": "lost-toy",
+    "filename": "lost_toy.png",
+    "url": "/sparks/lost_toy.png"
+  },
+  {
+    "id": "new-friend",
+    "name": "new-friend",
+    "filename": "new_friend.png",
+    "url": "/sparks/new_friend.png"
+  },
+  {
+    "id": "birthday-party",
+    "name": "birthday-party",
+    "filename": "birthday_party.png",
+    "url": "/sparks/birthday_party.png"
+  },
+  {
+    "id": "first-day-school",
+    "name": "first-day-school",
+    "filename": "first_day_school.png",
+    "url": "/sparks/first_day_school.png"
+  },
+  {
+    "id": "camping-trip",
+    "name": "camping-trip",
+    "filename": "camping_trip.png",
+    "url": "/sparks/camping_trip.png"
+  },
+  {
+    "id": "pet-adventure",
+    "name": "pet-adventure",
+    "filename": "pet_adventure.png",
+    "url": "/sparks/pet_adventure.png"
+  },
+  {
+    "id": "magic-discovery",
+    "name": "magic-discovery",
+    "filename": "magic_discovery.png",
+    "url": "/sparks/magic_discovery.png"
+  }
+]
