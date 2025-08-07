@@ -7,6 +7,7 @@ interface Question {
   text: string
   options: string[]
   correctAnswer: number
+  explanation?: string
 }
 
 interface GuidingQuestionsProps {
@@ -14,16 +15,21 @@ interface GuidingQuestionsProps {
   currentQuestionIndex: number
   onAnswer: (answerIndex: number) => void
   answers: number[]
+  selectedAnswer?: number
+  onSelectAnswer?: (answerIndex: number) => void
 }
 
 export function GuidingQuestions({ 
   questions, 
   currentQuestionIndex, 
   onAnswer,
-  answers 
+  answers,
+  selectedAnswer,
+  onSelectAnswer
 }: GuidingQuestionsProps) {
   const currentQuestion = questions[currentQuestionIndex]
   const hasAnswered = answers[currentQuestionIndex] !== undefined
+  const hasSelected = selectedAnswer !== undefined
 
   return (
     <div className="p-6">
@@ -56,7 +62,11 @@ export function GuidingQuestions({
           {currentQuestion.options.map((option, index) => (
             <button
               key={index}
-              onClick={() => !hasAnswered && onAnswer(index)}
+              onClick={() => {
+                if (!hasAnswered && onSelectAnswer) {
+                  onSelectAnswer(index)
+                }
+              }}
               disabled={hasAnswered}
               className={`w-full text-left p-4 rounded-lg border-2 transition-all ${
                 hasAnswered && answers[currentQuestionIndex] === index
@@ -65,11 +75,19 @@ export function GuidingQuestions({
                     : 'border-red-500 bg-red-50'
                   : hasAnswered && index === currentQuestion.correctAnswer
                   ? 'border-green-500 bg-green-50'
+                  : hasSelected && selectedAnswer === index
+                  ? 'border-blue-500 bg-blue-50'
                   : 'border-gray-200 hover:border-blue-300 hover:bg-blue-50'
               } ${hasAnswered ? 'cursor-not-allowed' : 'cursor-pointer'}`}
             >
               <div className="flex items-start">
-                <span className="mr-3 font-medium text-gray-900">{String.fromCharCode(65 + index)}.</span>
+                <span className={`mr-3 font-medium ${
+                  hasSelected && selectedAnswer === index && !hasAnswered 
+                    ? 'bg-blue-600 text-white rounded-full w-8 h-8 flex items-center justify-center' 
+                    : 'text-gray-900'
+                }`}>
+                  {String.fromCharCode(65 + index)}{hasSelected && selectedAnswer === index && !hasAnswered ? '' : '.'}
+                </span>
                 <span className="text-gray-900">{option}</span>
               </div>
             </button>
@@ -77,19 +95,60 @@ export function GuidingQuestions({
         </div>
       </div>
 
+      {/* Answer & Continue Button - Shows when an option is selected but not answered */}
+      {hasSelected && !hasAnswered && (
+        <Button
+          onClick={() => onAnswer(selectedAnswer)}
+          className="w-full mb-6 bg-blue-600 hover:bg-blue-700 text-white"
+        >
+          Answer & Continue Reading
+        </Button>
+      )}
+
       {/* Feedback */}
       {hasAnswered && (
-        <div className={`p-4 rounded-lg mb-6 ${
-          answers[currentQuestionIndex] === currentQuestion.correctAnswer
-            ? 'bg-green-100 text-green-800'
-            : 'bg-red-100 text-red-800'
-        }`}>
-          <p className="font-medium">
-            {answers[currentQuestionIndex] === currentQuestion.correctAnswer
-              ? '✅ Excellent! That\'s correct.'
-              : '❌ Not quite right. The correct answer is highlighted above.'}
-          </p>
-        </div>
+        <>
+          <div className={`p-4 rounded-lg mb-4 ${
+            answers[currentQuestionIndex] === currentQuestion.correctAnswer
+              ? 'bg-green-50 border border-green-200'
+              : 'bg-red-50 border border-red-200'
+          }`}>
+            <p className={`font-medium mb-2 ${
+              answers[currentQuestionIndex] === currentQuestion.correctAnswer
+                ? 'text-green-800'
+                : 'text-red-800'
+            }`}>
+              {answers[currentQuestionIndex] === currentQuestion.correctAnswer
+                ? '✅ Excellent! That\'s correct.'
+                : `❌ Not quite right. The correct answer is ${String.fromCharCode(65 + currentQuestion.correctAnswer)}.`}
+            </p>
+            {/* Show the educational explanation */}
+            {currentQuestion.explanation && (
+              <div className="text-sm text-gray-700 leading-relaxed">
+                {answers[currentQuestionIndex] === currentQuestion.correctAnswer ? (
+                  <p>{currentQuestion.explanation}</p>
+                ) : (
+                  <>
+                    <p className="font-medium text-gray-800 mb-1">Here's why:</p>
+                    <p>{currentQuestion.explanation}</p>
+                    {/* Additional learning tip for incorrect answers */}
+                    <p className="mt-2 italic text-gray-600">
+                      💡 Tip: Re-read that section of the story to better understand this detail.
+                    </p>
+                  </>
+                )}
+              </div>
+            )}
+          </div>
+          
+          {/* Continue Reading Button */}
+          <Button
+            onClick={() => onAnswer(-1)} // Special value to signal "next question" or "continue"
+            className="w-full mb-6 bg-blue-600 hover:bg-blue-700 text-white"
+          >
+            {currentQuestionIndex < questions.length - 1 ? 'Continue Reading' : 'View Results'}
+          </Button>
+        </>
       )}
 
       {/* Tips Section */}

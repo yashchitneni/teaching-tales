@@ -14,6 +14,7 @@ interface Question {
   text: string
   options: string[]
   correctAnswer: number
+  explanation?: string
 }
 
 interface StorySection {
@@ -39,6 +40,7 @@ export default function StoryReadingPage() {
   const [revealedSections, setRevealedSections] = useState<number[]>([0]) // Start with first section revealed
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0)
   const [answers, setAnswers] = useState<number[]>([])
+  const [selectedAnswer, setSelectedAnswer] = useState<number | undefined>(undefined)
   const [showAssessment, setShowAssessment] = useState(false)
   const [startTime] = useState(Date.now())
 
@@ -76,7 +78,8 @@ export default function StoryReadingPage() {
               id: q.id,
               text: q.question,
               options: q.options,
-              correctAnswer: q.correct
+              correctAnswer: q.correct,
+              explanation: q.explanation
             }))
           })),
           wordCount: storedStory.wordCount || 0,
@@ -105,7 +108,8 @@ export default function StoryReadingPage() {
                   id: q.id,
                   text: q.question,
                   options: q.options,
-                  correctAnswer: q.correct
+                  correctAnswer: q.correct,
+                  explanation: q.explanation
                 }))
               })),
               wordCount: foundStory.wordCount || 0,
@@ -162,16 +166,28 @@ export default function StoryReadingPage() {
   }
 
   const handleQuestionAnswer = (answerIndex: number) => {
+    // Special case: -1 means "continue" button was clicked after answering
+    if (answerIndex === -1) {
+      // Clear selected answer for next question
+      setSelectedAnswer(undefined)
+      // Move to next question or show assessment
+      if (currentQuestionIndex < getCurrentSectionQuestions().length - 1) {
+        setCurrentQuestionIndex(currentQuestionIndex + 1)
+      } else {
+        setShowAssessment(true)
+      }
+      return
+    }
+
+    // Regular answer submission - save the answer
     const newAnswers = [...answers]
     newAnswers[currentQuestionIndex] = answerIndex
     setAnswers(newAnswers)
+  }
 
-    // Move to next question or show assessment
-    if (currentQuestionIndex < getCurrentSectionQuestions().length - 1) {
-      setCurrentQuestionIndex(currentQuestionIndex + 1)
-    } else {
-      setShowAssessment(true)
-    }
+  const handleSelectAnswer = (answerIndex: number) => {
+    // Just select the answer, don't submit yet
+    setSelectedAnswer(answerIndex)
   }
 
   const getCurrentSectionQuestions = () => {
@@ -303,6 +319,8 @@ export default function StoryReadingPage() {
               currentQuestionIndex={currentQuestionIndex}
               onAnswer={handleQuestionAnswer}
               answers={answers}
+              selectedAnswer={selectedAnswer}
+              onSelectAnswer={handleSelectAnswer}
             />
           ) : (
             <AssessmentResults
