@@ -1,8 +1,9 @@
 /**
- * @fileoverview Gradebook Service
+ * @fileoverview Enhanced Gradebook Service
  * 
  * This service handles the submission and management of grades to OneRoster
- * gradebook systems, providing automatic grade synchronization and result tracking.
+ * gradebook systems, providing automatic grade synchronization, result tracking,
+ * and comprehensive gradebook management with offline support.
  */
 
 import { 
@@ -11,6 +12,7 @@ import {
   ResultResponse 
 } from '../api/oneroster-client';
 import { StoredResponse } from './response-storage-service';
+import type { QTIStory, QTIAssessment } from './qti-story-loader-service';
 
 // Gradebook service interfaces
 export interface GradeSubmissionData {
@@ -421,6 +423,179 @@ export class GradebookService {
     }
 
     return report;
+  }
+
+  /**
+   * Synchronize all pending grades for a story
+   */
+  static async synchronizeStoryGrades(
+    story: QTIStory,
+    studentId: string,
+    responses: StoredResponse[]
+  ): Promise<{
+    synchronized: GradeSubmissionResult[];
+    failed: Array<{ assessmentId: string; error: string }>;
+    totalGrades: number;
+  }> {
+    
+    const synchronized: GradeSubmissionResult[] = [];
+    const failed: Array<{ assessmentId: string; error: string }> = [];
+
+    try {
+      console.log('🔄 Synchronizing grades for story:', story.title);
+
+      // Get OneRoster integration data
+      const oneRosterIntegration = story.metadata.oneRosterIntegration;
+      if (!oneRosterIntegration?.lineItemIds || !oneRosterIntegration.classId) {
+        throw new Error('Story is not integrated with OneRoster');
+      }
+
+      // Group responses by assessment
+      const responsesByAssessment = responses.reduce((acc, response) => {
+        const assessmentId = response.metadata?.assessmentId || 'unknown';
+        if (!acc[assessmentId]) {
+          acc[assessmentId] = [];
+        }
+        acc[assessmentId].push(response);
+        return acc;
+      }, {} as Record<string, StoredResponse[]>);
+
+      // Process each assessment
+      for (const assessment of story.assessments) {
+        try {
+          const assessmentResponses = responsesByAssessment[assessment.id] || [];
+          
+          if (assessmentResponses.length === 0) {
+            console.log(`⏭️ Skipping assessment ${assessment.id} - no responses`);
+            continue;
+          }
+
+          // Find corresponding line item
+          const assessmentIndex = story.assessments.indexOf(assessment);
+          const lineItemId = oneRosterIntegration.lineItemIds[assessmentIndex];
+
+          if (!lineItemId) {
+            failed.push({
+              assessmentId: assessment.id,
+              error: 'No corresponding line item found'
+            });
+            continue;
+          }
+
+          // Calculate grade for this assessment
+          const gradeData: GradeSubmissionData = {
+            lineItemId,
+            studentId,
+            assessmentId: assessment.id,
+            totalScore: assessmentResponses.reduce((sum, r) => sum + r.score, 0),
+            maxPossibleScore: assessmentResponses.reduce((sum, r) => sum + r.maxScore, 0),
+            accuracy: 0, // Will be calculated
+            completedItems: assessmentResponses.length,
+            totalItems: assessment.questions.length,
+            timeSpent: assessmentResponses.reduce((sum, r) => sum + (r.timeSpent || 0), 0),
+            attempts: Math.max(...assessmentResponses.map(r => r.attempts || 1)),
+            comment: `Teaching Tales: ${assessment.title}`,
+            metadata: {
+              storyId: story.id,
+              storyTitle: story.title,
+              sectionId: assessment.sectionId,
+              completionDate: new Date().toISOString()
+            }
+          };
+
+          // Calculate accuracy
+          gradeData.accuracy = gradeData.maxPossibleScore > 0 
+            ? (gradeData.totalScore / gradeData.maxPossibleScore) * 100 
+            : 0;
+
+          // Submit grade
+          const result = await this.submitGrade(gradeData);
+          synchronized.push(result);
+
+          console.log(`✅ Grade synchronized for assessment ${assessment.id}: ${gradeData.accuracy.toFixed(1)}%`);
+
+        } catch (error) {
+          console.error(`❌ Failed to sync grade for assessment ${assessment.id}:`, error);
+          failed.push({
+            assessmentId: assessment.id,
+            error: error instanceof Error ? error.message : 'Unknown error'
+          });
+        }
+      }
+
+      console.log(`✅ Grade synchronization completed: ${synchronized.length} successful, ${failed.length} failed`);
+
+      return {
+        synchronized,
+        failed,
+        totalGrades: story.assessments.length
+      };
+
+    } catch (error) {
+      console.error('❌ Story grade synchronization failed:', error);
+      
+      return {
+        synchronized,
+        failed: [{
+          assessmentId: 'all',
+          error: error instanceof Error ? error.message : 'Synchronization failed'
+        }],
+        totalGrades: story.assessments.length
+      };
+    }
+  }
+
+  /**
+   * Get gradebook synchronization status for a story
+   */
+  static async getStoryGradebookStatus(
+    story: QTIStory,
+    studentId: string
+  ): Promise<{
+    isIntegrated: boolean;
+    classId?: string;
+    lineItemCount: number;
+    syncedAssessments: number;
+    pendingAssessments: number;
+    lastSyncAttempt?: string;
+    syncErrors: string[];
+  }> {
+    
+    try {
+      const oneRosterIntegration = story.metadata.oneRosterIntegration;
+      
+      if (!oneRosterIntegration?.classId) {
+        return {
+          isIntegrated: false,
+          lineItemCount: 0,
+          syncedAssessments: 0,
+          pendingAssessments: story.assessments.length,
+          syncErrors: ['Story not integrated with OneRoster']
+        };
+      }
+
+      // In a real implementation, this would check actual sync status from database
+      return {
+        isIntegrated: true,
+        classId: oneRosterIntegration.classId,
+        lineItemCount: oneRosterIntegration.lineItemIds?.length || 0,
+        syncedAssessments: 0, // Would be calculated from stored sync records
+        pendingAssessments: story.assessments.length,
+        lastSyncAttempt: undefined, // Would be retrieved from sync log
+        syncErrors: []
+      };
+
+    } catch (error) {
+      console.error('❌ Failed to get gradebook status:', error);
+      
+      return {
+        isIntegrated: false,
+        lineItemCount: 0,
+        syncedAssessments: 0,
+        pendingAssessments: story.assessments.length,
+        syncErrors: [error instanceof Error ? error.message : 'Status check failed']
+      };
+    }
   }
 }
 

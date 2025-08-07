@@ -8,10 +8,12 @@ import { GuidingQuestions } from '@/components/GuidingQuestions'
 import { AssessmentResults } from '@/components/AssessmentResults'
 import { SectionUnlockIndicator, SectionProgressOverview } from '@/components/SectionUnlockIndicator'
 import { QTIQuestionRenderer } from '@/components/QTIQuestionRenderer'
+import { ConnectionStatusBadge } from '@/components/ConnectionStatusIndicator'
 import { QTIStoryLoaderService, type QTIStory, type QTISection, type QTIQuestion } from '@/lib/services/qti-story-loader-service'
 import { ResponseStorageService } from '@/lib/services/response-storage-service'
 import { QTIResponseProcessor, defaultResponseProcessor } from '@/lib/qti/processors/response-processor'
 import { UnlockEngine, type UnlockContext } from '@/lib/qti/engines/unlock-engine'
+import { EnhancedResponseHandler, type ResponseProcessingResult } from '@/lib/services/enhanced-response-handler'
 import { useAuth } from '@/contexts/AuthContext'
 
 // Legacy interfaces for backward compatibility
@@ -62,6 +64,12 @@ export default function StoryReadingPage() {
   const [currentQTISection, setCurrentQTISection] = useState<QTISection | null>(null)
   const [sectionUnlockStates, setSectionUnlockStates] = useState<Record<string, boolean>>({})
   const [responseProcessingEnabled, setResponseProcessingEnabled] = useState(true)
+  
+  // Enhanced response handling state
+  const [processingResponse, setProcessingResponse] = useState<string | null>(null)
+  const [responseResults, setResponseResults] = useState<Record<string, ResponseProcessingResult>>({})
+  const [offlineMode, setOfflineMode] = useState(!navigator.onLine)
+  const [pendingSync, setPendingSync] = useState(false)
 
   const bookId = params.bookId as string
 
@@ -95,6 +103,55 @@ export default function StoryReadingPage() {
       return () => clearInterval(interval)
     }
   }, [qtiStory, user?.sourcedId])
+
+  // Monitor online/offline status
+  useEffect(() => {
+    const handleOnline = () => {
+      console.log('🌐 Connection restored')
+      setOfflineMode(false)
+      
+      // Trigger sync of offline responses
+      syncOfflineResponses()
+    }
+
+    const handleOffline = () => {
+      console.log('📱 Connection lost - switching to offline mode')
+      setOfflineMode(true)
+    }
+
+    window.addEventListener('online', handleOnline)
+    window.addEventListener('offline', handleOffline)
+
+    return () => {
+      window.removeEventListener('online', handleOnline)
+      window.removeEventListener('offline', handleOffline)
+    }
+  }, [])
+
+  // Sync offline responses when connection is restored
+  const syncOfflineResponses = async () => {
+    if (pendingSync) return
+
+    setPendingSync(true)
+    
+    try {
+      console.log('🔄 Syncing offline responses...')
+      const result = await EnhancedResponseHandler.syncOfflineResponses()
+      
+      if (result.synced > 0) {
+        console.log(`✅ Successfully synced ${result.synced} offline responses`)
+      }
+      
+      if (result.failed > 0) {
+        console.warn(`⚠️ Failed to sync ${result.failed} responses:`, result.errors)
+      }
+
+    } catch (error) {
+      console.error('❌ Offline sync failed:', error)
+    } finally {
+      setPendingSync(false)
+    }
+  }
 
   const loadStoryFromAPI = async () => {
     try {
@@ -211,7 +268,7 @@ export default function StoryReadingPage() {
     }
   }
 
-  // QTI-specific question answering with response processing
+  // Enhanced QTI question answering with full backend integration
   const handleQTIQuestionAnswer = async (questionId: string, response: any) => {
     if (!qtiStory || !currentQTISection || !user?.sourcedId) {
       console.warn('❌ Missing required data for QTI response processing')
@@ -219,7 +276,9 @@ export default function StoryReadingPage() {
     }
 
     try {
-      console.log('🔄 Processing QTI response:', { questionId, response })
+      console.log('🔄 Processing enhanced QTI response:', { questionId, response })
+      
+      setProcessingResponse(questionId)
 
       // Find the question and assessment
       const assessment = qtiStory.assessments.find(a => 
@@ -229,91 +288,103 @@ export default function StoryReadingPage() {
 
       if (!assessment || !question) {
         console.error('❌ Question or assessment not found:', questionId)
+        setProcessingResponse(null)
         return
       }
 
-      // Create QTI assessment item for processing
-      const qtiItem = {
-        identifier: question.id,
-        title: question.prompt,
-        adaptive: false,
-        timeDependent: false,
-        responseDeclaration: {
-          identifier: question.responseIdentifier,
-          cardinality: 'single' as const,
-          baseType: 'identifier' as const,
-          correctResponse: {
-            values: question.correctResponse || []
-          }
-        },
-        outcomeDeclarations: [{
-          identifier: 'SCORE',
-          cardinality: 'single' as const,
-          baseType: 'float',
-          defaultValue: 0
-        }],
-        itemBody: {
-          content: question.content,
-          interactions: question.interactions
-        },
-        responseProcessing: {
-          template: question.scoring?.method || 'match_correct'
-        },
-        modalFeedbacks: question.feedback?.map(f => ({
-          identifier: f.type,
-          content: f.content,
-          showHide: 'show' as const
-        }))
-      }
+      // Calculate time spent on this question
+      const timeSpent = Date.now() - startTime
+      const attempts = (responseResults[questionId]?.processedResponse.attempts || 0) + 1
 
-      // Process the response
-      const processedResponse = await defaultResponseProcessor.processResponse({
-        item: qtiItem,
-        response: response
+      // Process with enhanced handler
+      const result = await EnhancedResponseHandler.processResponse(
+        question,
+        assessment,
+        currentQTISection,
+        qtiStory,
+        user.sourcedId,
+        response,
+        timeSpent,
+        attempts
+      )
+
+      // Store result for UI updates
+      setResponseResults(prev => ({
+        ...prev,
+        [questionId]: result
+      }))
+
+      console.log('✅ Enhanced response processing completed:', {
+        success: result.success,
+        score: `${result.processedResponse.score}/${result.processedResponse.maxScore}`,
+        correct: result.processedResponse.isCorrect,
+        offline: result.offline,
+        gradebookSubmitted: result.gradebookSubmission?.success
       })
 
-      console.log('✅ Response processed:', {
-        score: `${processedResponse.score}/${processedResponse.maxScore}`,
-        correct: processedResponse.isCorrect,
-        feedback: processedResponse.feedback?.message
-      })
+      // Handle section unlocks
+      if (result.sectionUnlocked?.unlockedSections.length) {
+        console.log('🎉 New sections unlocked:', result.sectionUnlocked.unlockedSections)
+        
+        // Update section unlock states
+        const newUnlockStates = { ...sectionUnlockStates }
+        result.sectionUnlocked.unlockedSections.forEach(sectionId => {
+          newUnlockStates[sectionId] = true
+        })
+        setSectionUnlockStates(newUnlockStates)
 
-      // Store the response
-      if (responseProcessingEnabled) {
-        await ResponseStorageService.storeResponse(
-          assessment.id,
-          user.sourcedId,
-          question.id,
-          processedResponse,
-          {
-            responseIdentifier: question.responseIdentifier,
-            timeSpent: Date.now() - startTime,
-            attempts: 1,
-            metadata: {
-              sectionId: currentQTISection.id,
-              assessmentTitle: assessment.title,
-              questionPrompt: question.prompt
+        // Update QTI story sections
+        if (qtiStory) {
+          const updatedStory = { ...qtiStory }
+          updatedStory.sections = updatedStory.sections.map(section => {
+            if (result.sectionUnlocked!.unlockedSections.includes(section.id)) {
+              return { ...section, isUnlocked: true }
             }
-          }
-        )
-        console.log('💾 Response stored successfully')
+            return section
+          })
+          setQtiStory(updatedStory)
+        }
+
+        // Show unlock message (you could use a toast notification here)
+        if (result.sectionUnlocked.message) {
+          console.log('🎉 Unlock message:', result.sectionUnlocked.message)
+        }
       }
 
-      // Update UI state (you might want to add state for QTI responses)
-      // For now, we'll also update the legacy state for compatibility
+      // Update legacy state for backward compatibility
       const answerIndex = parseInt(response) || 0
       const newAnswers = [...answers]
       newAnswers[currentQuestionIndex] = answerIndex
       setAnswers(newAnswers)
 
-      // Show feedback if available
-      if (processedResponse.feedback) {
-        // You could show this in a toast or modal
-        console.log('📝 Feedback:', processedResponse.feedback.message)
-      }
+      // Trigger section unlock check
+      await updateSectionUnlockStates()
 
     } catch (error) {
-      console.error('❌ Error processing QTI response:', error)
+      console.error('❌ Error in enhanced QTI response processing:', error)
+      
+      // Store error result
+      setResponseResults(prev => ({
+        ...prev,
+        [questionId]: {
+          success: false,
+          processedResponse: {
+            score: 0,
+            maxScore: 1,
+            isCorrect: false,
+            timestamp: Date.now(),
+            timeSpent: Date.now() - startTime,
+            attempts: 1,
+            feedback: {
+              type: 'error',
+              message: 'Response processing failed. Please try again.'
+            }
+          },
+          error: error instanceof Error ? error.message : 'Unknown error'
+        }
+      }))
+    } finally {
+      setProcessingResponse(null)
     }
   }
 
@@ -603,13 +674,22 @@ export default function StoryReadingPage() {
           <div className="max-w-3xl mx-auto">
             {/* Story Header */}
             <div className="mb-8">
-              <h1 className="text-3xl font-bold mb-2 text-gray-900">{story.title}</h1>
+              <div className="flex items-start justify-between mb-2">
+                <h1 className="text-3xl font-bold text-gray-900">{story.title}</h1>
+                <ConnectionStatusBadge className="ml-4" />
+              </div>
               <div className="flex items-center gap-4 text-sm text-gray-600 mb-4">
                 <span>{story.wordCount} words</span>
                 <span>•</span>
                 <span>{story.readingTime}</span>
                 <span>•</span>
                 <span>Section {currentSectionIndex + 1} of {story.sections.length}</span>
+                {offlineMode && (
+                  <>
+                    <span>•</span>
+                    <span className="text-orange-600 font-medium">📱 Offline Mode</span>
+                  </>
+                )}
               </div>
               
               {/* Story Illustration */}
