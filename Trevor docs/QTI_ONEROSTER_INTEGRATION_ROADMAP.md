@@ -70,37 +70,38 @@
 
 ### 2.1 Complete Story Generation Flow
 
-- [ ] **Add OneRoster class creation to loading page**
-  - [ ] Modify `src/app/create-book/loading/page.tsx`
-  - [ ] After QTI storage, call `createClass()` with story metadata
-  - [ ] Handle class creation errors gracefully
-  - [ ] Store class ID in story metadata for future reference
+- [x] **Add OneRoster class creation to loading page**
+  - [x] Modify `src/app/create-book/loading/page.tsx`
+  - [x] After QTI storage, call `createClass()` with story metadata
+  - [x] Handle class creation errors gracefully
+  - [x] Store class ID in story metadata for future reference
 
-- [ ] **Create LineItem for each story chapter**
-  - [ ] Loop through generated assessments
-  - [ ] Create LineItem for each chapter/assessment
-  - [ ] Set appropriate due dates and max scores
-  - [ ] Link LineItems to the created class
+- [x] **Create LineItem for each story chapter**
+  - [x] Loop through generated assessments
+  - [x] Create LineItem for each chapter/assessment
+  - [x] Set appropriate due dates and max scores
+  - [x] Link LineItems to the created class
 
-- [ ] **Auto-enroll current student**
-  - [ ] Call `enrollStudent()` after class creation
-  - [ ] Set proper enrollment dates and status
-  - [ ] Handle enrollment conflicts/duplicates
-  - [ ] Update user's class list
+- [x] **Auto-enroll current student**
+  - [x] Call `enrollStudent()` after class creation
+  - [x] Set proper enrollment dates and status
+  - [x] Handle enrollment conflicts/duplicates
+  - [x] Update user's class list
 
 ### 2.2 Enhanced Metadata Tracking
 
-- [ ] **Store OneRoster IDs in QTI metadata**
-  - [ ] Update `StoryStorageService.saveStory()`
-  - [ ] Include classId, lineItemIds in stimulus metadata
-  - [ ] Store enrollment references
-  - [ ] Enable bidirectional data flow
+- [x] **Store OneRoster IDs in QTI metadata**
+  - [x] Update `StoryStorageService.saveStory()`
+  - [x] Include classId, lineItemIds in stimulus metadata
+  - [x] Store enrollment references
+  - [x] Enable bidirectional data flow
 
-- [ ] **Add error handling and rollback**
-  - [ ] If OneRoster creation fails, clean up QTI data
-  - [ ] Provide meaningful error messages to users
-  - [ ] Implement retry mechanisms for transient failures
-  - [ ] Log errors for debugging
+- [x] **Add error handling and rollback**
+  - [x] Create comprehensive `OneRosterIntegrationService`
+  - [x] Create `ErrorRecoveryService` for rollback operations
+  - [x] Provide meaningful error messages to users
+  - [x] Implement retry mechanisms for transient failures
+  - [x] Create integration testing utilities
 
 ---
 
@@ -328,13 +329,13 @@
 ## **📋 Tracking Progress**
 
 **Phase 1**: ✅ Foundation (12/12 tasks completed - 100%) 🎉  
-**Phase 2**: ☐ Story Generation (0/8 tasks completed)  
+**Phase 2**: ✅ Story Generation (8/8 tasks completed - 100%) 🎉  
 **Phase 3**: ☐ Reading Interface (0/12 tasks completed)  
 **Phase 4**: ☐ Response Handling (0/10 tasks completed)  
 **Phase 5**: ☐ Integration & Testing (0/10 tasks completed)  
 **Phase 6**: ☐ Final Polish (0/8 tasks completed)  
 
-**Overall Progress**: 12/60 tasks completed (20%)
+**Overall Progress**: 20/60 tasks completed (33%)
 
 ---
 

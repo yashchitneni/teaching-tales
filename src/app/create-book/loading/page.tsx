@@ -139,18 +139,37 @@ export default function StoryLoadingPage() {
       console.log('✅ AI story generation completed!')
       
       // Save complete story to QTI Stimuli API and create assessment tests
-      console.log('💾 Saving story to QTI API...')
-      const { stimulus: savedStimulus, assessments } = await StoryStorageService.saveStory(storyResponse, {
+      console.log('💾 Saving story to QTI API with OneRoster integration...')
+      const { 
+        stimulus: savedStimulus, 
+        assessments, 
+        oneRosterIntegration 
+      } = await StoryStorageService.saveStory(storyResponse, {
         universe: universe,
         character: character,
         spark: spark,
         gradeLevel: user.grades?.[0] || '4-5',
         studentId: user.sourcedId,
-        storyId: storyId
+        storyId: storyId,
+        enableOneRosterIntegration: true // Enable OneRoster integration
       })
       
       console.log('✅ Story and assessments saved to QTI API successfully!')
       console.log(`📚 Created ${assessments.length} assessment tests`)
+      
+      // Log OneRoster integration results
+      if (oneRosterIntegration) {
+        if (oneRosterIntegration.success) {
+          console.log('🏫 OneRoster integration completed:', {
+            classId: oneRosterIntegration.classId,
+            lineItemCount: oneRosterIntegration.lineItemIds?.length || 0,
+            enrollmentId: oneRosterIntegration.enrollmentId
+          })
+        } else {
+          console.warn('⚠️ OneRoster integration failed:', oneRosterIntegration.error)
+          // Story creation continues even if OneRoster integration fails
+        }
+      }
       
       // Navigate to reading interface using the stimulus ID
       router.push(`/book/${savedStimulus.id}`)

@@ -9,6 +9,11 @@ import {
 } from '@/lib/api/qti-client';
 import type { StoryGenerationResponse } from '@/lib/ai/types';
 import { AssessmentService, type StoryAssessment } from './assessment-service';
+import { 
+  OneRosterIntegrationService, 
+  type StoryClassCreationData,
+  type OneRosterIntegrationResult 
+} from './oneroster-integration-service';
 
 export interface StoredStory {
   id: string;
@@ -26,6 +31,15 @@ export interface StoredStory {
   sections?: any[];
   imageUrl?: string;
   assessments?: StoryAssessment[];
+  // OneRoster integration data
+  oneRosterIntegration?: {
+    classId?: string;
+    lineItemIds?: string[];
+    enrollmentId?: string;
+    integrationStatus: 'pending' | 'completed' | 'failed' | 'none';
+    integrationError?: string;
+    createdAt?: string;
+  };
   metadata?: Record<string, any>;
 }
 
@@ -46,8 +60,13 @@ export class StoryStorageService {
       gradeLevel: string;
       studentId: string;
       storyId: string;
+      enableOneRosterIntegration?: boolean;
     }
-  ): Promise<{ stimulus: Stimulus; assessments: StoryAssessment[] }> {
+  ): Promise<{ 
+    stimulus: Stimulus; 
+    assessments: StoryAssessment[];
+    oneRosterIntegration?: OneRosterIntegrationResult;
+  }> {
     try {
       // Use local storage for development
       if (this.USE_LOCAL_STORAGE) {
@@ -122,25 +141,91 @@ export class StoryStorageService {
       
       console.log(`✅ Created ${assessments.length} assessment tests for story`);
       
-      // Update stimulus metadata with assessment IDs for future retrieval
-      if (assessments.length > 0) {
-        console.log('📝 Updating stimulus with assessment IDs...');
+      // OneRoster Integration (if enabled)
+      let oneRosterIntegration: OneRosterIntegrationResult | undefined;
+      
+      if (storyMetadata.enableOneRosterIntegration !== false) { // Default to true
+        console.log('🏫 Starting OneRoster integration...');
+        try {
+          const integrationData: StoryClassCreationData = {
+            storyId: storyMetadata.storyId,
+            storyTitle: storyResponse.title,
+            universe: storyMetadata.universe,
+            character: storyMetadata.character,
+            spark: storyMetadata.spark,
+            gradeLevel: storyMetadata.gradeLevel,
+            studentId: storyMetadata.studentId,
+            assessments: assessments,
+            metadata: {
+              stimulusId: savedStimulus.id,
+              wordCount: storyResponse.wordCount,
+              readingTime: storyResponse.readingTime,
+              sectionCount: storyResponse.sections.length
+            }
+          };
+
+          oneRosterIntegration = await OneRosterIntegrationService.createStoryIntegration(integrationData);
+          
+          if (oneRosterIntegration.success) {
+            console.log('✅ OneRoster integration completed successfully');
+          } else {
+            console.error('❌ OneRoster integration failed:', oneRosterIntegration.error);
+            // Don't fail the whole story creation for OneRoster issues
+          }
+        } catch (integrationError) {
+          console.error('❌ OneRoster integration error:', integrationError);
+          oneRosterIntegration = {
+            success: false,
+            error: integrationError instanceof Error ? integrationError.message : 'Unknown integration error',
+            metadata: {
+              operationsCompleted: [],
+              operationsFailed: ['integration_exception'],
+              totalOperations: 0,
+              executionTime: 0
+            }
+          };
+        }
+      }
+      
+      // Update stimulus metadata with assessment IDs and OneRoster info
+      const updatedMetadata = {
+        ...savedStimulus.metadata,
+        assessmentIds: assessments.map(a => a.id),
+        hasAssessments: true,
+        // OneRoster integration metadata
+        oneRosterIntegration: oneRosterIntegration?.success ? {
+          classId: oneRosterIntegration.classId,
+          lineItemIds: oneRosterIntegration.lineItemIds,
+          enrollmentId: oneRosterIntegration.enrollmentId,
+          integrationStatus: 'completed',
+          createdAt: new Date().toISOString()
+        } : oneRosterIntegration ? {
+          integrationStatus: 'failed',
+          integrationError: oneRosterIntegration.error,
+          createdAt: new Date().toISOString()
+        } : {
+          integrationStatus: 'none'
+        }
+      };
+
+      if (assessments.length > 0 || oneRosterIntegration) {
+        console.log('📝 Updating stimulus with assessment and OneRoster metadata...');
         try {
           await updateStimulus(savedStimulus.id, {
-            metadata: {
-              ...savedStimulus.metadata,
-              assessmentIds: assessments.map(a => a.id),
-              hasAssessments: true
-            }
+            metadata: updatedMetadata
           });
-          console.log('✅ Stimulus updated with assessment IDs');
+          console.log('✅ Stimulus updated with complete metadata');
         } catch (updateError) {
-          console.warn('⚠️ Failed to update stimulus with assessment IDs:', updateError);
+          console.warn('⚠️ Failed to update stimulus metadata:', updateError);
           // Don't fail the whole operation for this
         }
       }
       
-      return { stimulus: savedStimulus, assessments };
+      return { 
+        stimulus: savedStimulus, 
+        assessments,
+        oneRosterIntegration
+      };
     } catch (error) {
       console.error('❌ Failed to save story to QTI API:', error);
       throw error;
@@ -395,8 +480,13 @@ export class StoryStorageService {
       gradeLevel: string;
       studentId: string;
       storyId: string;
+      enableOneRosterIntegration?: boolean;
     }
-  ): Promise<{ stimulus: Stimulus; assessments: StoryAssessment[] }> {
+  ): Promise<{ 
+    stimulus: Stimulus; 
+    assessments: StoryAssessment[];
+    oneRosterIntegration?: OneRosterIntegrationResult;
+  }> {
     console.log('🏠 💾 SAVING STORY TO LOCALSTORAGE (not QTI API)...', {
       title: storyResponse.title,
       universe: storyMetadata.universe,
@@ -452,7 +542,11 @@ export class StoryStorageService {
 
     const mockAssessments: StoryAssessment[] = [];
 
-    return { stimulus: mockStimulus, assessments: mockAssessments };
+    return { 
+      stimulus: mockStimulus, 
+      assessments: mockAssessments,
+      oneRosterIntegration: undefined // Local storage doesn't support OneRoster integration
+    };
   }
 
   /**
