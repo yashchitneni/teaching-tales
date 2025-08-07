@@ -4,9 +4,11 @@ import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import Image from 'next/image'
 import { useState } from 'react'
+import { useAuth } from '@/contexts/AuthContext'
 import { StreakModal } from './StreakModal'
 
 export function TopNavWithTabs() {
+  const { user } = useAuth()
   const pathname = usePathname()
   const [showStreakModal, setShowStreakModal] = useState(false)
 
@@ -109,7 +111,7 @@ export function TopNavWithTabs() {
             {/* Profile */}
             <div className="relative max-lg:hidden">
               <div className="flex flex-row items-center gap-2 cursor-pointer">
-                <div className="underline">Yash</div>
+                <div className="underline">{user?.name || user?.email?.split('@')[0] || 'User'}</div>
                 <div className="w-9 h-9">
                   <div className="w-full h-full rounded-full p-[1.8px] bg-transparent flex items-center justify-center">
                     <div className="w-full h-full bg-white/20 rounded-full"></div>
