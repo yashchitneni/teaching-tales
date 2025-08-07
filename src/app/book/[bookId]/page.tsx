@@ -6,8 +6,15 @@ import { TopNavWithTabs } from '@/components/TopNavWithTabs'
 import { FeedbackButton } from '@/components/FeedbackButton'
 import { GuidingQuestions } from '@/components/GuidingQuestions'
 import { AssessmentResults } from '@/components/AssessmentResults'
-import { StoryStorageService } from '@/lib/services/story-storage-service'
+import { SectionUnlockIndicator, SectionProgressOverview } from '@/components/SectionUnlockIndicator'
+import { QTIQuestionRenderer } from '@/components/QTIQuestionRenderer'
+import { QTIStoryLoaderService, type QTIStory, type QTISection, type QTIQuestion } from '@/lib/services/qti-story-loader-service'
+import { ResponseStorageService } from '@/lib/services/response-storage-service'
+import { QTIResponseProcessor, defaultResponseProcessor } from '@/lib/qti/processors/response-processor'
+import { UnlockEngine, type UnlockContext } from '@/lib/qti/engines/unlock-engine'
+import { useAuth } from '@/contexts/AuthContext'
 
+// Legacy interfaces for backward compatibility
 interface Question {
   id: string
   text: string
@@ -34,9 +41,12 @@ interface Story {
 export default function StoryReadingPage() {
   const params = useParams()
   const router = useRouter()
+  const { user } = useAuth()
+  
+  // Legacy state (for backward compatibility)
   const [story, setStory] = useState<Story | null>(null)
   const [currentSectionIndex, setCurrentSectionIndex] = useState(0)
-  const [revealedSections, setRevealedSections] = useState<number[]>([0]) // Start with first section revealed
+  const [revealedSections, setRevealedSections] = useState<number[]>([0])
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0)
   const [answers, setAnswers] = useState<number[]>([])
   const [answersBySection, setAnswersBySection] = useState<number[][]>([])
@@ -44,6 +54,14 @@ export default function StoryReadingPage() {
   const [showAssessment, setShowAssessment] = useState(false)
   const [startTime] = useState(Date.now())
   const sectionRefs = useRef<Record<number, HTMLDivElement | null>>({})
+
+  // New QTI state
+  const [qtiStory, setQtiStory] = useState<QTIStory | null>(null)
+  const [loadingQTI, setLoadingQTI] = useState(true)
+  const [qtiError, setQtiError] = useState<string | null>(null)
+  const [currentQTISection, setCurrentQTISection] = useState<QTISection | null>(null)
+  const [sectionUnlockStates, setSectionUnlockStates] = useState<Record<string, boolean>>({})
+  const [responseProcessingEnabled, setResponseProcessingEnabled] = useState(true)
 
   const bookId = params.bookId as string
 
@@ -60,19 +78,113 @@ export default function StoryReadingPage() {
     loadStoryFromAPI()
   }, [bookId, router])
 
+  // Update section unlock states when QTI story is loaded or responses change
+  useEffect(() => {
+    if (qtiStory && user?.sourcedId) {
+      updateSectionUnlockStates()
+    }
+  }, [qtiStory, user?.sourcedId])
+
+  // Periodically check for unlock conditions (e.g., after answering questions)
+  useEffect(() => {
+    if (qtiStory && user?.sourcedId) {
+      const interval = setInterval(() => {
+        updateSectionUnlockStates()
+      }, 30000) // Check every 30 seconds
+
+      return () => clearInterval(interval)
+    }
+  }, [qtiStory, user?.sourcedId])
+
   const loadStoryFromAPI = async () => {
     try {
-      console.log('📖 Loading story from QTI API:', bookId)
+      if (!user?.sourcedId) {
+        console.error('❌ No authenticated user found')
+        router.push('/login')
+        return
+      }
+
+      console.log('📖 Loading QTI story:', { bookId, studentId: user.sourcedId })
+      setLoadingQTI(true)
+      setQtiError(null)
       
-      // Try to load from QTI Stimuli API first
-      const storedStory = await StoryStorageService.getStory(bookId)
+      // Load story using new QTI service
+      const result = await QTIStoryLoaderService.loadStory(bookId, user.sourcedId, {
+        useCache: true,
+        includeResponses: true,
+        parseXML: true
+      })
       
-      if (storedStory && storedStory.sections) {
-        // Transform stored story to reading format
+      if (result.success && result.story) {
+        console.log('✅ QTI story loaded successfully:', {
+          source: result.source,
+          loadTime: `${result.loadTime}ms`,
+          sections: result.story.sections.length,
+          assessments: result.story.assessments.length
+        })
+        
+        setQtiStory(result.story)
+        setCurrentQTISection(result.story.sections[0] || null)
+        
+        // Update section unlock states
+        const unlockStates: Record<string, boolean> = {}
+        result.story.sections.forEach(section => {
+          unlockStates[section.id] = section.isUnlocked
+        })
+        setSectionUnlockStates(unlockStates)
+        
+        // Convert to legacy format for backward compatibility
+        const legacyStory: Story = {
+          id: result.story.id,
+          title: result.story.title,
+          sections: result.story.sections.map((section, index) => ({
+            id: parseInt(section.id.replace(/\D/g, '')) || index,
+            content: processVocabularyWords(section.content),
+            questions: result.story.assessments
+              .filter(assessment => assessment.sectionId === section.id)
+              .flatMap(assessment => assessment.questions.map(q => ({
+                id: q.id,
+                text: q.prompt,
+                options: q.interactions[0]?.choices?.map(c => c.content) || [],
+                correctAnswer: parseInt(q.correctResponse?.[0] || '0'),
+                explanation: q.feedback?.find(f => f.type === 'correct')?.content || ''
+              })))
+          })),
+          wordCount: result.story.wordCount,
+          readingTime: result.story.readingTime,
+          imageUrl: result.story.imageUrl
+        }
+        
+        setStory(legacyStory)
+        console.log('✅ Legacy story format created for backward compatibility')
+      } else {
+        console.error('❌ Failed to load QTI story:', result.error)
+        setQtiError(result.error || 'Unknown error')
+        
+        // Still try legacy loading as fallback
+        await loadLegacyStoryFallback()
+      }
+    } catch (error) {
+      console.error('❌ Error loading QTI story:', error)
+      setQtiError(error instanceof Error ? error.message : 'Unknown error')
+      await loadLegacyStoryFallback()
+    } finally {
+      setLoadingQTI(false)
+    }
+  }
+
+  const loadLegacyStoryFallback = async () => {
+    console.log('🔄 Attempting legacy story loading as fallback...')
+    
+    try {
+      const stories = JSON.parse(localStorage.getItem('teaching-tales-stories') || '[]')
+      const foundStory = stories.find((s: any) => s.id === bookId)
+      
+      if (foundStory && foundStory.sections) {
         const transformedStory: Story = {
-          id: storedStory.id,
-          title: storedStory.title,
-          sections: storedStory.sections.map((section: any) => ({
+          id: foundStory.id,
+          title: foundStory.title,
+          sections: foundStory.sections.map((section: any) => ({
             id: section.id,
             content: processVocabularyWords(section.content),
             questions: section.questions.map((q: any) => ({
@@ -83,86 +195,278 @@ export default function StoryReadingPage() {
               explanation: q.explanation
             }))
           })),
-          wordCount: storedStory.wordCount || 0,
-          readingTime: storedStory.readingTime || '5 minutes',
-          imageUrl: storedStory.imageUrl
+          wordCount: foundStory.wordCount || 0,
+          readingTime: foundStory.readingTime || '5 minutes',
+          imageUrl: foundStory.imageUrl
         }
         setStory(transformedStory)
-        console.log('✅ Story loaded from QTI API successfully')
+        console.log('✅ Legacy story loaded from localStorage')
       } else {
-        console.warn('❌ Story not found in QTI API:', bookId)
-        
-        // Fallback to localStorage
-        console.log('🔄 Trying localStorage fallback...')
-        try {
-          const stories = JSON.parse(localStorage.getItem('teaching-tales-stories') || '[]')
-          const foundStory = stories.find((s: any) => s.id === bookId)
-          
-          if (foundStory && foundStory.sections) {
-            const transformedStory: Story = {
-              id: foundStory.id,
-              title: foundStory.title,
-              sections: foundStory.sections.map((section: any) => ({
-                id: section.id,
-                content: processVocabularyWords(section.content),
-                questions: section.questions.map((q: any) => ({
-                  id: q.id,
-                  text: q.question,
-                  options: q.options,
-                  correctAnswer: q.correct,
-                  explanation: q.explanation
-                }))
-              })),
-              wordCount: foundStory.wordCount || 0,
-              readingTime: foundStory.readingTime || '5 minutes',
-              imageUrl: foundStory.imageUrl
-            }
-            setStory(transformedStory)
-            console.log('📱 Story loaded from localStorage fallback')
-          } else {
-            console.warn('Story not found in localStorage either')
-            router.push('/dashboard')
-          }
-        } catch (localError) {
-          console.error('Fallback to localStorage failed:', localError)
-          router.push('/dashboard')
-        }
-      }
-    } catch (error) {
-      console.error('❌ Error loading story:', error)
-      
-      // Try localStorage as fallback
-      try {
-        const stories = JSON.parse(localStorage.getItem('teaching-tales-stories') || '[]')
-        const foundStory = stories.find((s: any) => s.id === bookId)
-        
-        if (foundStory && foundStory.sections) {
-          const transformedStory: Story = {
-            id: foundStory.id,
-            title: foundStory.title,
-            sections: foundStory.sections.map((section: any) => ({
-              id: section.id,
-              content: processVocabularyWords(section.content),
-              questions: section.questions.map((q: any) => ({
-                id: q.id,
-                text: q.question,
-                options: q.options,
-                correctAnswer: q.correct
-              }))
-            })),
-            wordCount: foundStory.wordCount || 0,
-            readingTime: foundStory.readingTime || '5 minutes',
-            imageUrl: foundStory.imageUrl
-          }
-          setStory(transformedStory)
-          console.log('📱 Story loaded from localStorage after API error')
-        } else {
-          router.push('/dashboard')
-        }
-      } catch (localError) {
-        console.error('All story loading methods failed:', localError)
+        console.error('❌ Story not found in any source')
         router.push('/dashboard')
       }
+    } catch (error) {
+      console.error('❌ Legacy fallback failed:', error)
+      router.push('/dashboard')
+    }
+  }
+
+  // QTI-specific question answering with response processing
+  const handleQTIQuestionAnswer = async (questionId: string, response: any) => {
+    if (!qtiStory || !currentQTISection || !user?.sourcedId) {
+      console.warn('❌ Missing required data for QTI response processing')
+      return
+    }
+
+    try {
+      console.log('🔄 Processing QTI response:', { questionId, response })
+
+      // Find the question and assessment
+      const assessment = qtiStory.assessments.find(a => 
+        a.questions.some(q => q.id === questionId)
+      )
+      const question = assessment?.questions.find(q => q.id === questionId)
+
+      if (!assessment || !question) {
+        console.error('❌ Question or assessment not found:', questionId)
+        return
+      }
+
+      // Create QTI assessment item for processing
+      const qtiItem = {
+        identifier: question.id,
+        title: question.prompt,
+        adaptive: false,
+        timeDependent: false,
+        responseDeclaration: {
+          identifier: question.responseIdentifier,
+          cardinality: 'single' as const,
+          baseType: 'identifier' as const,
+          correctResponse: {
+            values: question.correctResponse || []
+          }
+        },
+        outcomeDeclarations: [{
+          identifier: 'SCORE',
+          cardinality: 'single' as const,
+          baseType: 'float',
+          defaultValue: 0
+        }],
+        itemBody: {
+          content: question.content,
+          interactions: question.interactions
+        },
+        responseProcessing: {
+          template: question.scoring?.method || 'match_correct'
+        },
+        modalFeedbacks: question.feedback?.map(f => ({
+          identifier: f.type,
+          content: f.content,
+          showHide: 'show' as const
+        }))
+      }
+
+      // Process the response
+      const processedResponse = await defaultResponseProcessor.processResponse({
+        item: qtiItem,
+        response: response
+      })
+
+      console.log('✅ Response processed:', {
+        score: `${processedResponse.score}/${processedResponse.maxScore}`,
+        correct: processedResponse.isCorrect,
+        feedback: processedResponse.feedback?.message
+      })
+
+      // Store the response
+      if (responseProcessingEnabled) {
+        await ResponseStorageService.storeResponse(
+          assessment.id,
+          user.sourcedId,
+          question.id,
+          processedResponse,
+          {
+            responseIdentifier: question.responseIdentifier,
+            timeSpent: Date.now() - startTime,
+            attempts: 1,
+            metadata: {
+              sectionId: currentQTISection.id,
+              assessmentTitle: assessment.title,
+              questionPrompt: question.prompt
+            }
+          }
+        )
+        console.log('💾 Response stored successfully')
+      }
+
+      // Update UI state (you might want to add state for QTI responses)
+      // For now, we'll also update the legacy state for compatibility
+      const answerIndex = parseInt(response) || 0
+      const newAnswers = [...answers]
+      newAnswers[currentQuestionIndex] = answerIndex
+      setAnswers(newAnswers)
+
+      // Show feedback if available
+      if (processedResponse.feedback) {
+        // You could show this in a toast or modal
+        console.log('📝 Feedback:', processedResponse.feedback.message)
+      }
+
+    } catch (error) {
+      console.error('❌ Error processing QTI response:', error)
+    }
+  }
+
+  // Check and update section unlock states based on current progress
+  const updateSectionUnlockStates = async () => {
+    if (!qtiStory || !user?.sourcedId) {
+      return
+    }
+
+    try {
+      console.log('🔓 Checking section unlock conditions...')
+
+      // Get current student responses
+      const responses = await ResponseStorageService.getResponses({
+        studentId: user.sourcedId,
+        assessmentId: qtiStory.id
+      })
+
+      // Build section states for unlock engine
+      const sectionStates = qtiStory.sections.map(section => {
+        const sectionResponses = responses.filter(r => 
+          r.metadata?.sectionId === section.id
+        )
+        
+        const totalScore = sectionResponses.reduce((sum, r) => sum + r.score, 0)
+        const maxScore = sectionResponses.reduce((sum, r) => sum + r.maxScore, 0)
+        const accuracy = maxScore > 0 ? (totalScore / maxScore) * 100 : 0
+        const timeSpent = sectionResponses.reduce((sum, r) => sum + (r.timeSpent || 0), 0)
+
+        return UnlockEngine.updateSectionState({
+          id: section.id,
+          title: section.title,
+          isUnlocked: section.isUnlocked,
+          isCompleted: section.isCompleted,
+          isInProgress: section.isInProgress,
+          completedItems: sectionResponses.map(r => r.itemId),
+          totalItems: qtiStory.assessments
+            .filter(a => a.sectionId === section.id)
+            .flatMap(a => a.questions.map(q => q.id)),
+          score: totalScore,
+          maxScore,
+          accuracy,
+          timeSpent,
+          attempts: Math.max(...sectionResponses.map(r => r.attempts || 1), 0),
+          unlockConditions: UnlockEngine.createLinearUnlockConditions(qtiStory.sections.map(s => s.id))
+            .filter(condition => condition.target === section.id)
+        }, responses)
+      })
+
+      // Create unlock context
+      const unlockContext: UnlockContext = {
+        studentId: user.sourcedId,
+        assessmentId: qtiStory.id,
+        currentSection: currentQTISection?.id || '',
+        targetSection: qtiStory.sections[qtiStory.sections.length - 1]?.id || '',
+        responses,
+        sectionStates,
+        startTime: startTime,
+        currentTime: Date.now()
+      }
+
+      // Check unlock conditions
+      const unlockResult = UnlockEngine.checkUnlockConditions(unlockContext)
+
+      if (unlockResult.success && unlockResult.unlockedSections.length > 0) {
+        console.log(`✅ Unlocked ${unlockResult.unlockedSections.length} new sections:`, unlockResult.unlockedSections)
+
+        // Update QTI story sections
+        const updatedStory = { ...qtiStory }
+        updatedStory.sections = updatedStory.sections.map(section => {
+          if (unlockResult.unlockedSections.includes(section.id)) {
+            return { ...section, isUnlocked: true }
+          }
+          return section
+        })
+        setQtiStory(updatedStory)
+
+        // Update unlock states
+        const newUnlockStates = { ...sectionUnlockStates }
+        unlockResult.unlockedSections.forEach(sectionId => {
+          newUnlockStates[sectionId] = true
+        })
+        setSectionUnlockStates(newUnlockStates)
+
+        // Update revealed sections for legacy compatibility
+        const newRevealedSections = [...revealedSections]
+        unlockResult.unlockedSections.forEach(sectionId => {
+          const sectionIndex = qtiStory.sections.findIndex(s => s.id === sectionId)
+          if (sectionIndex >= 0 && !newRevealedSections.includes(sectionIndex)) {
+            newRevealedSections.push(sectionIndex)
+          }
+        })
+        setRevealedSections(newRevealedSections.sort((a, b) => a - b))
+
+        // Show unlock message to user
+        if (unlockResult.message) {
+          console.log('🎉 Unlock message:', unlockResult.message)
+          // You could show this in a toast notification
+        }
+      }
+
+    } catch (error) {
+      console.error('❌ Error updating section unlock states:', error)
+    }
+  }
+
+  // Navigate to a specific section (if unlocked)
+  const navigateToSection = (sectionId: string) => {
+    if (!qtiStory) return
+
+    const section = qtiStory.sections.find(s => s.id === sectionId)
+    const sectionIndex = qtiStory.sections.findIndex(s => s.id === sectionId)
+    
+    if (!section || !section.isUnlocked) {
+      console.warn('❌ Cannot navigate to locked section:', sectionId)
+      return
+    }
+
+    console.log('📖 Navigating to section:', { sectionId, sectionIndex, title: section.title })
+    
+    setCurrentQTISection(section)
+    setCurrentSectionIndex(sectionIndex)
+    
+    // Scroll to section
+    const sectionRef = sectionRefs.current[sectionIndex]
+    if (sectionRef) {
+      sectionRef.scrollIntoView({ behavior: 'smooth', block: 'start' })
+    }
+  }
+
+  // Calculate overall progress for display
+  const calculateOverallProgress = () => {
+    if (!qtiStory) {
+      return {
+        completedSections: 0,
+        totalSections: 0,
+        overallAccuracy: 0,
+        totalTimeSpent: 0
+      }
+    }
+
+    const completedSections = qtiStory.sections.filter(s => s.isCompleted).length
+    const totalSections = qtiStory.sections.length
+    
+    // These would be calculated from stored responses in a real implementation
+    const overallAccuracy = 85 // Placeholder
+    const totalTimeSpent = Date.now() - startTime
+
+    return {
+      completedSections,
+      totalSections,
+      overallAccuracy,
+      totalTimeSpent
     }
   }
 
@@ -272,12 +576,17 @@ export default function StoryReadingPage() {
     }
   }
 
-  if (!story) {
+  if (!story || loadingQTI) {
     return (
       <div className="flex items-center justify-center h-screen">
         <div className="text-center">
           <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto mb-4"></div>
-          <p>Loading your story...</p>
+          <p>{loadingQTI ? 'Loading QTI story...' : 'Loading your story...'}</p>
+          {qtiError && (
+            <p className="text-red-600 mt-2 text-sm">
+              ⚠️ {qtiError} (falling back to legacy mode)
+            </p>
+          )}
         </div>
       </div>
     )
@@ -355,8 +664,75 @@ export default function StoryReadingPage() {
           </div>
         </div>
 
-        {/* Right Panel - Questions or Assessment (fixed/sticky; story column scrolls) */}
-        <div className="w-96 bg-white border-l border-gray-200 sticky top-0 self-start">
+        {/* Right Panel - QTI Section Management & Questions */}
+        <div className="w-96 bg-white border-l border-gray-200 sticky top-0 self-start max-h-screen overflow-y-auto">
+          
+          {/* QTI Section Progress (if QTI story is loaded) */}
+          {qtiStory && (
+            <div className="p-4 border-b border-gray-200">
+              <SectionProgressOverview
+                sections={qtiStory.sections}
+                currentSectionIndex={currentSectionIndex}
+                totalProgress={calculateOverallProgress()}
+                className="mb-4"
+              />
+              
+              {/* Section unlock indicators */}
+              <div className="space-y-2">
+                <h4 className="font-semibold text-sm text-gray-700 mb-2">Story Sections</h4>
+                {qtiStory.sections.slice(0, 3).map((section, index) => (
+                  <SectionUnlockIndicator
+                    key={section.id}
+                    section={section}
+                    sectionIndex={index}
+                    totalSections={qtiStory.sections.length}
+                    currentProgress={{
+                      completedSections: qtiStory.sections.filter(s => s.isCompleted).length,
+                      currentAccuracy: 85, // Placeholder - would be calculated from responses
+                      timeSpent: Date.now() - startTime
+                    }}
+                    unlockRequirements={{
+                      requiredPreviousCompletion: true,
+                      minimumAccuracy: 60
+                    }}
+                    onSectionClick={navigateToSection}
+                    className="text-xs"
+                  />
+                ))}
+                
+                {qtiStory.sections.length > 3 && (
+                  <div className="text-xs text-gray-500 text-center py-2">
+                    ... and {qtiStory.sections.length - 3} more sections
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
+
+          {/* QTI Questions (if available) */}
+          {qtiStory && currentQTISection && (
+            <div className="p-4 border-b border-gray-200">
+              <h4 className="font-semibold text-sm text-gray-700 mb-3">
+                Section Questions
+              </h4>
+              
+              {qtiStory.assessments
+                .filter(assessment => assessment.sectionId === currentQTISection.id)
+                .flatMap(assessment => assessment.questions)
+                .map(question => (
+                  <QTIQuestionRenderer
+                    key={question.id}
+                    question={question}
+                    onResponse={handleQTIQuestionAnswer}
+                    showFeedback={responseProcessingEnabled}
+                    className="mb-4 text-sm"
+                  />
+                ))
+              }
+            </div>
+          )}
+
+          {/* Legacy Questions Panel */}
           {!showAssessment ? (
             <GuidingQuestions
               questions={getCurrentSectionQuestions()}
