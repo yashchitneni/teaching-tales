@@ -198,7 +198,7 @@ export default function SignUpPage() {
 
       <div className="bg-white rounded-2xl shadow-xl p-8 w-full max-w-md relative z-10">
         <h1 className="text-2xl font-bold text-center text-gray-900 mb-8">
-          Create Your TeachTales Account
+          Create Your Student Account
         </h1>
 
         {/* Success message */}

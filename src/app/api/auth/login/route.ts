@@ -92,7 +92,7 @@ export async function POST(request: NextRequest) {
           id: timebackUser.id || timebackUser.cognitoId,
           email: timebackUser.email,
           cognitoId: timebackUser.cognitoId,
-          role: timebackUser.role || 'parent',
+          role: timebackUser.role === 'student' ? 'student' : 'student', // Always map to student for our app
           name: timebackUser.name || email.split('@')[0],
         },
         // Tokens removed - they're securely stored in HttpOnly cookies

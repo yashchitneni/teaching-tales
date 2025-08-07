@@ -1,12 +1,13 @@
-# Teaching Tales - Educational Platform Clone
+# Teaching Tales - Student-Focused Educational Platform
 
-A pixel-perfect clone of the TeachTales educational platform, featuring a magical and cosmic design aesthetic. This project recreates the original website with enhanced visual effects and modern web technologies.
+A student-centered educational platform featuring personalized story creation and learning experiences. Students can create accounts, generate custom stories, and engage with educational content through an intuitive, magical interface.
 
 ## ✨ Features
 
-- **Magical Design**: Cosmic backgrounds, gradient effects, and enchanting animations
-- **Educational Content**: Complete recreation of TeachTales content structure
-- **OneRoster Integration**: TimeBack API integration for user management
+- **Student-Centric Design**: Direct student registration and personalized experiences
+- **Story Creation**: Students can create personalized educational stories
+- **Magical Interface**: Cosmic backgrounds, gradient effects, and enchanting animations
+- **Educational Content**: Interactive story library and reading experiences
 - **Responsive Design**: Fully responsive across all device sizes
 - **Modern Stack**: Built with Next.js, TypeScript, and Tailwind CSS
 - **Component Library**: Shadcn/ui components for consistent design

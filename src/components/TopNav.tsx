@@ -26,7 +26,7 @@ export function TopNav() {
         </div>
 
         {/* Center Tabs */}
-        <div className="hidden md:flex items-center space-x-8">
+        {/* <div className="hidden md:flex items-center space-x-8">
           <Link 
             href="/dashboard" 
             className="px-4 py-2 rounded bg-white/20 text-white font-medium"
@@ -39,7 +39,7 @@ export function TopNav() {
           >
             My Reading Circles
           </Link>
-        </div>
+        </div> */}
 
         {/* User Info */}
         <div className="flex items-center space-x-4">

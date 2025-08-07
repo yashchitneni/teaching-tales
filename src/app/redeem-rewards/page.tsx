@@ -9,7 +9,7 @@ import { CoinCounter } from '@/components/CoinCounter'
 import { StepIndicator } from '@/components/StepIndicator'
 
 export default function RedeemRewardsPage() {
-  const { user, loading } = useAuth()
+  const { user, isLoading } = useAuth()
   const router = useRouter()
   const [coins, setCoins] = useState(100)
   const [robloxUsername, setRobloxUsername] = useState('')

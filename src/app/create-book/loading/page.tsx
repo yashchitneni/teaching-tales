@@ -84,15 +84,12 @@ export default function StoryLoadingPage() {
     try {
       console.log('Generating story with:', { universe, character, spark })
       
-      // Get available students from OneRoster to validate context
-      const studentsResponse = await fetchUsers({ role: 'student' })
-      if (studentsResponse.users.length === 0) {
-        throw new Error('No students found. Please create a student first.')
+      // Use current authenticated user for book creation
+      if (!user) {
+        throw new Error('You must be logged in to create a story.')
       }
       
-      // For now, use the first student as the target student
-      const targetStudent = studentsResponse.users[0]
-      console.log('Creating story for student:', targetStudent.givenName, targetStudent.familyName)
+      console.log('Creating story for current user:', user.name)
       
       // Generate a unique book ID for this story session
       const storyId = crypto.randomUUID()
@@ -101,12 +98,12 @@ export default function StoryLoadingPage() {
       // Store story metadata in localStorage for now (until proper API is available)
       const storyMetadata = {
         id: storyId,
-        studentId: targetStudent.sourcedId,
+        studentId: user.sourcedId,
         title: `${character}'s ${spark} Adventure`,
         universe: universe,
         character: character,
         spark: spark,
-        targetGrade: targetStudent.grades?.[0] || 'Unknown',
+        targetGrade: user.grades?.[0] || 'Unknown',
         status: 'generating',
         createdAt: new Date().toISOString()
       }
@@ -127,8 +124,8 @@ export default function StoryLoadingPage() {
           universe: universe,
           character: character,
           spark: spark,
-          gradeLevel: targetStudent.grades?.[0] || '4-5', // Default to 4-5 if no grade available
-          studentId: targetStudent.sourcedId
+          gradeLevel: user.grades?.[0] || '4-5', // Default to 4-5 if no grade available
+          studentId: user.sourcedId || user.id || user.cognitoId // Fallback chain
         })
       })
       
@@ -147,8 +144,8 @@ export default function StoryLoadingPage() {
         universe: universe,
         character: character,
         spark: spark,
-        gradeLevel: targetStudent.grades?.[0] || '4-5',
-        studentId: targetStudent.sourcedId,
+        gradeLevel: user.grades?.[0] || '4-5',
+        studentId: user.sourcedId,
         storyId: storyId
       })
       

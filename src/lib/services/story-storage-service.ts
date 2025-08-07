@@ -54,12 +54,12 @@ export class StoryStorageService {
         return await this.saveStoryLocally(storyResponse, storyMetadata);
       }
       
-      // Convert story to QTI Stimulus format
+      // Convert story to QTI Stimulus format (matching TimeBack API spec exactly)
       const stimulusData: CreateStimulusRequest = {
         identifier: `story-${storyMetadata.storyId}`,
         title: storyResponse.title,
-        description: `A ${storyMetadata.universe} adventure featuring ${storyMetadata.character} - ${storyMetadata.spark}`,
-        content: JSON.stringify({
+        contentType: 'application/json',
+        contentText: JSON.stringify({
           sections: storyResponse.sections.map(section => ({
             ...section,
             // Remove questions from sections since they'll be stored separately as assessments
@@ -67,9 +67,8 @@ export class StoryStorageService {
           })),
           wordCount: storyResponse.wordCount,
           readingTime: storyResponse.readingTime,
+          description: `A ${storyMetadata.universe} adventure featuring ${storyMetadata.character} - ${storyMetadata.spark}`,
         }),
-        mediaType: 'application/json',
-        language: 'en',
         metadata: {
           // Story generation metadata
           universe: storyMetadata.universe,

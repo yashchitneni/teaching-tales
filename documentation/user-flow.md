@@ -512,7 +512,7 @@ URL Structure (Assumed):
 
 /login
 
-/onboarding/create-child
+/onboarding/create-profile
 
 /dashboard
 
