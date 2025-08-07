@@ -77,7 +77,7 @@ You must return your response as a valid JSON object with this exact structure:
           "question": "What did ${request.character} discover at the beginning of the story?",
           "options": ["Option A", "Option B", "Option C", "Option D"],
           "correct": 0,
-          "explanation": "This is correct because..."
+          "explanation": "Provide a detailed, educational explanation that helps students understand WHY this is the correct answer by referencing specific story details"
         },
         {
           "id": "q1_2",
@@ -85,7 +85,7 @@ You must return your response as a valid JSON object with this exact structure:
           "question": "How do you think ${request.character} felt when this happened?",
           "options": ["Excited", "Worried", "Curious", "Confused"],
           "correct": 2,
-          "explanation": "The character likely felt curious because..."
+          "explanation": "Explain the emotional context and what clues in the story text support this answer"
         }
       ]
     }
@@ -110,7 +110,16 @@ CRITICAL OUTPUT REQUIREMENTS:
 - Make questions engaging and educational
 - Keep the story cohesive and engaging throughout all sections
 - Each section should build naturally from the previous one
-- Cliffhangers should feel organic to the story, not forced`;
+- Cliffhangers should feel organic to the story, not forced
+
+QUESTION EXPLANATION REQUIREMENTS:
+- Each explanation must be 2-3 sentences minimum
+- Reference specific details from the story text
+- For correct answers: Explain what story clues lead to this answer
+- For inference questions: Explain the reasoning process
+- Use encouraging, educational language appropriate for ${request.gradeLevel} grade
+- Help students understand reading comprehension strategies
+- Connect the answer to broader story themes when relevant`;
   }
 
   static generateContinuationPrompt(request: ContinuationRequest): string {
