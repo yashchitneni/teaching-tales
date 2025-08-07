@@ -1,12 +1,11 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { useParams, useRouter } from 'next/navigation'
 import { TopNavWithTabs } from '@/components/TopNavWithTabs'
 import { FeedbackButton } from '@/components/FeedbackButton'
 import { GuidingQuestions } from '@/components/GuidingQuestions'
 import { AssessmentResults } from '@/components/AssessmentResults'
-import { Button } from '@/components/ui/button'
 import { StoryStorageService } from '@/lib/services/story-storage-service'
 
 interface Question {
@@ -40,9 +39,11 @@ export default function StoryReadingPage() {
   const [revealedSections, setRevealedSections] = useState<number[]>([0]) // Start with first section revealed
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0)
   const [answers, setAnswers] = useState<number[]>([])
+  const [answersBySection, setAnswersBySection] = useState<number[][]>([])
   const [selectedAnswer, setSelectedAnswer] = useState<number | undefined>(undefined)
   const [showAssessment, setShowAssessment] = useState(false)
   const [startTime] = useState(Date.now())
+  const sectionRefs = useRef<Record<number, HTMLDivElement | null>>({})
 
   const bookId = params.bookId as string
 
@@ -165,16 +166,43 @@ export default function StoryReadingPage() {
     }
   }
 
+  // Scroll to the active section whenever section or question changes
+  useEffect(() => {
+    const el = sectionRefs.current[currentSectionIndex]
+    if (el) {
+      el.scrollIntoView({ behavior: 'smooth', block: 'start' })
+    }
+  }, [currentSectionIndex, currentQuestionIndex])
+
   const handleQuestionAnswer = (answerIndex: number) => {
     // Special case: -1 means "continue" button was clicked after answering
     if (answerIndex === -1) {
       // Clear selected answer for next question
       setSelectedAnswer(undefined)
-      // Move to next question or show assessment
+      // Move to next question or advance section/end
       if (currentQuestionIndex < getCurrentSectionQuestions().length - 1) {
         setCurrentQuestionIndex(currentQuestionIndex + 1)
       } else {
-        setShowAssessment(true)
+        // End of current section
+        setAnswersBySection(prev => {
+          const updated = [...prev]
+          updated[currentSectionIndex] = answers
+          return updated
+        })
+
+        if (story && currentSectionIndex < story.sections.length - 1) {
+          // Reveal next section, reset for next section
+          const nextSectionIndex = currentSectionIndex + 1
+          setCurrentSectionIndex(nextSectionIndex)
+          setRevealedSections(prev => Array.from(new Set([...prev, nextSectionIndex])))
+          setCurrentQuestionIndex(0)
+          setAnswers([])
+          setShowAssessment(false)
+          // Scroll will be handled by useEffect when currentSectionIndex updates
+        } else {
+          // Last section completed – show final assessment
+          setShowAssessment(true)
+        }
       }
       return
     }
@@ -195,24 +223,34 @@ export default function StoryReadingPage() {
     return story.sections[currentSectionIndex].questions
   }
 
-  const calculateAccuracy = () => {
-    const questions = getCurrentSectionQuestions()
+  const getAllQuestions = () => {
+    if (!story) return [] as Question[]
+    return story.sections.flatMap(section => section.questions)
+  }
+
+  const getAllAnswers = () => {
+    // Ensure we include the current section answers if not already recorded
+    const collected: number[][] = [...answersBySection]
+    collected[currentSectionIndex] = showAssessment ? answersBySection[currentSectionIndex] : answers
+    // Some earlier sections might be undefined if not set; normalize
+    const normalized = (story?.sections || []).map((_, idx) => collected[idx] || [])
+    return normalized.flat()
+  }
+
+  const calculateTotalAccuracy = () => {
+    const questions = getAllQuestions()
+    const userAnswers = getAllAnswers()
     if (questions.length === 0) return 0
-    
-    const correct = answers.reduce((count, answer, index) => {
+    const correct = userAnswers.reduce((count, answer, index) => {
       return count + (answer === questions[index]?.correctAnswer ? 1 : 0)
     }, 0)
-    
     return Math.round((correct / questions.length) * 100)
   }
 
-  const calculateWPM = () => {
+  const calculateTotalWPM = () => {
     const timeElapsed = (Date.now() - startTime) / 1000 / 60 // minutes
-    const wordsInCurrentSections = story?.sections
-      .slice(0, currentSectionIndex + 1)
-      .reduce((total, section) => total + (section.content.split(' ').length || 0), 0) || 0
-    
-    return Math.round(wordsInCurrentSections / Math.max(timeElapsed, 0.1))
+    const totalWords = story?.sections.reduce((total, section) => total + (section.content.split(' ').length || 0), 0) || 0
+    return Math.round(totalWords / Math.max(timeElapsed, 0.1))
   }
 
   const handleContinueToNextSection = () => {
@@ -283,26 +321,32 @@ export default function StoryReadingPage() {
 
             {/* Story Sections - Progressive Reveal */}
             <div className="space-y-8">
-              {story.sections.map((section, index) => (
-                <div key={section.id} className={`${revealedSections.includes(index) ? 'block' : 'hidden'}`}>
-                  {/* Section Content */}
-                  <div 
-                    className="prose prose-lg max-w-none text-gray-900 mb-6"
-                    dangerouslySetInnerHTML={{ __html: section.content }}
-                  />
-                  
-                  {/* Section Divider (except for last section) */}
-                  {index < story.sections.length - 1 && revealedSections.includes(index) && (
-                    <div className="border-t border-gray-200 my-8"></div>
-                  )}
-                </div>
-              ))}
+              {story.sections.map((section, index) => {
+                const revealed = revealedSections.includes(index)
+                return (
+                  <div
+                    key={section.id}
+                    ref={(el) => { sectionRefs.current[index] = el }}
+                    className="block"
+                  >
+                    {/* Section Content */}
+                    <div
+                      className={`prose prose-lg max-w-none text-gray-900 mb-6 ${revealed ? '' : 'filter blur-sm select-none pointer-events-none opacity-70'}`}
+                      dangerouslySetInnerHTML={{ __html: section.content }}
+                    />
+                    {/* Section Divider (except for last section) */}
+                    {index < story.sections.length - 1 && (
+                      <div className="border-t border-gray-200 my-8"></div>
+                    )}
+                  </div>
+                )
+              })}
             </div>
 
 
 
             {/* Story Complete Message */}
-            {showAssessment && currentSectionIndex === story.sections.length - 1 && (
+            {showAssessment && (
               <div className="mt-8 p-6 bg-green-50 border border-green-200 rounded-lg text-center">
                 <h3 className="text-lg font-semibold text-green-800 mb-2">🎉 Story Complete!</h3>
                 <p className="text-green-700">You've finished reading the entire story. Great job!</p>
@@ -311,8 +355,8 @@ export default function StoryReadingPage() {
           </div>
         </div>
 
-        {/* Right Panel - Questions or Assessment */}
-        <div className="w-96 bg-white border-l border-gray-200 overflow-y-auto">
+        {/* Right Panel - Questions or Assessment (fixed/sticky; story column scrolls) */}
+        <div className="w-96 bg-white border-l border-gray-200 sticky top-0 self-start">
           {!showAssessment ? (
             <GuidingQuestions
               questions={getCurrentSectionQuestions()}
@@ -321,14 +365,16 @@ export default function StoryReadingPage() {
               answers={answers}
               selectedAnswer={selectedAnswer}
               onSelectAnswer={handleSelectAnswer}
+              isLastSection={story.sections && currentSectionIndex === story.sections.length - 1}
             />
           ) : (
             <AssessmentResults
-              questions={getCurrentSectionQuestions()}
-              answers={answers}
-              accuracy={calculateAccuracy()}
-              wordsPerMinute={calculateWPM()}
-              onContinue={handleContinueToNextSection}
+              questions={getAllQuestions()}
+              answers={getAllAnswers()}
+              accuracy={calculateTotalAccuracy()}
+              wordsPerMinute={calculateTotalWPM()}
+              onContinue={() => {}}
+              hideContinue
             />
           )}
         </div>

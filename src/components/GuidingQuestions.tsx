@@ -17,6 +17,8 @@ interface GuidingQuestionsProps {
   answers: number[]
   selectedAnswer?: number
   onSelectAnswer?: (answerIndex: number) => void
+  /** When true, this is the final section of the chapter and the last question should show "View Results" */
+  isLastSection?: boolean
 }
 
 export function GuidingQuestions({ 
@@ -25,7 +27,8 @@ export function GuidingQuestions({
   onAnswer,
   answers,
   selectedAnswer,
-  onSelectAnswer
+  onSelectAnswer,
+  isLastSection = false
 }: GuidingQuestionsProps) {
   const currentQuestion = questions[currentQuestionIndex]
   const hasAnswered = answers[currentQuestionIndex] !== undefined
@@ -146,7 +149,11 @@ export function GuidingQuestions({
             onClick={() => onAnswer(-1)} // Special value to signal "next question" or "continue"
             className="w-full mb-6 bg-blue-600 hover:bg-blue-700 text-white"
           >
-            {currentQuestionIndex < questions.length - 1 ? 'Continue Reading' : 'View Results'}
+            {currentQuestionIndex < questions.length - 1
+              ? 'Continue Reading'
+              : isLastSection
+              ? 'View Results'
+              : 'Continue Reading'}
           </Button>
         </>
       )}
