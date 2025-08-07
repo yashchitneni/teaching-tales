@@ -234,7 +234,7 @@ export default function ReadingPage() {
                   router.push(`/book/${bookId}/chapter/${nextChapter}`)
                 } else {
                   // Story complete - navigate to dashboard or library
-                  router.push('/dashboard')
+                  router.push('http://localhost:3001/my-stories')
                 }
               }}
             />
