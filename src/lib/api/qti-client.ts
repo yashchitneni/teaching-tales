@@ -69,10 +69,12 @@ interface Stimulus {
 interface CreateStimulusRequest {
   identifier: string;
   title: string;
-  description?: string;
-  content: string;
-  mediaType: string;
-  language?: string;
+  contentType: string;
+  contentText?: string;
+  contentFile?: string;
+  altText?: string;
+  transcript?: string;
+  captions?: Record<string, any>;
   metadata?: Record<string, any>;
 }
 

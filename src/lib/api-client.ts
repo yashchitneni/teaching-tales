@@ -7,11 +7,11 @@ interface ApiError {
 }
 
 interface OneRosterUser {
-  // Required for creation (v1.2 format)
+  // Required for creation (v1.2 format) - restrict to student-only
   username: string;
   givenName: string;
   familyName: string;
-  role: 'student' | 'teacher' | 'parent' | 'guardian' | 'relative' | 'aide' | 'administrator';
+  role: 'student'; // Restrict from full OneRoster enum to student-only
   orgIds: string[];
   enabledUser: boolean;
   
@@ -20,9 +20,9 @@ interface OneRosterUser {
   grades?: string[];
   metadata?: {
     age?: number;
-    parentId?: string;
     readingLevel?: 'beginner' | 'intermediate' | 'advanced';
     interests?: string[];
+    // Remove parentId - no longer needed
     [key: string]: unknown;
   };
   
@@ -37,9 +37,6 @@ interface OneRosterUser {
   
   // OneRoster v1.2 specific response fields
   orgs?: Array<{ href: string; sourcedId: string; type: string }>;
-  
-  // Legacy fields that may be returned for compatibility but shouldn't be sent in requests
-  agents?: Array<{ sourcedId: string; agentSourcedId: string; type?: string }>;
 }
 
 class ApiClient {

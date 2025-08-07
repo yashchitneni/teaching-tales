@@ -21,7 +21,7 @@ interface FormErrors {
   email?: string
 }
 
-export default function CreateChildAccountPage() {
+export default function CreateProfilePage() {
   const [formData, setFormData] = useState<FormData>({
     firstName: "",
     lastName: "",
@@ -76,7 +76,8 @@ export default function CreateChildAccountPage() {
         familyName: formData.lastName,
         role: 'student' as const,
         email: formData.email,
-        grades: [formData.grade]
+        grades: [formData.grade],
+        orgIds: ['default-org'] // Default organization for students
       }
 
       await apiClient.createOneRosterUser(studentData)
@@ -100,10 +101,10 @@ export default function CreateChildAccountPage() {
       <Card className="w-full max-w-md relative z-10">
         <CardHeader className="space-y-1">
           <CardTitle className="text-2xl text-center text-secondary">
-            Create Your Child's Account
+            Create Your Profile
           </CardTitle>
           <CardDescription className="text-center">
-            Set up a personalized learning profile for your child
+            Set up your personalized learning profile
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -181,7 +182,7 @@ export default function CreateChildAccountPage() {
                 <div className="text-6xl mb-4">🔥</div>
                 <CardTitle className="text-2xl text-secondary">Start your streak!</CardTitle>
                 <CardDescription>
-                  Welcome to TeachTales! Your child's learning adventure begins now.
+                  Welcome to TeachTales! Your learning adventure begins now.
                 </CardDescription>
               </div>
             </CardHeader>

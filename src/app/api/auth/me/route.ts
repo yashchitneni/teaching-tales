@@ -50,7 +50,7 @@ export async function GET(request: NextRequest) {
           id: timebackUser.id || timebackUser.cognitoId,
           email: timebackUser.email,
           cognitoId: timebackUser.cognitoId,
-          role: timebackUser.role || 'parent',
+          role: timebackUser.role === 'student' ? 'student' : 'student', // Always map to student for our app
           name: timebackUser.name || timebackUser.email?.split('@')[0],
         },
         message: 'User information retrieved successfully'
