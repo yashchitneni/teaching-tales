@@ -32,13 +32,13 @@ const sparksByUniverse: Record<string, Spark[]> = {
   // Default sparks for other universes
   'default': [
     { id: 'create-own', name: 'Create Your Choice', description: 'Add your own unique choice', isCustom: true },
-    { id: 'lost-toy', name: 'Lost Toy', isSpecial: true },
-    { id: 'new-friend', name: 'New Friend', isSpecial: true },
-    { id: 'birthday-party', name: 'Birthday Party', isSpecial: true },
-    { id: 'first-day-school', name: 'First Day of School' },
-    { id: 'camping-trip', name: 'Camping Trip' },
-    { id: 'pet-adventure', name: 'Pet Adventure' },
-    { id: 'magic-discovery', name: 'Magic Discovery' },
+    { id: 'lost-toy', name: 'Lost Toy', image: '/sparks/lost_toy.png', isSpecial: true },
+    { id: 'new-friend', name: 'New Friend', image: '/sparks/new_friend.png', isSpecial: true },
+    { id: 'birthday-party', name: 'Birthday Party', image: '/sparks/birthday_party.png', isSpecial: true },
+    { id: 'first-day-school', name: 'First Day of School', image: '/sparks/first_day_school.png' },
+    { id: 'camping-trip', name: 'Camping Trip', image: '/sparks/camping_trip.png' },
+    { id: 'pet-adventure', name: 'Pet Adventure', image: '/sparks/pet_adventure.png' },
+    { id: 'magic-discovery', name: 'Magic Discovery', image: '/sparks/magic_discovery.png' },
   ]
 }
 
