@@ -4,16 +4,26 @@
 // Helpers to adapt varying API shapes
 function unwrapApi<T = any>(json: any): T {
   if (json && typeof json === 'object') {
+    // Preferred shape: { success, data: { ... } }
     if ('success' in json && 'data' in json) {
       const data = (json as any).data;
       if (data && typeof data === 'object') {
-        // Common nested keys used by upstream
         if ('stimulus' in data) return (data as any).stimulus as T;
         if ('assessment' in data) return (data as any).assessment as T;
         return data as T;
       }
       return (json as any).data as T;
     }
+
+    // Alternate shape: { success, stimulus: {...} } or { success, assessment: {...} }
+    if ('success' in json) {
+      if ('stimulus' in json) return (json as any).stimulus as T;
+      if ('assessment' in json) return (json as any).assessment as T;
+    }
+
+    // Bare entity shape: { stimulus: {...} } or { assessment: {...} }
+    if ('stimulus' in json) return (json as any).stimulus as T;
+    if ('assessment' in json) return (json as any).assessment as T;
   }
   return json as T;
 }

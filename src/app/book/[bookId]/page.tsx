@@ -49,7 +49,7 @@ interface Story {
 export default function StoryReadingPage() {
   const params = useParams()
   const router = useRouter()
-  const { user } = useAuth()
+  const { user, isLoading: authLoading, isAuthenticated } = useAuth()
   
   // Legacy state (for backward compatibility)
   const [story, setStory] = useState<Story | null>(null)
@@ -89,6 +89,17 @@ export default function StoryReadingPage() {
 
   const bookId = params.bookId as string
 
+  // Debug: surface core state in console for quick diagnosis
+  useEffect(() => {
+    // Avoid logging huge objects every render
+    console.log('[BookPage] context', {
+      bookId,
+      hasUser: !!user,
+      authLoading,
+      isAuthenticated
+    })
+  }, [bookId, user, authLoading, isAuthenticated])
+
   // Function to convert vocabulary markdown to HTML with hover tooltips
   const processVocabularyWords = (content: string) => {
     // Convert **word** (meaning: definition) or **word** (definition) to HTML spans with hover tooltips
@@ -97,13 +108,24 @@ export default function StoryReadingPage() {
     )
   }
 
-  // Load story data from QTI API
+  // Load story data from QTI API (or fallback) based on auth state
   useEffect(() => {
-    // Only load when user is available
+    console.log('[BookPage] load effect', { bookId, hasUser: !!user, authLoading })
     if (user) {
       loadStoryFromAPI()
+      return
     }
-  }, [bookId, router, user])
+    // If auth has resolved and there's no user, attempt a safe anonymous load
+    if (!authLoading) {
+      console.warn('[BookPage] No authenticated user; attempting anonymous story load')
+      loadStoryWithoutAuth()
+    }
+  }, [bookId, router, user, authLoading])
+
+  // Emit render-state transitions for easier debugging of loading UI
+  useEffect(() => {
+    console.log('[BookPage] render-state', { loadingQTI, hasStory: !!story, qtiError })
+  }, [loadingQTI, story, qtiError])
 
   // Update section unlock states when QTI story is loaded or responses change
   useEffect(() => {
@@ -215,29 +237,67 @@ export default function StoryReadingPage() {
         setSectionUnlockStates(unlockStates)
         
         // Convert to legacy format for backward compatibility
-        const legacyStory: Story = {
-          id: result.story.id,
-          title: result.story.title,
-          sections: result.story.sections.map((section, index) => ({
-            id: parseInt(section.id.replace(/\D/g, '')) || index,
-            content: processVocabularyWords(section.content),
-            questions: result.story.assessments
-              .filter(assessment => assessment.sectionId === section.id)
-              .flatMap(assessment => assessment.questions.map(q => ({
-                id: q.id,
-                text: q.prompt,
-                options: q.interactions[0]?.choices?.map(c => c.content) || [],
-                correctAnswer: parseInt(q.correctResponse?.[0] || '0'),
-                explanation: q.feedback?.find(f => f.type === 'correct')?.content || ''
-              })))
-          })),
-          wordCount: result.story.wordCount,
-          readingTime: result.story.readingTime,
-          imageUrl: result.story.imageUrl
+        const qtiSections = result.story.sections || []
+        const hasQTISections = qtiSections.length > 0 && qtiSections.some(s => (s.content || '').trim().length > 0)
+
+        if (!hasQTISections) {
+          console.warn('⚠️ QTI story returned 0 sections or empty content. Falling back to Storage Service for content render.')
+          try {
+            const storedStory = await StoryStorageService.getStory(bookId)
+            if (storedStory && (storedStory.sections || []).length > 0) {
+              const transformed: Story = {
+                id: storedStory.id,
+                title: storedStory.title,
+                sections: storedStory.sections.map((section: any, index: number) => ({
+                  id: section.id ?? index,
+                  content: processVocabularyWords(section.content || ''),
+                  questions: (section.questions || []).map((q: any) => ({
+                    id: q.id,
+                    text: q.text || q.question,
+                    options: q.options || [],
+                    correctAnswer: typeof q.correctAnswer === 'number' ? q.correctAnswer : q.correct,
+                    explanation: q.explanation || ''
+                  }))
+                })),
+                wordCount: storedStory.wordCount || 0,
+                readingTime: storedStory.readingTime || '5 minutes',
+                imageUrl: storedStory.imageUrl
+              }
+              setStory(transformed)
+              setStoryMeta(storedStory)
+              console.log('✅ Content populated from Storage Service fallback')
+            } else {
+              console.warn('⚠️ Storage Service fallback returned no sections; trying legacy localStorage fallback')
+              await loadLegacyStoryFallback()
+            }
+          } catch (fallbackErr) {
+            console.error('❌ Storage Service fallback failed:', fallbackErr)
+            await loadLegacyStoryFallback()
+          }
+        } else {
+          const legacyStory: Story = {
+            id: result.story.id,
+            title: result.story.title,
+            sections: qtiSections.map((section, index) => ({
+              id: parseInt(section.id.replace(/\D/g, '')) || index,
+              content: processVocabularyWords(section.content),
+              questions: result.story.assessments
+                .filter(assessment => assessment.sectionId === section.id)
+                .flatMap(assessment => assessment.questions.map(q => ({
+                  id: q.id,
+                  text: q.prompt,
+                  options: q.interactions[0]?.choices?.map(c => c.content) || [],
+                  correctAnswer: parseInt(q.correctResponse?.[0] || '0'),
+                  explanation: q.feedback?.find(f => f.type === 'correct')?.content || ''
+                })))
+            })),
+            wordCount: result.story.wordCount,
+            readingTime: result.story.readingTime,
+            imageUrl: result.story.imageUrl
+          }
+          setStory(legacyStory)
+          console.log('✅ Legacy story format created for backward compatibility')
         }
-        
-        setStory(legacyStory)
-        console.log('✅ Legacy story format created for backward compatibility')
         
         // Also try to load story metadata from story storage service for new features
         try {
@@ -328,6 +388,50 @@ export default function StoryReadingPage() {
         console.log('⚠️ Storage service also failed, trying localStorage...', storageError)
         await loadLegacyStoryFallback()
       }
+    } finally {
+      setLoadingQTI(false)
+    }
+  }
+
+  // Anonymous/basic loader to render content when auth isn't available
+  const loadStoryWithoutAuth = async () => {
+    try {
+      setLoadingQTI(true)
+      setQtiError(null)
+
+      // First try the StoryStorageService (uses QTI API via proxy)
+      console.log('📖 Attempting anonymous story load via storage service')
+      const storedStory = await StoryStorageService.getStory(bookId)
+      if (storedStory && storedStory.sections) {
+        const transformedStory: Story = {
+          id: storedStory.id,
+          title: storedStory.title,
+          sections: storedStory.sections.map((section: any) => ({
+            id: section.id,
+            content: processVocabularyWords(section.content),
+            questions: (section.questions || []).map((q: any) => ({
+              id: q.id,
+              text: q.text,
+              options: q.options,
+              correctAnswer: q.correctAnswer,
+              explanation: q.explanation
+            }))
+          })),
+          wordCount: storedStory.wordCount || 0,
+          readingTime: storedStory.readingTime || '5 minutes',
+          imageUrl: storedStory.imageUrl
+        }
+        setStory(transformedStory)
+        setStoryMeta(storedStory)
+        console.log('✅ Anonymous story load success via storage service')
+        return
+      }
+
+      console.log('ℹ️ Anonymous path: no story in storage, trying legacy localStorage fallback')
+      await loadLegacyStoryFallback()
+    } catch (error) {
+      console.error('❌ Anonymous story load failed:', error)
+      await loadLegacyStoryFallback()
     } finally {
       setLoadingQTI(false)
     }

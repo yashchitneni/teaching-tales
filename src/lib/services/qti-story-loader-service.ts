@@ -245,24 +245,52 @@ export class QTIStoryLoaderService {
       // Parse story content
       let storyData: any;
       try {
-        // Support both content and contentText shapes and handle literal "undefined"
+        // Support both content and contentText shapes and handle empty/"undefined" strings
         const contentField = (stimulus as any).content;
         const contentTextField = (stimulus as any).contentText;
-        let chosen = contentField ?? contentTextField ?? '{}';
-        if (
-          typeof contentField === 'string' &&
-          contentField.trim().toLowerCase() === 'undefined' &&
-          typeof contentTextField === 'string' &&
-          contentTextField.trim().toLowerCase() !== 'undefined'
-        ) {
-          chosen = contentTextField;
+
+        const normalize = (val: unknown): string | undefined => {
+          if (typeof val !== 'string') return undefined;
+          const t = val.trim();
+          if (!t) return undefined; // treat empty string as missing
+          if (t.toLowerCase() === 'undefined') return undefined; // treat literal "undefined" as missing
+          return t;
+        };
+
+        const contentCandidate = normalize(contentField);
+        const contentTextCandidate = normalize(contentTextField);
+
+        // Prefer content if valid; otherwise fall back to contentText
+        const chosen = contentCandidate ?? contentTextCandidate ?? '{}';
+
+        try {
+          storyData = JSON.parse(chosen);
+        } catch (e1) {
+          // If first parse fails, attempt the other candidate if available
+          const alt = chosen === contentCandidate ? contentTextCandidate : contentCandidate;
+          if (alt) {
+            try {
+              storyData = JSON.parse(alt);
+            } catch (e2) {
+              // Fall through to final fallback
+            }
+          }
+
+          if (!storyData) {
+            // Final fallback: keep raw text for visibility but still return an object
+            storyData = { content: (contentTextCandidate ?? contentCandidate ?? '') };
+          }
         }
-        storyData = typeof chosen === 'string' ? JSON.parse(chosen) : chosen;
       } catch (parseError) {
         console.warn('Failed to parse stimulus content, using raw text');
         const fallbackRaw = (stimulus as any).contentText ?? (stimulus as any).content ?? '';
         const fallbackText = typeof fallbackRaw === 'string' ? fallbackRaw : '';
-        storyData = { content: String(fallbackText) };
+        // Best-effort: try parsing fallback as JSON, otherwise keep as plain text
+        try {
+          storyData = JSON.parse(fallbackText);
+        } catch {
+          storyData = { content: String(fallbackText) };
+        }
       }
 
       // Load associated assessments
