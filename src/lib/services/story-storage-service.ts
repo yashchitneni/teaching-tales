@@ -161,7 +161,8 @@ export class StoryStorageService {
       // OneRoster Integration (if enabled)
       let oneRosterIntegration: OneRosterIntegrationResult | undefined;
       
-      if (storyMetadata.enableOneRosterIntegration !== false) { // Default to true
+      const oneRosterEnabled = process.env.NEXT_PUBLIC_ONEROSTER_ENABLED === 'true';
+      if (oneRosterEnabled && storyMetadata.enableOneRosterIntegration !== false) {
         console.log('🏫 Starting OneRoster integration...');
         try {
           const integrationData: StoryClassCreationData = {
@@ -384,13 +385,23 @@ export class StoryStorageService {
    */
   private static convertStimulusToStory(stimulus: Stimulus): StoredStory | null {
     try {
-      // Parse the content JSON
-      let storyContent;
+      // Parse the content JSON (support content or contentText and guard invalid strings)
+      let storyContent: any = {};
+      const rawContent = (stimulus as any).content ?? (stimulus as any).contentText ?? '';
       try {
-        storyContent = JSON.parse(stimulus.content);
+        if (typeof rawContent === 'string') {
+          // Handle accidental string "undefined" from upstream
+          if (rawContent.trim() && rawContent.trim().toLowerCase() !== 'undefined') {
+            storyContent = JSON.parse(rawContent);
+          } else {
+            storyContent = {};
+          }
+        } else if (rawContent && typeof rawContent === 'object') {
+          storyContent = rawContent;
+        }
       } catch (parseError) {
         console.warn('Failed to parse story content:', parseError);
-        return null;
+        storyContent = {};
       }
 
       const metadata = stimulus.metadata || {};

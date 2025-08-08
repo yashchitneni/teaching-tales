@@ -8,7 +8,7 @@
 import { QTIXMLParser, type ParsedQTIContent } from '../qti/parsers/qti-xml-parser';
 import { UnlockEngine, type SectionState, type UnlockContext } from '../qti/engines/unlock-engine';
 import { ResponseStorageService, type StoredResponse } from './response-storage-service';
-import { getStimulus, type Stimulus } from '../api/qti-client';
+import { getStimulus, getAssessmentTest, type Stimulus } from '../api/qti-client';
 
 // Story loading interfaces
 export interface QTIStory {
@@ -245,12 +245,23 @@ export class QTIStoryLoaderService {
       // Parse story content
       let storyData: any;
       try {
-        // Support both content and contentText shapes
-        const contentPayload = (stimulus as any).content ?? (stimulus as any).contentText ?? '{}';
-        storyData = typeof contentPayload === 'string' ? JSON.parse(contentPayload) : contentPayload;
+        // Support both content and contentText shapes and handle literal "undefined"
+        const contentField = (stimulus as any).content;
+        const contentTextField = (stimulus as any).contentText;
+        let chosen = contentField ?? contentTextField ?? '{}';
+        if (
+          typeof contentField === 'string' &&
+          contentField.trim().toLowerCase() === 'undefined' &&
+          typeof contentTextField === 'string' &&
+          contentTextField.trim().toLowerCase() !== 'undefined'
+        ) {
+          chosen = contentTextField;
+        }
+        storyData = typeof chosen === 'string' ? JSON.parse(chosen) : chosen;
       } catch (parseError) {
         console.warn('Failed to parse stimulus content, using raw text');
-        const fallbackText = (stimulus as any).content ?? (stimulus as any).contentText ?? '';
+        const fallbackRaw = (stimulus as any).contentText ?? (stimulus as any).content ?? '';
+        const fallbackText = typeof fallbackRaw === 'string' ? fallbackRaw : '';
         storyData = { content: String(fallbackText) };
       }
 
@@ -303,26 +314,20 @@ export class QTIStoryLoaderService {
     for (const assessmentId of assessmentIds) {
       try {
         console.log(`📝 Loading assessment: ${assessmentId}`);
-        
-        // Load assessment from QTI API (IMS v3p0 proxy)
-        const response = await fetch(`/api/ims/qti/v3p0/assessments/${assessmentId}?format=${parseXML ? 'full' : 'json'}`);
-        
-        if (!response.ok) {
-          console.warn(`Failed to load assessment ${assessmentId}: ${response.statusText}`);
-          continue;
-        }
+        // Use client helper to normalize shapes returned by upstream
+        const test = await getAssessmentTest(assessmentId);
+        if (!test) continue;
 
-        const assessmentData = await response.json();
-        
-        if (assessmentData.success) {
-          const assessment = parseXML && assessmentData.data.xml
-            ? this.parseAssessmentFromXML(assessmentData.data.xml, assessmentId)
-            : this.parseAssessmentFromJSON(assessmentData.data, assessmentId);
-            
-          if (assessment) {
-            assessments.push(assessment);
-          }
-        }
+        // Build JSON shape expected by our parser, sourcing questions from metadata
+        const data = {
+          id: test.id,
+          title: test.title,
+          sectionId: (test as any).metadata?.sectionId,
+          questions: (test as any).metadata?.questions || (test as any).questions || []
+        };
+
+        const parsed = this.parseAssessmentFromJSON(data, assessmentId);
+        if (parsed) assessments.push(parsed);
 
       } catch (error) {
         console.error(`Error loading assessment ${assessmentId}:`, error);

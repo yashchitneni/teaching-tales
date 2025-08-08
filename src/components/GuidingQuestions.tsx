@@ -30,8 +30,18 @@ export function GuidingQuestions({
   onSelectAnswer,
   isLastSection = false
 }: GuidingQuestionsProps) {
-  const currentQuestion = questions[currentQuestionIndex]
-  const hasAnswered = answers[currentQuestionIndex] !== undefined
+  // Guard against empty list or out-of-bounds index
+  if (!questions || questions.length === 0) {
+    return (
+      <div className="p-6">
+        <h2 className="text-xl font-bold mb-2 text-gray-900">Guiding Questions</h2>
+        <p className="text-sm text-gray-600">No questions available for this section.</p>
+      </div>
+    )
+  }
+  const safeIndex = Math.min(Math.max(currentQuestionIndex, 0), questions.length - 1)
+  const currentQuestion = questions[safeIndex]
+  const hasAnswered = answers[safeIndex] !== undefined
   const hasSelected = selectedAnswer !== undefined
 
   return (
@@ -47,13 +57,13 @@ export function GuidingQuestions({
       {/* Progress */}
       <div className="mb-6">
         <div className="flex justify-between text-sm text-gray-600 mb-2">
-          <span>Question {currentQuestionIndex + 1} of {questions.length}</span>
-          <span>{Math.round(((currentQuestionIndex + 1) / questions.length) * 100)}%</span>
+          <span>Question {safeIndex + 1} of {questions.length}</span>
+          <span>{Math.round(((safeIndex + 1) / questions.length) * 100)}%</span>
         </div>
         <div className="w-full bg-gray-200 rounded-full h-2">
           <div 
             className="bg-blue-600 h-2 rounded-full transition-all"
-            style={{ width: `${((currentQuestionIndex + 1) / questions.length) * 100}%` }}
+            style={{ width: `${((safeIndex + 1) / questions.length) * 100}%` }}
           />
         </div>
       </div>
@@ -62,7 +72,7 @@ export function GuidingQuestions({
       <div className="mb-6">
         <h3 className="font-medium mb-4 text-gray-900">{currentQuestion.text}</h3>
         <div className="space-y-3">
-          {currentQuestion.options.map((option, index) => (
+          {currentQuestion.options?.map((option, index) => (
             <button
               key={index}
               onClick={() => {
@@ -72,8 +82,8 @@ export function GuidingQuestions({
               }}
               disabled={hasAnswered}
               className={`w-full text-left p-4 rounded-lg border-2 transition-all ${
-                hasAnswered && answers[currentQuestionIndex] === index
-                  ? answers[currentQuestionIndex] === currentQuestion.correctAnswer
+                hasAnswered && answers[safeIndex] === index
+                  ? answers[safeIndex] === currentQuestion.correctAnswer
                     ? 'border-green-500 bg-green-50'
                     : 'border-red-500 bg-red-50'
                   : hasAnswered && index === currentQuestion.correctAnswer
@@ -112,23 +122,23 @@ export function GuidingQuestions({
       {hasAnswered && (
         <>
           <div className={`p-4 rounded-lg mb-4 ${
-            answers[currentQuestionIndex] === currentQuestion.correctAnswer
+            answers[safeIndex] === currentQuestion.correctAnswer
               ? 'bg-green-50 border border-green-200'
               : 'bg-red-50 border border-red-200'
           }`}>
             <p className={`font-medium mb-2 ${
-              answers[currentQuestionIndex] === currentQuestion.correctAnswer
+              answers[safeIndex] === currentQuestion.correctAnswer
                 ? 'text-green-800'
                 : 'text-red-800'
             }`}>
-              {answers[currentQuestionIndex] === currentQuestion.correctAnswer
+              {answers[safeIndex] === currentQuestion.correctAnswer
                 ? '✅ Excellent! That\'s correct.'
                 : `❌ Not quite right. The correct answer is ${String.fromCharCode(65 + currentQuestion.correctAnswer)}.`}
             </p>
             {/* Show the educational explanation */}
             {currentQuestion.explanation && (
               <div className="text-sm text-gray-700 leading-relaxed">
-                {answers[currentQuestionIndex] === currentQuestion.correctAnswer ? (
+                {answers[safeIndex] === currentQuestion.correctAnswer ? (
                   <p>{currentQuestion.explanation}</p>
                 ) : (
                   <>

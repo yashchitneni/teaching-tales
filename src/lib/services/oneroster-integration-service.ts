@@ -100,14 +100,27 @@ export class OneRosterIntegrationService {
       // Step 1: Get student and school information
       console.log('👤 Fetching student information...');
       const studentInfo = await this.getStudentInfo(data.studentId);
+      let studentInfoData = studentInfo.data;
+      let canEnroll = true;
+
       if (!studentInfo.success) {
-        throw new Error(`Failed to fetch student info: ${studentInfo.error}`);
+        console.warn('⚠️ Student not found in OneRoster system, proceeding without enrollment');
+        operationsFailed.push('student_info_not_found');
+        // Fallback defaults for class creation
+        studentInfoData = {
+          studentId: data.studentId,
+          schoolId: 'teaching-tales-school',
+          gradeLevel: data.gradeLevel || 'elementary',
+          enrolledClasses: []
+        };
+        canEnroll = false;
+      } else {
+        operationsCompleted.push('student_info_fetched');
       }
-      operationsCompleted.push('student_info_fetched');
 
       // Step 2: Create OneRoster class
       console.log('🏫 Creating OneRoster class...');
-      const classResult = await this.createStoryClass(data, studentInfo.data);
+      const classResult = await this.createStoryClass(data, studentInfoData);
       if (!classResult.success) {
         operationsFailed.push('class_creation');
         throw new Error(`Failed to create class: ${classResult.error}`);
@@ -151,24 +164,31 @@ export class OneRosterIntegrationService {
       });
 
       // Step 4: Enroll student in class
-      console.log('👨‍🎓 Enrolling student in class...');
-      const enrollmentResult = await this.enrollStudentInClass(
-        classResult.classId!,
-        data.studentId,
-        studentInfo.data.schoolId
-      );
-      
-      if (!enrollmentResult.success) {
-        operationsFailed.push('student_enrollment');
-        throw new Error(`Failed to enroll student: ${enrollmentResult.error}`);
+      let enrollmentId: string | undefined;
+      if (canEnroll) {
+        console.log('👨‍🎓 Enrolling student in class...');
+        const enrollmentResult = await this.enrollStudentInClass(
+          classResult.classId!,
+          data.studentId,
+          studentInfoData!.schoolId
+        );
+        
+        if (!enrollmentResult.success) {
+          operationsFailed.push('student_enrollment');
+          console.warn(`⚠️ Failed to enroll student: ${enrollmentResult.error}`);
+        } else {
+          operationsCompleted.push('student_enrolled');
+          createdResources.push({
+            type: 'enrollment',
+            id: enrollmentResult.enrollmentId!,
+            operation: 'create'
+          });
+          enrollmentId = enrollmentResult.enrollmentId;
+        }
+      } else {
+        console.log('ℹ️ Skipping enrollment step because student was not found');
+        operationsFailed.push('student_enrollment_skipped');
       }
-
-      operationsCompleted.push('student_enrolled');
-      createdResources.push({
-        type: 'enrollment',
-        id: enrollmentResult.enrollmentId!,
-        operation: 'create'
-      });
 
       const executionTime = Date.now() - startTime;
       
@@ -183,11 +203,11 @@ export class OneRosterIntegrationService {
         success: true,
         classId: classResult.classId,
         lineItemIds: successfulLineItems.map(result => result.lineItemId!),
-        enrollmentId: enrollmentResult.enrollmentId,
+        enrollmentId,
         rollbackData: {
           classId: classResult.classId,
           lineItemIds: successfulLineItems.map(result => result.lineItemId!),
-          enrollmentId: enrollmentResult.enrollmentId,
+          enrollmentId,
           createdResources
         },
         metadata: {
