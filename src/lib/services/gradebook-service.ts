@@ -501,7 +501,7 @@ export class GradebookService {
             : 0;
 
           // Submit grade
-          const result = await this.submitGrade(gradeData);
+          const result = await this.submitToGradebook(gradeData);
           synchronized.push(result);
 
 
