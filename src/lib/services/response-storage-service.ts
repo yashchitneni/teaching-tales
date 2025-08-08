@@ -157,42 +157,36 @@ export class ResponseStorageService {
     response: StoredResponse
   ): Promise<{ success: boolean; responseId?: string; submissionId?: string; error?: string }> {
     try {
+      // QTI v3.0 Response Processing: process response for the specific item
+      const endpoint = `/api/ims/qti/v3p0/items/${encodeURIComponent(response.itemId)}/process-response`;
       const payload = {
-        assessmentId: response.assessmentId,
-        studentId: response.studentId,
-        itemResponses: [{
-          itemId: response.itemId,
-          responseIdentifier: response.responseIdentifier,
-          response: response.processedResponse,
-          timeSpent: response.timeSpent,
-          attempts: response.attempts
-        }],
-        timestamp: response.timestamp
+        responses: {
+          [response.responseIdentifier || 'RESPONSE']:
+            response.processedResponse
+        },
+        attemptId: response.id
       };
 
-      const apiResponse = await fetch('/api/ims/qti/v3p0/responses', {
+      const apiResponse = await fetch(endpoint, {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
+        headers: { 'Content-Type': 'application/json' },
         credentials: 'include',
         body: JSON.stringify(payload)
       });
 
-      const result = await apiResponse.json();
+      const result = await apiResponse.json().catch(() => ({}));
 
-      if (apiResponse.ok && result.success) {
+      if (apiResponse.ok && (result.success === undefined || result.success === true)) {
         return {
           success: true,
-          responseId: result.data?.responseId,
-          submissionId: result.data?.submissionId
-        };
-      } else {
-        return {
-          success: false,
-          error: result.error?.message || 'API request failed'
+          submissionId: payload.attemptId
         };
       }
+
+      return {
+        success: false,
+        error: (result && (result.error?.message || result.message)) || 'API request failed'
+      };
 
     } catch (error) {
       return {

@@ -258,9 +258,11 @@ export async function fetchItemDetails(itemId: string): Promise<ItemDetails> {
 }
 
 export async function fetchItemXML(xmlUrl: string): Promise<string> {
+  // Sanitize potentially double-encoded or malformed S3 URLs
+  const safeUrl = sanitizeXmlUrl(xmlUrl);
   
   // The xmlUrl should be a pre-signed S3 URL that doesn't require authentication
-  const response = await fetch(xmlUrl, {
+  const response = await fetch(safeUrl, {
     method: 'GET',
     headers: {
       'Accept': 'application/xml, text/xml',
@@ -280,7 +282,7 @@ export async function fetchItemXML(xmlUrl: string): Promise<string> {
   // Check if we received HTML instead of XML
   if (xmlContent.includes('<!DOCTYPE html') || xmlContent.includes('<html')) {
     console.error('ERROR: Received HTML instead of XML. This might be a CORS issue or incorrect URL.');
-    console.error('Full URL was:', xmlUrl);
+    console.error('Full URL was:', safeUrl);
   }
   
   return xmlContent;
@@ -300,7 +302,7 @@ export async function loadCompleteAssessmentTest(testId: string): Promise<TestPa
             const itemDetails = await fetchItemDetails(item.id);
             
             // Check if xmlUrl exists
-            const xmlUrl = itemDetails.item.xmlUrl;
+            const xmlUrl = sanitizeXmlUrl(itemDetails.item.xmlUrl);
             if (!xmlUrl) {
               console.warn(`No XML URL provided for item ${item.id}. Using mock XML for testing.`);
               
@@ -367,6 +369,47 @@ export async function loadCompleteAssessmentTest(testId: string): Promise<TestPa
   } catch (error) {
     console.error('Failed to load assessment test:', error);
     throw error;
+  }
+}
+
+/**
+ * Attempt to correct common double-encoding issues seen in upstream xmlUrl values.
+ * - Detects nested encoded URLs like .../https%3A//bucket.s3.amazonaws.com/...
+ * - Returns the decoded inner URL when found
+ * - Leaves normal pre-signed URLs untouched
+ */
+function sanitizeXmlUrl(url: string): string {
+  try {
+    if (!url) return url;
+
+    // If the URL already looks like a valid https S3 pre-signed URL, return as-is
+    if (/^https?:\/\//i.test(url) && url.includes('s3')) {
+      // But if it ALSO contains an encoded https inside, prefer the decoded inner URL
+      const encIdx = url.search(/https?%3A/i);
+      if (encIdx > -1) {
+        const encodedPart = url.substring(encIdx);
+        const decoded = decodeURIComponent(encodedPart);
+        if (/^https?:\/\//i.test(decoded)) return decoded;
+      }
+      return url;
+    }
+
+    // Standalone encoded URL
+    if (/^https?%3A/i.test(url)) {
+      const decoded = decodeURIComponent(url);
+      if (/^https?:\/\//i.test(decoded)) return decoded;
+    }
+
+    // Look for nested encoded https/http anywhere in the string
+    const match = url.match(/https?%3A[^\s]+/i);
+    if (match) {
+      const decoded = decodeURIComponent(match[0]);
+      if (/^https?:\/\//i.test(decoded)) return decoded;
+    }
+
+    return url;
+  } catch (_err) {
+    return url;
   }
 }
 

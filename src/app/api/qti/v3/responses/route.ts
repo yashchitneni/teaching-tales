@@ -194,35 +194,65 @@ export async function POST(request: NextRequest) {
     // Process and enrich the response data
     const processedData = processResponseData(body);
 
-    // Submit to TimeBack QTI API (IMS v3p0)
-    const timebackResponse = await fetch(`${TIMEBACK_API_URL}/ims/qti/v3p0/responses`, {
-      method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${token}`,
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify(processedData)
-    });
+    // Submit each item response to the upstream "process-response" endpoint
+    const itemResults = await Promise.all(
+      processedData.itemResponses.map(async (ir: any) => {
+        const url = `${TIMEBACK_API_URL}/ims/qti/v3p0/items/${encodeURIComponent(ir.itemId)}/process-response`;
+        const payload = {
+          responses: {
+            [ir.responseIdentifier || 'RESPONSE']: ir.response
+          },
+          attemptId: processedData.sessionId
+        };
 
-    const responseData = await timebackResponse.json();
+        const upstream = await fetch(url, {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify(payload)
+        });
 
-    if (!timebackResponse.ok) {
-      console.error('❌ TimeBack API error:', {
-        status: timebackResponse.status,
-        statusText: timebackResponse.statusText,
-        error: responseData
-      });
-      
+        const data = await upstream.json().catch(() => ({}));
+
+        if (!upstream.ok) {
+          return {
+            itemId: ir.itemId,
+            success: false as const,
+            status: upstream.status,
+            error: data
+          };
+        }
+
+        // Normalize expected fields
+        const score = data?.data?.score ?? data?.score ?? 0;
+        const maxScore = data?.data?.maxScore ?? data?.maxScore ?? 1;
+        const feedback = data?.data?.feedback ?? data?.feedback;
+
+        return {
+          itemId: ir.itemId,
+          success: true as const,
+          score,
+          maxScore,
+          isCorrect: maxScore > 0 ? score === maxScore : false,
+          feedback
+        };
+      })
+    );
+
+    const failed = itemResults.filter(r => !r.success);
+    if (failed.length > 0) {
       return NextResponse.json(
         {
           success: false,
           error: {
-            message: 'Failed to store response in QTI system',
-            code: 'QTI_STORAGE_ERROR',
-            details: responseData
+            message: 'One or more item responses failed to process',
+            code: 'QTI_ITEM_PROCESS_ERROR',
+            details: failed
           }
         },
-        { status: timebackResponse.status }
+        { status: 502 }
       );
     }
 
@@ -230,13 +260,12 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({
       success: true,
       data: {
-        responseId: responseData.id || responseData.responseId,
         submissionId: processedData.sessionId,
         assessmentId: body.assessmentId,
         studentId: body.studentId,
         itemCount: body.itemResponses.length,
         timestamp: processedData.timestamp,
-        message: 'Response successfully recorded'
+        results: itemResults
       }
     });
 

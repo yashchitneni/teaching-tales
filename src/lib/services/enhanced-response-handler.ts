@@ -202,7 +202,7 @@ export class EnhancedResponseHandler {
         responseData.questionId,
         processedResponse,
         {
-          responseIdentifier: responseData.questionId,
+          responseIdentifier: 'RESPONSE',
           timeSpent: responseData.timeSpent,
           attempts: responseData.attempts,
           metadata: responseData.metadata
@@ -581,21 +581,16 @@ export class EnhancedResponseHandler {
       for (const responseData of this.offlineQueue.responses) {
         try {
           // Re-process with backend
-          const response = await fetch('/api/ims/qti/v3p0/responses', {
+          const response = await fetch(`/api/ims/qti/v3p0/items/${encodeURIComponent(responseData.questionId)}/process-response`, {
             method: 'POST',
             headers: {
               'Content-Type': 'application/json'
             },
             body: JSON.stringify({
-              assessmentId: responseData.assessmentId,
-              studentId: responseData.studentId,
-              responses: [{
-                itemId: responseData.questionId,
-                response: responseData.response,
-                timeSpent: responseData.timeSpent,
-                attempts: responseData.attempts,
-                timestamp: responseData.timestamp
-              }]
+              responses: {
+                RESPONSE: responseData.response
+              },
+              attemptId: responseData.sessionId
             })
           });
 

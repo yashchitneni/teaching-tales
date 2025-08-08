@@ -814,6 +814,13 @@ export class QTIGenerator {
     const interactionContext = this.createInteractionContext(item, options);
 
     // Prepare template context
+    const templateValue = item.responseProcessing?.template;
+    const templateUrl = templateValue
+      ? (templateValue.startsWith('http')
+          ? templateValue
+          : `http://www.imsglobal.org/question/qti_v3p0/rptemplates/${templateValue}`)
+      : undefined;
+
     const context = {
       ITEM_IDENTIFIER: item.identifier,
       ITEM_TITLE: item.title,
@@ -829,6 +836,7 @@ export class QTIGenerator {
       
       // Response processing
       RESPONSE_PROCESSING_TEMPLATE: item.responseProcessing.template,
+      RESPONSE_PROCESSING_TEMPLATE_URL: templateUrl,
       
       // Interaction type and content
       INTERACTION_TYPE: item.interactionType,

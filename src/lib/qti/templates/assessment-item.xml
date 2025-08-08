@@ -103,9 +103,13 @@
     </qti-item-body>
 
     <!-- Response processing for scoring -->
+    {{#if RESPONSE_PROCESSING_TEMPLATE_URL}}
+    <!-- Use template-based processing via URL (preferred in QTI v3) -->
+    <qti-response-processing template="{{RESPONSE_PROCESSING_TEMPLATE_URL}}" />
+    {{else}}
     <qti-response-processing>
         {{#if RESPONSE_PROCESSING_TEMPLATE}}
-        <!-- Use template-based processing -->
+        <!-- Fallback: use template identifier element if URL not provided -->
         <qti-response-processing-template identifier="{{RESPONSE_PROCESSING_TEMPLATE}}" />
         {{else}}
         <!-- Custom response processing -->
@@ -158,6 +162,7 @@
         </qti-response-condition>
         {{/if}}
     </qti-response-processing>
+    {{/if}}
 
     <!-- Feedback (optional) -->
     {{#if INCLUDE_FEEDBACK}}
