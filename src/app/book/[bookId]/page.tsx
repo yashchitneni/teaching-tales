@@ -6,6 +6,7 @@ import { TopNavWithTabs } from '@/components/TopNavWithTabs'
 import { FeedbackButton } from '@/components/FeedbackButton'
 import { GuidingQuestions } from '@/components/GuidingQuestions'
 import { AssessmentResults } from '@/components/AssessmentResults'
+// QTI Integration imports
 import { SectionUnlockIndicator, SectionProgressOverview } from '@/components/SectionUnlockIndicator'
 import { QTIQuestionRenderer } from '@/components/QTIQuestionRenderer'
 import { ConnectionStatusBadge } from '@/components/ConnectionStatusIndicator'
@@ -15,6 +16,11 @@ import { QTIResponseProcessor, defaultResponseProcessor } from '@/lib/qti/proces
 import { UnlockEngine, type UnlockContext } from '@/lib/qti/engines/unlock-engine'
 import { EnhancedResponseHandler, type ResponseProcessingResult } from '@/lib/services/enhanced-response-handler'
 import { useAuth } from '@/contexts/AuthContext'
+// Story Storage and Chapter Features imports
+import { StoryStorageService, type StoredStory } from '@/lib/services/story-storage-service'
+import { ChapterQuiz } from '@/components/ChapterQuiz'
+import { NextChapterChoice } from '@/components/NextChapterChoice'
+import { StoryGenerationService } from '@/lib/ai/story-generation-service'
 
 // Legacy interfaces for backward compatibility
 interface Question {
@@ -57,7 +63,7 @@ export default function StoryReadingPage() {
   const [startTime] = useState(Date.now())
   const sectionRefs = useRef<Record<number, HTMLDivElement | null>>({})
 
-  // New QTI state
+  // QTI Integration state
   const [qtiStory, setQtiStory] = useState<QTIStory | null>(null)
   const [loadingQTI, setLoadingQTI] = useState(true)
   const [qtiError, setQtiError] = useState<string | null>(null)
@@ -70,6 +76,16 @@ export default function StoryReadingPage() {
   const [responseResults, setResponseResults] = useState<Record<string, ResponseProcessingResult>>({})
   const [offlineMode, setOfflineMode] = useState(!navigator.onLine)
   const [pendingSync, setPendingSync] = useState(false)
+
+  // Story Flow and Chapter Features state
+  type Phase = 'reading' | 'choose-next' | 'chapter-quiz' | 'chapter-results'
+  const [phase, setPhase] = useState<Phase>('reading')
+  const [storyMeta, setStoryMeta] = useState<StoredStory | null>(null)
+  const [chapterQuizQuestions, setChapterQuizQuestions] = useState<Question[]>([])
+  const [chapterQuizAnswers, setChapterQuizAnswers] = useState<number[]>([])
+  const [nextOptions, setNextOptions] = useState<{ id: string; label: string; description?: string }[]>([])
+  const [isGeneratingNext, setIsGeneratingNext] = useState(false)
+  const [nextStoryId, setNextStoryId] = useState<string | null>(null)
 
   const bookId = params.bookId as string
 
@@ -214,17 +230,96 @@ export default function StoryReadingPage() {
         
         setStory(legacyStory)
         console.log('✅ Legacy story format created for backward compatibility')
+        
+        // Also try to load story metadata from story storage service for new features
+        try {
+          const storedStory = await StoryStorageService.getStory(bookId)
+          if (storedStory) {
+            setStoryMeta(storedStory)
+            console.log('✅ Story metadata loaded from storage service')
+          }
+        } catch (metaError) {
+          console.log('ℹ️ Story metadata not available from storage service')
+        }
       } else {
         console.error('❌ Failed to load QTI story:', result.error)
         setQtiError(result.error || 'Unknown error')
         
-        // Still try legacy loading as fallback
+        // Try story storage service as first fallback
+        console.log('🔄 Trying Story Storage Service fallback...')
+        try {
+          const storedStory = await StoryStorageService.getStory(bookId)
+          if (storedStory) {
+            // Convert StoredStory to legacy Story format
+            const transformedStory: Story = {
+              id: storedStory.id,
+              title: storedStory.title,
+              sections: storedStory.sections.map((section: any) => ({
+                id: section.id,
+                content: processVocabularyWords(section.content),
+                questions: section.questions.map((q: any) => ({
+                  id: q.id,
+                  text: q.text,
+                  options: q.options,
+                  correctAnswer: q.correctAnswer,
+                  explanation: q.explanation
+                }))
+              })),
+              wordCount: storedStory.wordCount || 0,
+              readingTime: storedStory.readingTime || '5 minutes',
+              imageUrl: storedStory.imageUrl
+            }
+            setStory(transformedStory)
+            setStoryMeta(storedStory)
+            console.log('✅ Story loaded from storage service fallback')
+            return
+          } else {
+            console.log('📝 Story not found in storage service, trying localStorage...')
+          }
+        } catch (storageError) {
+          console.log('⚠️ Story storage service failed, trying localStorage...', storageError)
+        }
+        
+        // Still try legacy loading as final fallback
         await loadLegacyStoryFallback()
       }
     } catch (error) {
       console.error('❌ Error loading QTI story:', error)
       setQtiError(error instanceof Error ? error.message : 'Unknown error')
-      await loadLegacyStoryFallback()
+      
+      // Try story storage service as fallback
+      try {
+        const storedStory = await StoryStorageService.getStory(bookId)
+        if (storedStory) {
+          // Convert StoredStory to legacy Story format
+          const transformedStory: Story = {
+            id: storedStory.id,
+            title: storedStory.title,
+            sections: storedStory.sections.map((section: any) => ({
+              id: section.id,
+              content: processVocabularyWords(section.content),
+              questions: section.questions.map((q: any) => ({
+                id: q.id,
+                text: q.text,
+                options: q.options,
+                correctAnswer: q.correctAnswer,
+                explanation: q.explanation
+              }))
+            })),
+            wordCount: storedStory.wordCount || 0,
+            readingTime: storedStory.readingTime || '5 minutes',
+            imageUrl: storedStory.imageUrl
+          }
+          setStory(transformedStory)
+          setStoryMeta(storedStory)
+          console.log('✅ Story loaded from storage service after QTI error')
+        } else {
+          await loadLegacyStoryFallback()
+        }
+      } catch (storageError) {
+        console.log('⚠️ Storage service also failed, trying localStorage...', storageError)
+        await loadLegacyStoryFallback()
+      }
     } finally {
       setLoadingQTI(false)
     }
@@ -258,6 +353,17 @@ export default function StoryReadingPage() {
         }
         setStory(transformedStory)
         console.log('✅ Legacy story loaded from localStorage')
+        
+        // Also try to set story meta from story storage service for new features
+        try {
+          const storedStory = await StoryStorageService.getStory(bookId)
+          if (storedStory) {
+            setStoryMeta(storedStory)
+            console.log('✅ Story metadata loaded from storage service')
+          }
+        } catch (metaError) {
+          console.log('ℹ️ Story metadata not available from storage service')
+        }
       } else {
         console.error('❌ Story not found in any source')
         router.push('/dashboard')
@@ -575,8 +681,9 @@ export default function StoryReadingPage() {
           setShowAssessment(false)
           // Scroll will be handled by useEffect when currentSectionIndex updates
         } else {
-          // Last section completed – show final assessment
+          // Last section completed – move to next choice phase
           setShowAssessment(true)
+          prepareNextChapterFlow()
         }
       }
       return
@@ -586,6 +693,58 @@ export default function StoryReadingPage() {
     const newAnswers = [...answers]
     newAnswers[currentQuestionIndex] = answerIndex
     setAnswers(newAnswers)
+  }
+
+  // Prepare next chapter options and chapter-wide quiz
+  const prepareNextChapterFlow = () => {
+    setPhase('choose-next')
+    if (!story) return
+
+    // Build three simple, thematic options for the next chapter spark
+    const character = storyMeta?.character || 'the hero'
+    const options = [
+      { id: 'friend', label: `A surprising new friend helps ${character}` },
+      { id: 'mystery', label: `A mystery from earlier returns to challenge ${character}` },
+      { id: 'travel', label: `${character} discovers a path to a new place` }
+    ]
+    setNextOptions(options)
+
+    // Build 4 chapter-level questions by sampling across sections (first 4 available)
+    const allQs = getAllQuestions()
+    const picked = allQs.slice(0, 4)
+    setChapterQuizQuestions(picked)
+  }
+
+  const startGeneratingNextChapter = async (choiceId: string) => {
+    if (!story || !storyMeta) {
+      setPhase('chapter-quiz')
+      return
+    }
+    setIsGeneratingNext(true)
+    try {
+      const previousChapter = story.sections.map(s => s.content).join('\n\n')
+      const selectedLabel = nextOptions.find(o => o.id === choiceId)?.label || choiceId
+      const res = await fetch('/api/generate-continuation', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          universe: storyMeta.universe,
+          character: storyMeta.character,
+          spark: storyMeta.spark,
+          gradeLevel: storyMeta.gradeLevel,
+          studentId: storyMeta.studentId,
+          previousChapter,
+          selectedPath: selectedLabel,
+          storyTitle: story.title
+        })
+      })
+      const json = await res.json()
+      if (json?.success && json?.stimulusId) setNextStoryId(json.stimulusId)
+    } catch (e) {
+      console.error('Failed to generate next chapter in background:', e)
+    } finally {
+      setIsGeneratingNext(false)
+    }
   }
 
   const handleSelectAnswer = (answerIndex: number) => {
@@ -642,8 +801,9 @@ export default function StoryReadingPage() {
       setCurrentSectionIndex(nextSectionIndex)
       setRevealedSections(prev => [...prev, nextSectionIndex])
     } else {
-      // Story complete - navigate to dashboard
-      router.push('/dashboard')
+      // Story complete - move to next choice phase instead of navigating away
+      setShowAssessment(true)
+      prepareNextChapterFlow()
     }
   }
 
@@ -823,15 +983,56 @@ export default function StoryReadingPage() {
               onSelectAnswer={handleSelectAnswer}
               isLastSection={story.sections && currentSectionIndex === story.sections.length - 1}
             />
-          ) : (
-            <AssessmentResults
-              questions={getAllQuestions()}
-              answers={getAllAnswers()}
-              accuracy={calculateTotalAccuracy()}
-              wordsPerMinute={calculateTotalWPM()}
-              onContinue={() => {}}
-              hideContinue
+          ) : phase === 'choose-next' ? (
+            <NextChapterChoice
+              options={nextOptions}
+              onSelect={(id) => { startGeneratingNextChapter(id); setPhase('chapter-quiz') }}
             />
+          ) : phase === 'chapter-quiz' ? (
+            <ChapterQuiz
+              questions={chapterQuizQuestions.map((q) => ({ id: q.id, text: q.text, options: q.options, correctAnswer: q.correctAnswer, explanation: q.explanation }))}
+              onComplete={(ans) => { setChapterQuizAnswers(ans); setPhase('chapter-results') }}
+            />
+          ) : (
+            <div className="p-6">
+              <AssessmentResults
+                questions={getAllQuestions()}
+                answers={getAllAnswers()}
+                accuracy={calculateTotalAccuracy()}
+                wordsPerMinute={calculateTotalWPM()}
+                onContinue={() => {}}
+                hideContinue
+              />
+              {/* Chapter-wide quiz results summary */}
+              <div className="mt-6 p-4 rounded-lg border border-gray-200 bg-white">
+                <h4 className="font-semibold text-gray-900 mb-2">Chapter Quiz Completed</h4>
+                <p className="text-sm text-gray-600">You answered {chapterQuizAnswers.length} questions.</p>
+                {isGeneratingNext ? (
+                  <p className="mt-3 text-sm text-blue-700">Preparing your next chapter...</p>
+                ) : (
+                  <div className="mt-4 grid grid-cols-1 gap-3">
+                    <button
+                      className="w-full bg-blue-600 hover:bg-blue-700 text-white py-2 px-4 rounded"
+                      onClick={() => {
+                        if (nextStoryId) {
+                          router.push(`/book/${nextStoryId}`)
+                        } else {
+                          router.push('http://localhost:3001/my-stories')
+                        }
+                      }}
+                    >
+                      Continue to Next Chapter
+                    </button>
+                    <button
+                      className="w-full bg-gray-100 hover:bg-gray-200 text-gray-900 py-2 px-4 rounded border border-gray-200"
+                      onClick={() => router.push('http://localhost:3001/my-stories')}
+                    >
+                      Back to My Stories
+                    </button>
+                  </div>
+                )}
+              </div>
+            </div>
           )}
         </div>
       </div>

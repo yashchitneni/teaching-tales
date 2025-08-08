@@ -1,7 +1,6 @@
 import { GeminiClient } from './gemini-client';
 import { ReplicateClient } from './replicate-client';
 import { PromptTemplates } from './prompt-templates';
-import { S3Service } from '@/lib/services/s3-service';
 import { 
   StoryGenerationRequest, 
   StoryGenerationResponse, 
@@ -31,7 +30,8 @@ import {
 export class StoryGenerationService {
   private geminiClient: GeminiClient;
   private replicateClient: ReplicateClient;
-  private s3Service: S3Service;
+  // Avoid importing server-only modules (like 'sst' via S3Service) on the client bundle.
+  // We'll dynamically import S3Service only inside the image generation method.
 
   /**
    * Creates a new StoryGenerationService instance
@@ -40,7 +40,6 @@ export class StoryGenerationService {
   constructor() {
     this.geminiClient = new GeminiClient();
     this.replicateClient = new ReplicateClient();
-    this.s3Service = new S3Service();
   }
 
   /**
@@ -367,6 +366,9 @@ export class StoryGenerationService {
     storyResponse: StoryGenerationResponse, 
     request: StoryGenerationRequest
   ): Promise<string> {
+    // Dynamically import to keep client bundles free of server-only deps
+    const { S3Service } = await import('@/lib/services/s3-service');
+    const s3Service = new S3Service();
     // Create image prompt based on story content
     const imagePrompt = `${storyResponse.title}, featuring ${request.character} in ${request.universe}, ${request.spark}`;
     
@@ -381,10 +383,10 @@ export class StoryGenerationService {
     });
     
     // Generate safe filename for S3
-    const fileName = this.s3Service.generateFileName(storyResponse.title, request.studentId);
+    const fileName = s3Service.generateFileName(storyResponse.title, request.studentId);
     
     // Download and upload to S3
-    const s3Url = await this.s3Service.downloadAndUpload(imageUrl, fileName);
+    const s3Url = await s3Service.downloadAndUpload(imageUrl, fileName);
     
     return s3Url;
   }
