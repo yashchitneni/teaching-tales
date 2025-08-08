@@ -56,34 +56,28 @@ export class RetryManager {
     
     for (let attempt = 1; attempt <= options.maxAttempts; attempt++) {
       try {
-        console.log(`🔄 Attempt ${attempt}/${options.maxAttempts}...`);
         const result = await operation();
         
         if (attempt > 1) {
-          console.log(`✅ Operation succeeded on attempt ${attempt}`);
         }
         
         return result;
       } catch (error) {
         lastError = error as Error;
         
-        console.log(`❌ Attempt ${attempt} failed:`, error instanceof Error ? error.message : 'Unknown error');
         
         // Check if this is the last attempt
         if (attempt === options.maxAttempts) {
-          console.log(`🚫 All ${options.maxAttempts} attempts failed, giving up`);
           break;
         }
         
         // Check if error is retryable
         if (error instanceof AIServiceError && !this.shouldRetry(error)) {
-          console.log(`🚫 Error is not retryable: ${error.code}`);
           break;
         }
         
         // Calculate delay for next attempt
         const delay = this.calculateDelay(attempt, options.baseDelay, options.maxDelay, options.backoffMultiplier);
-        console.log(`⏳ Waiting ${delay}ms before retry...`);
         
         await this.sleep(delay);
       }

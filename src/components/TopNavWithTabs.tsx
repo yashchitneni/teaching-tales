@@ -16,7 +16,6 @@ export function TopNavWithTabs() {
     { name: 'Create My Own Story', href: '/create-book/universe' },
     { name: 'My Stories', href: '/my-stories' },
     { name: 'Library', href: '/library' },
-    { name: 'My Reading Circles', href: '/reading-circles' },
   ]
 
   const isActiveTab = (href: string) => {
@@ -29,7 +28,7 @@ export function TopNavWithTabs() {
         {/* Logo */}
         <div className="flex items-center flex-1">
           <Link href="/dashboard" className="flex items-center">
-            <div className="w-8 h-8 bg-white rounded-full mr-2"></div>
+            <img src="/logo.svg" alt="TeachTales" className="w-8 h-8 mr-2" />
             <span className="font-bold text-lg">TeachTales</span>
           </Link>
         </div>

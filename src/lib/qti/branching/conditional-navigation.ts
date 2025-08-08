@@ -156,7 +156,6 @@ export class ConditionalNavigationService {
    * @returns Built navigation graph
    */
   buildNavigationGraph(assessmentTest: QTIAssessmentTest): Map<string, NavigationNode> {
-    console.log('🗺️ Building navigation graph...');
     
     this.navigationGraph.clear();
 
@@ -190,7 +189,6 @@ export class ConditionalNavigationService {
       }
     }
 
-    console.log(`✅ Navigation graph built with ${this.navigationGraph.size} nodes`);
     return this.navigationGraph;
   }
 
@@ -263,7 +261,6 @@ export class ConditionalNavigationService {
       previousScores?: number[];
     }
   ): NavigationPath[] {
-    console.log('🛤️ Generating adaptive navigation paths...');
     
     const paths: NavigationPath[] = [];
 
@@ -294,7 +291,6 @@ export class ConditionalNavigationService {
     // Store paths
     paths.forEach(path => this.navigationPaths.set(path.id, path));
 
-    console.log(`✅ Generated ${paths.length} navigation paths`);
     return paths;
   }
 
@@ -534,7 +530,6 @@ export class ConditionalNavigationService {
     currentNode: string,
     context: BranchingContext
   ): NavigationDecision {
-    console.log(`🧭 Making navigation decision from node: ${currentNode}`);
     
     const node = this.navigationGraph.get(currentNode);
     if (!node) {

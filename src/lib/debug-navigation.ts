@@ -17,7 +17,6 @@ export function logNavigation(page: string) {
     console.table(recentNavigations);
   }
   
-  console.log(`[Navigation] Navigated to ${page} at ${new Date(now).toISOString()}`);
 }
 
 export function getNavigationHistory() {

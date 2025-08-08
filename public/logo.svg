@@ -1,0 +1,16 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" role="img" aria-label="TeachTales logo: open book in blue circle">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#2F7DFF"/>
+      <stop offset="100%" stop-color="#1F5ED6"/>
+    </linearGradient>
+  </defs>
+  <circle cx="256" cy="256" r="240" fill="url(#bg)"/>
+  <g fill="#FFFFFF">
+    <path d="M256 156c-46-21-96-22-144-6a12 12 0 0 0-8 11v176a12 12 0 0 0 16 11c41-14 92-16 136 7V156z"/>
+    <path d="M256 156c46-21 96-22 144-6a12 12 0 0 1 8 11v176a12 12 0 0 1-16 11c-41-14-92-16-136 7V156z"/>
+    <rect x="248" y="148" width="16" height="216" fill="#FFFFFF"/>
+    <path d="M112 320c48-14 96-14 144 8 48-22 96-22 144-8" fill="none" stroke="#FFFFFF" stroke-width="16" stroke-linecap="round"/>
+  </g>
+</svg>
+

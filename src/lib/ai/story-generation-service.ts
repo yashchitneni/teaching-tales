@@ -63,9 +63,7 @@ export class StoryGenerationService {
    *   studentId: 'student-456'
    * });
    * 
-   * console.log(story.title); // "Hermione's Magical Discovery"
-   * console.log(story.sections.length); // 5
-   * console.log(story.wordCount); // ~1000
+   
    * ```
    */
   async generateStory(request: StoryGenerationRequest): Promise<StoryGenerationResponse> {
@@ -89,20 +87,12 @@ export class StoryGenerationService {
       // Generate the prompt with grade-level specific guidance
       const prompt = PromptTemplates.generateStoryPromptWithGradeLevel(sanitizedRequest);
 
-      console.log('🎭 Generating story with Gemini Flash...');
-      console.log('📝 Parameters:', {
-        universe: sanitizedRequest.universe,
-        character: sanitizedRequest.character,
-        spark: sanitizedRequest.spark,
-        gradeLevel: sanitizedRequest.gradeLevel
-      });
+
 
       // Call Gemini API
       const rawResponse = await this.geminiClient.generateContent(prompt);
       
-      console.log('✅ Raw response received, parsing JSON...');
-      console.log('📄 Raw AI Response (first 1000 chars):', rawResponse.substring(0, 1000));
-      console.log('📄 Raw AI Response (last 200 chars):', rawResponse.substring(rawResponse.length - 200));
+
 
       // Parse the response
       const parsedResponse = PromptTemplates.parseAIResponse(rawResponse);
@@ -110,27 +100,14 @@ export class StoryGenerationService {
       // Validate and transform the response
       const storyResponse = this.validateAndTransformResponse(parsedResponse, sanitizedRequest);
       
-      console.log('📝 Story response validated, starting image generation...');
-
       // Generate story illustration
-      console.log('🎨 Generating story illustration...');
       try {
         const imageUrl = await this.generateStoryImage(storyResponse, sanitizedRequest);
         storyResponse.imageUrl = imageUrl;
-        console.log('✅ Story illustration generated successfully:', imageUrl);
       } catch (imageError) {
         console.warn('⚠️ Image generation failed, continuing without image:', imageError);
         // Continue without image - don't fail the whole story generation
       }
-
-      console.log('🎉 Story generation completed successfully!');
-      console.log('📊 Generated:', {
-        title: storyResponse.title,
-        sections: storyResponse.sections.length,
-        wordCount: storyResponse.wordCount,
-        readingTime: storyResponse.readingTime,
-        hasImage: !!storyResponse.imageUrl
-      });
 
       return storyResponse;
 
@@ -194,7 +171,7 @@ export class StoryGenerationService {
       // Generate continuation prompt
       const prompt = PromptTemplates.generateContinuationPrompt(request);
 
-      console.log('📖 Generating story continuation...');
+
 
       // Call Gemini API
       const rawResponse = await this.geminiClient.generateContent(prompt);
@@ -203,7 +180,7 @@ export class StoryGenerationService {
       const parsedResponse = PromptTemplates.parseAIResponse(rawResponse);
       const storyResponse = this.validateAndTransformResponse(parsedResponse, baseRequest);
 
-      console.log('✅ Story continuation completed!');
+
 
       return storyResponse;
 
@@ -262,8 +239,7 @@ export class StoryGenerationService {
 
       // Validate and fix questions
       section.questions.forEach((question: any, qIndex: number) => {
-        // Log the question for debugging
-        console.log(`🔍 Validating section ${index + 1}, question ${qIndex + 1}:`, JSON.stringify(question, null, 2));
+
         
         if (!question.question || !question.options || !Array.isArray(question.options)) {
           console.warn(`⚠️ Malformed question detected in section ${index + 1}, question ${qIndex + 1}. Attempting to fix...`);
@@ -289,7 +265,7 @@ export class StoryGenerationService {
             question.explanation = "This is the correct answer based on the story.";
           }
           
-          console.log(`✅ Fixed question:`, JSON.stringify(question, null, 2));
+
         }
       });
     });
@@ -372,8 +348,7 @@ export class StoryGenerationService {
     // Create image prompt based on story content
     const imagePrompt = `${storyResponse.title}, featuring ${request.character} in ${request.universe}, ${request.spark}`;
     
-    console.log('🎨 Generating story illustration...');
-    console.log('📝 Image prompt:', imagePrompt);
+
     
     // Generate image with Replicate
     const imageUrl = await this.replicateClient.generateImage(imagePrompt, {

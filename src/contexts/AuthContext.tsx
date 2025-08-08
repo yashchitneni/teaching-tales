@@ -38,14 +38,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       if (response.ok) {
         const data = await response.json();
         if (data.success && data.data && data.data.user) {
-          console.log('[AuthContext] Authenticated user:', data.data.user);
           setUser(data.data.user);
         } else {
-          console.log('[AuthContext] No user in response');
           setUser(null);
         }
       } else if (response.status === 401) {
-        console.log('[AuthContext] Not authenticated');
         setUser(null);
       } else {
         console.error('[AuthContext] Auth check failed with status:', response.status);
@@ -60,7 +57,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   };
 
   const login = async (email: string, password: string) => {
-    console.log('[AuthContext] Login called with:', { email, password: '***' });
+
     try {
       // Use server API route which sets HttpOnly cookies
       const response = await fetch('/api/auth/login', {
@@ -73,15 +70,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       });
       
       const data = await response.json();
-      console.log('[AuthContext] Login response:', data);
       
       if (data.success && data.data && data.data.user) {
-        console.log('[AuthContext] Login successful, setting user');
         setUser(data.data.user);
         return { success: true };
       }
-      
-      console.log('[AuthContext] Login failed');
       return { success: false, error: data.error?.message || 'Invalid credentials' };
     } catch (error) {
       console.error('[AuthContext] Login error:', error);
@@ -110,7 +103,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       });
       
       if (response.ok) {
-        console.log('[AuthContext] Logout successful');
       }
       
       setUser(null);

@@ -9,6 +9,11 @@ import {
 } from '@/lib/api/qti-client';
 import type { StoryGenerationResponse } from '@/lib/ai/types';
 import { AssessmentService, type StoryAssessment } from './assessment-service';
+import { 
+  OneRosterIntegrationService, 
+  type StoryClassCreationData,
+  type OneRosterIntegrationResult 
+} from './oneroster-integration-service';
 
 export interface StoredStory {
   id: string;
@@ -26,13 +31,22 @@ export interface StoredStory {
   sections?: any[];
   imageUrl?: string;
   assessments?: StoryAssessment[];
+  // OneRoster integration data
+  oneRosterIntegration?: {
+    classId?: string;
+    lineItemIds?: string[];
+    enrollmentId?: string;
+    integrationStatus: 'pending' | 'completed' | 'failed' | 'none';
+    integrationError?: string;
+    createdAt?: string;
+  };
   metadata?: Record<string, any>;
 }
 
 export class StoryStorageService {
   
   private static readonly STORAGE_KEY = 'teaching-tales-stories';
-  private static readonly USE_LOCAL_STORAGE = true; // Toggle for development
+  private static readonly USE_LOCAL_STORAGE = false; // Toggle for development
   
   /**
    * Save a generated story locally or to QTI API
@@ -46,8 +60,13 @@ export class StoryStorageService {
       gradeLevel: string;
       studentId: string;
       storyId: string;
+      enableOneRosterIntegration?: boolean;
     }
-  ): Promise<{ stimulus: Stimulus; assessments: StoryAssessment[] }> {
+  ): Promise<{ 
+    stimulus: Stimulus; 
+    assessments: StoryAssessment[];
+    oneRosterIntegration?: OneRosterIntegrationResult;
+  }> {
     try {
       // Use local storage for development
       if (this.USE_LOCAL_STORAGE) {
@@ -68,6 +87,8 @@ export class StoryStorageService {
           wordCount: storyResponse.wordCount,
           readingTime: storyResponse.readingTime,
           description: `A ${storyMetadata.universe} adventure featuring ${storyMetadata.character} - ${storyMetadata.spark}`,
+          // Persist image URL so production can render it
+          imageUrl: storyResponse.imageUrl || undefined,
         }),
         metadata: {
           // Story generation metadata
@@ -82,6 +103,8 @@ export class StoryStorageService {
           wordCount: storyResponse.wordCount,
           readingTime: storyResponse.readingTime,
           sectionCount: storyResponse.sections.length,
+          // Duplicate image URL in metadata for easy access
+          imageUrl: storyResponse.imageUrl || undefined,
           
           // Application metadata
           appName: 'Teaching Tales',
@@ -93,19 +116,30 @@ export class StoryStorageService {
         }
       };
 
-      console.log('💾 Saving story to QTI Stimuli API...', {
-        identifier: stimulusData.identifier,
-        title: stimulusData.title,
-        universe: storyMetadata.universe,
-        character: storyMetadata.character
-      });
 
-      const savedStimulus = await createStimulus(stimulusData);
-      
-      console.log('✅ Story saved successfully to QTI API:', savedStimulus.id);
+
+      let savedStimulus = await createStimulus(stimulusData);
+
+      // Defensive: recover id if upstream omitted it
+      if (!savedStimulus?.id) {
+        console.warn('⚠️ Stimulus created but id missing. Attempting recovery via listStimuli...');
+        try {
+          const list = await listStimuli(1, 100);
+          const match = list.stimuli.find((s: any) => 
+            s.identifier === stimulusData.identifier ||
+            s?.metadata?.storyId === storyMetadata.storyId
+          );
+          if (match) {
+            savedStimulus = match as any;
+          }
+        } catch (e) {
+          console.warn('Stimulus id recovery failed:', e);
+        }
+      }
+
+
       
       // Create assessment tests for comprehension questions
-      console.log('📝 Creating assessment tests for story sections...');
       const assessments = await AssessmentService.createStoryAssessments(
         storyMetadata.storyId,
         savedStimulus.id,
@@ -120,27 +154,89 @@ export class StoryStorageService {
         }
       );
       
-      console.log(`✅ Created ${assessments.length} assessment tests for story`);
       
-      // Update stimulus metadata with assessment IDs for future retrieval
-      if (assessments.length > 0) {
-        console.log('📝 Updating stimulus with assessment IDs...');
+      // OneRoster Integration (if enabled)
+      let oneRosterIntegration: OneRosterIntegrationResult | undefined;
+      
+      const oneRosterEnabled = process.env.NEXT_PUBLIC_ONEROSTER_ENABLED === 'true';
+      if (oneRosterEnabled && storyMetadata.enableOneRosterIntegration !== false) {
+        try {
+          const integrationData: StoryClassCreationData = {
+            storyId: storyMetadata.storyId,
+            storyTitle: storyResponse.title,
+            universe: storyMetadata.universe,
+            character: storyMetadata.character,
+            spark: storyMetadata.spark,
+            gradeLevel: storyMetadata.gradeLevel,
+            studentId: storyMetadata.studentId,
+            assessments: assessments,
+            metadata: {
+              stimulusId: savedStimulus.id,
+              wordCount: storyResponse.wordCount,
+              readingTime: storyResponse.readingTime,
+              sectionCount: storyResponse.sections.length
+            }
+          };
+
+          oneRosterIntegration = await OneRosterIntegrationService.createStoryIntegration(integrationData);
+          
+          if (oneRosterIntegration.success) {
+          } else {
+            console.error('❌ OneRoster integration failed:', oneRosterIntegration.error);
+            // Don't fail the whole story creation for OneRoster issues
+          }
+        } catch (integrationError) {
+          console.error('❌ OneRoster integration error:', integrationError);
+          oneRosterIntegration = {
+            success: false,
+            error: integrationError instanceof Error ? integrationError.message : 'Unknown integration error',
+            metadata: {
+              operationsCompleted: [],
+              operationsFailed: ['integration_exception'],
+              totalOperations: 0,
+              executionTime: 0
+            }
+          };
+        }
+      }
+      
+      // Update stimulus metadata with assessment IDs and OneRoster info
+      const updatedMetadata = {
+        ...savedStimulus.metadata,
+        assessmentIds: assessments.map(a => a.id),
+        hasAssessments: true,
+        // OneRoster integration metadata
+        oneRosterIntegration: oneRosterIntegration?.success ? {
+          classId: oneRosterIntegration.classId,
+          lineItemIds: oneRosterIntegration.lineItemIds,
+          enrollmentId: oneRosterIntegration.enrollmentId,
+          integrationStatus: 'completed',
+          createdAt: new Date().toISOString()
+        } : oneRosterIntegration ? {
+          integrationStatus: 'failed',
+          integrationError: oneRosterIntegration.error,
+          createdAt: new Date().toISOString()
+        } : {
+          integrationStatus: 'none'
+        }
+      };
+
+      if (assessments.length > 0 || oneRosterIntegration) {
         try {
           await updateStimulus(savedStimulus.id, {
-            metadata: {
-              ...savedStimulus.metadata,
-              assessmentIds: assessments.map(a => a.id),
-              hasAssessments: true
-            }
+            metadata: updatedMetadata
           });
-          console.log('✅ Stimulus updated with assessment IDs');
         } catch (updateError) {
-          console.warn('⚠️ Failed to update stimulus with assessment IDs:', updateError);
+          console.warn('⚠️ Failed to update stimulus metadata:', updateError);
           // Don't fail the whole operation for this
         }
       }
       
-      return { stimulus: savedStimulus, assessments };
+      return { 
+        stimulus: savedStimulus, 
+        assessments,
+        oneRosterIntegration
+      };
     } catch (error) {
       console.error('❌ Failed to save story to QTI API:', error);
       throw error;
@@ -154,11 +250,9 @@ export class StoryStorageService {
     try {
       // Use local storage for development
       if (this.USE_LOCAL_STORAGE) {
-        console.log('📖 Loading story from localStorage:', stimulusId);
         return this.getStoryFromLocalStorage(stimulusId);
       }
       
-      console.log('📖 Loading story from QTI API:', stimulusId);
       
       const stimulus = await getStimulus(stimulusId);
       const story = this.convertStimulusToStory(stimulus);
@@ -169,7 +263,6 @@ export class StoryStorageService {
       
       // Load assessments if they exist
       if (stimulus.metadata?.assessmentIds && Array.isArray(stimulus.metadata.assessmentIds)) {
-        console.log('📝 Loading assessments for story...');
         try {
           const assessmentPromises = stimulus.metadata.assessmentIds.map((id: string) => 
             AssessmentService.getSectionAssessment(id)
@@ -190,7 +283,6 @@ export class StoryStorageService {
           }
           
           story.assessments = validAssessments;
-          console.log(`✅ Loaded ${validAssessments.length} assessments for story`);
         } catch (assessmentError) {
           console.warn('⚠️ Failed to load assessments, story will have no questions:', assessmentError);
           story.assessments = [];
@@ -214,7 +306,6 @@ export class StoryStorageService {
         return this.getStoriesFromLocalStorage();
       }
       
-      console.log('📚 Loading user stories from QTI API...');
       
       const response = await listStimuli(page, pageSize);
       
@@ -227,7 +318,6 @@ export class StoryStorageService {
         .map(stimulus => this.convertStimulusToStory(stimulus))
         .filter(story => story !== null) as StoredStory[];
 
-      console.log(`✅ Loaded ${stories.length} stories from QTI API`);
       
       return stories;
     } catch (error) {
@@ -243,7 +333,6 @@ export class StoryStorageService {
     try {
       // Use local storage for development
       if (this.USE_LOCAL_STORAGE) {
-        console.log('🗑️ Deleting story from localStorage:', stimulusId);
         const success = this.deleteStoryFromLocalStorage(stimulusId);
         if (!success) {
           throw new Error('Failed to delete story from localStorage');
@@ -251,17 +340,14 @@ export class StoryStorageService {
         return;
       }
       
-      console.log('🗑️ Deleting story from QTI API:', stimulusId);
       
       // First, get the story to find assessment IDs
       const stimulus = await getStimulus(stimulusId);
       
       // Delete assessments if they exist
       if (stimulus.metadata?.assessmentIds && Array.isArray(stimulus.metadata.assessmentIds)) {
-        console.log('📝 Deleting story assessments...');
         try {
           await AssessmentService.deleteStoryAssessments(stimulus.metadata.assessmentIds);
-          console.log('✅ Story assessments deleted successfully');
         } catch (assessmentError) {
           console.warn('⚠️ Failed to delete some assessments:', assessmentError);
           // Continue with story deletion even if assessment deletion fails
@@ -270,7 +356,6 @@ export class StoryStorageService {
       
       // Delete the story stimulus
       await deleteStimulus(stimulusId);
-      console.log('✅ Story deleted successfully');
     } catch (error) {
       console.error('Failed to delete story:', error);
       throw error;
@@ -282,13 +367,23 @@ export class StoryStorageService {
    */
   private static convertStimulusToStory(stimulus: Stimulus): StoredStory | null {
     try {
-      // Parse the content JSON
-      let storyContent;
+      // Parse the content JSON (support content or contentText and guard invalid strings)
+      let storyContent: any = {};
+      const rawContent = (stimulus as any).content ?? (stimulus as any).contentText ?? '';
       try {
-        storyContent = JSON.parse(stimulus.content);
+        if (typeof rawContent === 'string') {
+          // Handle accidental string "undefined" from upstream
+          if (rawContent.trim() && rawContent.trim().toLowerCase() !== 'undefined') {
+            storyContent = JSON.parse(rawContent);
+          } else {
+            storyContent = {};
+          }
+        } else if (rawContent && typeof rawContent === 'object') {
+          storyContent = rawContent;
+        }
       } catch (parseError) {
         console.warn('Failed to parse story content:', parseError);
-        return null;
+        storyContent = {};
       }
 
       const metadata = stimulus.metadata || {};
@@ -307,6 +402,7 @@ export class StoryStorageService {
         wordCount: storyContent.wordCount || metadata.wordCount,
         readingTime: storyContent.readingTime || metadata.readingTime,
         sections: storyContent.sections || [],
+        imageUrl: storyContent.imageUrl || metadata.imageUrl, // Populate image URL for rendering
         metadata: {
           stimulusId: stimulus.id,
           identifier: stimulus.identifier,
@@ -324,17 +420,14 @@ export class StoryStorageService {
    */
   static async migrateFromLocalStorage(): Promise<void> {
     try {
-      console.log('🔄 Starting migration from localStorage to QTI API...');
       
       // Get stories from localStorage
       const localStoriesJson = localStorage.getItem('teaching-tales-stories');
       if (!localStoriesJson) {
-        console.log('No stories found in localStorage to migrate');
         return;
       }
 
       const localStories = JSON.parse(localStoriesJson);
-      console.log(`Found ${localStories.length} stories in localStorage`);
 
       // Migrate each completed story
       let migratedCount = 0;
@@ -361,21 +454,17 @@ export class StoryStorageService {
             });
 
             migratedCount++;
-            console.log(`✅ Migrated story: ${story.title}`);
           } catch (error) {
             console.error(`❌ Failed to migrate story ${story.title}:`, error);
           }
         }
       }
 
-      console.log(`🎉 Migration completed! Migrated ${migratedCount} stories to QTI API`);
       
       // Optionally clear localStorage after successful migration
       if (migratedCount > 0) {
-        console.log('💾 Backing up localStorage stories before clearing...');
         localStorage.setItem('teaching-tales-stories-backup', localStoriesJson);
         localStorage.removeItem('teaching-tales-stories');
-        console.log('🧹 Cleared localStorage stories (backup created)');
       }
     } catch (error) {
       console.error('❌ Migration failed:', error);
@@ -395,9 +484,14 @@ export class StoryStorageService {
       gradeLevel: string;
       studentId: string;
       storyId: string;
+      enableOneRosterIntegration?: boolean;
     }
-  ): Promise<{ stimulus: Stimulus; assessments: StoryAssessment[] }> {
-    console.log('🏠 💾 SAVING STORY TO LOCALSTORAGE (not QTI API)...', {
+  ): Promise<{
+    stimulus: Stimulus; 
+    assessments: StoryAssessment[];
+    oneRosterIntegration?: OneRosterIntegrationResult;
+  }> {
+    console.debug('StoryStorageService.saveStoryLocally', {
       title: storyResponse.title,
       universe: storyMetadata.universe,
       character: storyMetadata.character,
@@ -436,7 +530,6 @@ export class StoryStorageService {
     // Save to localStorage
     localStorage.setItem(this.STORAGE_KEY, JSON.stringify(updatedStories));
     
-    console.log('✅ Story saved successfully to localStorage:', story.id);
 
     // Return mock objects to satisfy the interface
     const mockStimulus: Stimulus = {
@@ -452,7 +545,11 @@ export class StoryStorageService {
 
     const mockAssessments: StoryAssessment[] = [];
 
-    return { stimulus: mockStimulus, assessments: mockAssessments };
+    return { 
+      stimulus: mockStimulus, 
+      assessments: mockAssessments,
+      oneRosterIntegration: undefined // Local storage doesn't support OneRoster integration
+    };
   }
 
   /**
@@ -460,15 +557,12 @@ export class StoryStorageService {
    */
   private static getStoriesFromLocalStorage(): StoredStory[] {
     try {
-      console.log('🏠 📚 LOADING STORIES FROM LOCALSTORAGE (not QTI API)...');
       const stored = localStorage.getItem(this.STORAGE_KEY);
       if (!stored) {
-        console.log('📚 No stories found in localStorage');
         return [];
       }
 
       const stories: StoredStory[] = JSON.parse(stored);
-      console.log(`✅ Loaded ${stories.length} stories from localStorage`);
       return stories;
     } catch (error) {
       console.error('Failed to load stories from localStorage:', error);
@@ -492,7 +586,6 @@ export class StoryStorageService {
       const stories = this.getStoriesFromLocalStorage();
       const updatedStories = stories.filter(story => story.id !== storyId);
       localStorage.setItem(this.STORAGE_KEY, JSON.stringify(updatedStories));
-      console.log('🗑️ Story deleted from localStorage:', storyId);
       return true;
     } catch (error) {
       console.error('Failed to delete story from localStorage:', error);

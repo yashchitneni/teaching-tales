@@ -42,7 +42,7 @@ export class AssessmentService {
     }
   ): Promise<StoryAssessment[]> {
     try {
-      console.log('📝 Creating assessment tests for story sections...', {
+      console.debug('AssessmentService.createStoryAssessments', {
         storyId,
         sectionCount: sections.length
       });
@@ -92,7 +92,6 @@ export class AssessmentService {
             }
           };
 
-          console.log(`📝 Creating assessment for section ${section.id}...`);
           
           const createdAssessment = await createAssessmentTest(assessmentData);
           
@@ -109,13 +108,11 @@ export class AssessmentService {
           
           assessments.push(storyAssessment);
           
-          console.log(`✅ Created assessment for section ${section.id}:`, createdAssessment.id);
         } else {
           console.warn(`⚠️ Section ${section.id} has no questions, skipping assessment creation`);
         }
       }
 
-      console.log(`🎉 Created ${assessments.length} assessment tests for story`);
       return assessments;
       
     } catch (error) {
@@ -129,7 +126,6 @@ export class AssessmentService {
    */
   static async getSectionAssessment(assessmentId: string): Promise<StoryAssessment | null> {
     try {
-      console.log('📖 Loading section assessment:', assessmentId);
       
       const assessment = await getAssessmentTest(assessmentId);
       
@@ -149,7 +145,6 @@ export class AssessmentService {
         metadata: assessment.metadata
       };
 
-      console.log('✅ Assessment loaded successfully');
       return storyAssessment;
       
     } catch (error) {
@@ -163,7 +158,6 @@ export class AssessmentService {
    */
   static async getStoryAssessments(storyId: string): Promise<StoryAssessment[]> {
     try {
-      console.log('📚 Loading all assessments for story:', storyId);
       
       // Note: This would require a search/filter endpoint in the QTI API
       // For now, we'll need to store assessment IDs with the story or implement a different approach
@@ -182,12 +176,10 @@ export class AssessmentService {
    */
   static async deleteStoryAssessments(assessmentIds: string[]): Promise<void> {
     try {
-      console.log('🗑️ Deleting story assessments:', assessmentIds);
       
       const deletePromises = assessmentIds.map(id => deleteAssessmentTest(id));
       await Promise.all(deletePromises);
       
-      console.log('✅ All story assessments deleted successfully');
       
     } catch (error) {
       console.error('❌ Failed to delete story assessments:', error);

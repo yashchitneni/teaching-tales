@@ -42,21 +42,6 @@ export async function POST(request: NextRequest) {
 
     const body: StoryGenerationRequest = await request.json()
     
-    // Add debugging logs to see what's being received
-    console.log('🔍 SERVER RECEIVED REQUEST BODY:', body)
-    console.log('🔍 SERVER FIELD CHECK:', {
-      universe: body.universe,
-      character: body.character, 
-      spark: body.spark,
-      gradeLevel: body.gradeLevel,
-      studentId: body.studentId,
-      'universe type': typeof body.universe,
-      'character type': typeof body.character,
-      'spark type': typeof body.spark,
-      'gradeLevel type': typeof body.gradeLevel,
-      'studentId type': typeof body.studentId
-    })
-    
     // Validate required fields
     if (!body.universe || !body.character || !body.spark || !body.gradeLevel || !body.studentId) {
       return NextResponse.json(
@@ -65,19 +50,9 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    console.log('🎭 Starting AI story generation for:', {
-      universe: body.universe,
-      character: body.character,
-      spark: body.spark,
-      gradeLevel: body.gradeLevel,
-      studentId: body.studentId
-    })
-
     // Generate story using the AI service
     const storyService = new StoryGenerationService()
     const storyResponse = await storyService.generateStory(body)
-
-    console.log('✅ AI story generation completed!')
 
     return NextResponse.json(storyResponse)
 

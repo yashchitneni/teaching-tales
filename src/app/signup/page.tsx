@@ -25,7 +25,7 @@ export default function SignUpPage() {
   const router = useRouter()
   const { user } = useAuth()
   
-  console.log('[SignUpPage] Component rendered, user:', user)
+
   
   useEffect(() => {
     logNavigation('/signup')
@@ -33,15 +33,12 @@ export default function SignUpPage() {
 
   // Check if user is already logged in
   useEffect(() => {
-    console.log('[SignUpPage] useEffect triggered, user:', user)
     if (user) {
-      console.log('[SignUpPage] User already logged in, redirecting to dashboard')
       router.push('/dashboard')
     }
   }, [user, router])
 
   const handleGoogleSignUp = async () => {
-    console.log('[SignUpPage] Google signup clicked')
     setIsLoading(true)
     setGeneralError("")
     
@@ -56,7 +53,6 @@ export default function SignUpPage() {
   }
 
   const handleAppleSignUp = async () => {
-    console.log('[SignUpPage] Apple signup clicked')
     setIsLoading(true)
     setGeneralError("")
     
@@ -122,8 +118,6 @@ export default function SignUpPage() {
     setIsLoading(true)
     
     try {
-      console.log('[SignUpPage] Attempting signup with:', { email, displayName })
-      
       // Call signup API endpoint
       const response = await fetch('/api/auth/signup', {
         method: 'POST',
@@ -132,7 +126,6 @@ export default function SignUpPage() {
       })
       
       const data = await response.json()
-      console.log('[SignUpPage] Signup response:', data)
       
       if (!response.ok || !data.success) {
         // Handle specific auth errors
@@ -156,13 +149,11 @@ export default function SignUpPage() {
         
         // If tokens were returned, we could auto-login the user
         if (data.data?.tokens) {
-          console.log('[SignUpPage] Tokens received, auto-login possible')
           // For now, just redirect to login
         }
         
         // Redirect to login after 2 seconds
         setTimeout(() => {
-          console.log('[SignUpPage] Redirecting to login after successful signup')
           router.push('/login')
         }, 2000)
       }

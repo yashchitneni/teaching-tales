@@ -186,7 +186,7 @@ export default function ReadingPage() {
                   {showChoices && (
                     <ChapterChoices 
                       onChoiceSelect={(choice: string) => {
-                        console.log('Selected choice:', choice)
+                
                         // Navigate to next chapter generation
                         router.push(`/create-book/loading?continueFrom=${chapterId}&choice=${choice}`)
                       }}

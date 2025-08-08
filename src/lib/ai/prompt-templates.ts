@@ -291,64 +291,57 @@ GRADE 6-8 SPECIFIC REQUIREMENTS:
   }
 
   static parseAIResponse(response: string): any {
+    // Pre-clean: strip markdown code fences if the whole response is fenced
+    const preStripped = this.stripCodeFences(response);
     try {
-      // First, try parsing as-is
-      return JSON.parse(response);
+      // First, try parsing as-is (after simple fence stripping)
+      return JSON.parse(preStripped);
     } catch (error) {
-      console.log('🔧 Initial JSON parse failed, trying fallbacks...');
-      
       // If that fails, try to extract JSON from markdown code blocks
-      const codeBlockMatch = response.match(/```(?:json)?\s*([\s\S]*?)\s*```/);
+      const codeBlockMatch = preStripped.match(/```(?:json)?\s*([\s\S]*?)\s*```/);
       if (codeBlockMatch) {
+        const block = codeBlockMatch[1].replace(/^json\s*/i, '').trim();
         try {
-          return JSON.parse(codeBlockMatch[1]);
-        } catch (innerError) {
-          console.log('🔧 Code block JSON parse failed, trying fixes...');
+          return JSON.parse(block);
+        } catch {
           // Try to fix common JSON issues in code blocks
-          const fixedJson = this.fixCommonJsonIssues(codeBlockMatch[1]);
+          const fixedJson = this.fixCommonJsonIssues(block);
           try {
             return JSON.parse(fixedJson);
-          } catch (finalError) {
-            console.log('🔧 Trying aggressive repair for code block JSON...');
-            const repaired = this.repairJsonLoose(codeBlockMatch[1]);
-            try {
-              return JSON.parse(repaired);
-            } catch (ultimateError) {
-              console.error('❌ Fixed code block JSON still invalid:', ultimateError.message);
-              console.error('🔍 Problematic JSON around position:', codeBlockMatch[1].substring(Math.max(0, 2900), 2950));
-              throw new Error(`Failed to parse JSON from code block: ${ultimateError.message}`);
+          } catch {
+            // Last try: balanced extraction inside the code block
+            const balanced = this.extractBalancedJson(block);
+            if (balanced) {
+              try {
+                return JSON.parse(this.fixCommonJsonIssues(balanced));
+              } catch (ultimateError) {
+                console.error('❌ Fixed code block JSON still invalid:', (ultimateError as any)?.message);
+                console.error('🔍 Problematic JSON around position:', block.substring(Math.max(0, 2900), 2950));
+                throw new Error(`Failed to parse JSON from code block: ${(ultimateError as any)?.message}`);
+              }
             }
           }
         }
       }
       
-      // Try to find JSON-like content between first { and last }
-      const jsonMatch = response.match(/\{[\s\S]*\}/);
-      if (jsonMatch) {
+      // Try to find JSON-like content using balanced brace extraction
+      const balancedFromResponse = this.extractBalancedJson(preStripped);
+      if (balancedFromResponse) {
         try {
-          return JSON.parse(jsonMatch[0]);
-        } catch (innerError) {
-          console.log('🔧 Extracted JSON parse failed, trying fixes...');
-          // Try to fix common JSON issues in extracted content
-          const fixedJson = this.fixCommonJsonIssues(jsonMatch[0]);
+          return JSON.parse(balancedFromResponse);
+        } catch {
           try {
-            return JSON.parse(fixedJson);
-          } catch (finalError) {
-            console.log('🔧 Trying aggressive repair for extracted JSON...');
-            const repaired = this.repairJsonLoose(jsonMatch[0]);
-            try {
-              return JSON.parse(repaired);
-            } catch (ultimateError) {
-              console.error('❌ Fixed extracted JSON still invalid:', ultimateError.message);
-              console.error('🔍 Problematic JSON around position:', jsonMatch[0].substring(Math.max(0, 2900), 2950));
-              throw new Error(`Failed to parse extracted JSON: ${ultimateError.message}`);
-            }
+            return JSON.parse(this.fixCommonJsonIssues(balancedFromResponse));
+          } catch (ultimateError) {
+            console.error('❌ Fixed extracted JSON still invalid:', (ultimateError as any)?.message);
+            console.error('🔍 Problematic JSON around position:', balancedFromResponse.substring(Math.max(0, 2900), 2950));
+            throw new Error(`Failed to parse extracted JSON: ${(ultimateError as any)?.message}`);
           }
         }
       }
       
       console.error('❌ No JSON content found in response');
-      throw new Error(`No valid JSON found in response: ${error.message}`);
+      throw new Error(`No valid JSON found in response: ${(error as any)?.message || 'Unknown error'}`);
     }
   }
 
@@ -413,16 +406,65 @@ GRADE 6-8 SPECIFIC REQUIREMENTS:
     let s = jsonStr.trim();
     // If wrapped in code fencing artifacts like json:, strip them
     s = s.replace(/^json\s*/i, '');
-    // Extract content between first { and last }
-    const start = s.indexOf('{');
-    const end = s.lastIndexOf('}');
-    if (start !== -1 && end !== -1 && end > start) {
-      s = s.substring(start, end + 1);
-    }
+    const balanced = this.extractBalancedJson(s);
+    const core = balanced || s;
     // Apply common fixes and extra lenient rules
-    s = this.fixCommonJsonIssues(s);
-    // Remove stray trailing characters
-    s = s.replace(/^[^\{]*/, '').replace(/[^\}]*$/, '');
-    return s;
+    const fixed = this.fixCommonJsonIssues(core);
+    // Remove stray leading/trailing non-brace chars
+    return fixed.replace(/^[^\{]*/, '').replace(/[^\}]*$/, '');
+  }
+
+  // Remove surrounding markdown code fences if present
+  private static stripCodeFences(input: string): string {
+    const trimmed = (input || '').trim();
+    // Case 1: the entire response is a single fenced block
+    const wholeFence = trimmed.match(/^```(?:json)?\s*([\s\S]*?)\s*```\s*$/);
+    if (wholeFence) {
+      return wholeFence[1].trim();
+    }
+    // Case 2: leading/trailing standalone fence lines
+    if (trimmed.startsWith('```')) {
+      const withoutLeading = trimmed.replace(/^```[^\n]*\n/, '');
+      if (withoutLeading.endsWith('```')) {
+        return withoutLeading.replace(/\n?```\s*$/,'').trim();
+      }
+      return withoutLeading.trim();
+    }
+    return trimmed;
+  }
+
+  // Extract a balanced JSON object substring respecting quotes and escapes
+  private static extractBalancedJson(input: string): string | null {
+    let start = -1;
+    let depth = 0;
+    let inString = false;
+    let escape = false;
+    for (let i = 0; i < input.length; i++) {
+      const ch = input[i];
+      if (inString) {
+        if (escape) {
+          escape = false;
+        } else if (ch === '\\') {
+          escape = true;
+        } else if (ch === '"') {
+          inString = false;
+        }
+        continue;
+      }
+      if (ch === '"') {
+        inString = true;
+        continue;
+      }
+      if (ch === '{') {
+        if (start === -1) start = i;
+        depth++;
+      } else if (ch === '}') {
+        if (depth > 0) depth--;
+        if (depth === 0 && start !== -1) {
+          return input.substring(start, i + 1);
+        }
+      }
+    }
+    return null;
   }
 }

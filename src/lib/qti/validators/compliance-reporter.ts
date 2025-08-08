@@ -141,7 +141,6 @@ export class ComplianceReporter {
     options: Partial<ReportOptions> = {}
   ): ComplianceReport {
     const startTime = Date.now();
-    console.log('📊 Generating compliance report...');
 
     const reportId = this.generateReportId(packageInfo);
     const overallScore = this.calculateOverallScore(validationResults);
@@ -165,8 +164,6 @@ export class ComplianceReporter {
     this.reportHistory.push(report);
     
     const generationTime = Date.now() - startTime;
-    console.log(`✅ Compliance report generated in ${generationTime}ms`);
-    console.log(`📈 Overall Compliance Score: ${overallScore}/100`);
 
     return report;
   }
@@ -590,7 +587,6 @@ export class ComplianceReporter {
    * Export report in specified format
    */
   async exportReport(report: ComplianceReport, options: ReportOptions): Promise<string> {
-    console.log(`📤 Exporting compliance report in ${options.format} format...`);
 
     switch (options.format) {
       case 'json':

@@ -1,6 +1,69 @@
 // Updated to use server-side proxy routes for security
 // See docs/AUTHENTICATION_ARCHITECTURE.md for details
 
+// Helpers to adapt varying API shapes
+function unwrapApi<T = any>(json: any): T {
+  if (json && typeof json === 'object') {
+    // Preferred shape: { success, data: { ... } }
+    if ('success' in json && 'data' in json) {
+      const data = (json as any).data;
+      if (data && typeof data === 'object') {
+        // Nested entity keys inside data
+        if ('stimulus' in data) return (data as any).stimulus as T;
+        if ('assessment' in data) return (data as any).assessment as T;
+        if ('test' in data) return (data as any).test as T;
+        if ('stimulus' in data) return (data as any).stimulus as T;
+        if ('assessment' in data) return (data as any).assessment as T;
+        if ('test' in data) return (data as any).test as T;
+        return data as T;
+      }
+      return (json as any).data as T;
+    }
+
+    // Alternate shape: { success, stimulus: {...} } or { success, assessment: {...} }
+    if ('success' in json) {
+      if ('stimulus' in json) return (json as any).stimulus as T;
+      if ('assessment' in json) return (json as any).assessment as T;
+      if ('test' in json) return (json as any).test as T;
+    }
+
+    // Bare entity shape: { stimulus: {...} } or { assessment: {...} }
+    if ('stimulus' in json) return (json as any).stimulus as T;
+    if ('assessment' in json) return (json as any).assessment as T;
+    if ('test' in json) return (json as any).test as T;
+  }
+  return json as T;
+}
+
+function normalizeStimulusShape<S extends { [k: string]: any }>(obj: S): S {
+  if (!obj) return obj;
+  // Ensure clients expecting `content` can read from `contentText`
+  if (obj.content === undefined && obj.contentText !== undefined) {
+    (obj as any).content = obj.contentText;
+  }
+  return obj;
+}
+
+// Best-effort extraction of an entity id from various upstream shapes
+function extractEntityId(json: any, entityKey?: string): string | undefined {
+  try {
+    if (!json || typeof json !== 'object') return undefined;
+    // Common patterns
+    if (json.id) return json.id;
+    if (json[`${entityKey}Id`]) return json[`${entityKey}Id`];
+    if (json.data) {
+      const d = json.data;
+      if (d.id) return d.id;
+      if (entityKey && d[entityKey]?.id) return d[entityKey].id;
+      if (entityKey && d[`${entityKey}Id`]) return d[`${entityKey}Id`];
+    }
+    if (json[entityKey]?.id) return json[entityKey].id;
+  } catch (_) {
+    // ignore
+  }
+  return undefined;
+}
+
 interface TestPart {
   id: string;
   identifier: string;
@@ -151,7 +214,9 @@ export async function fetchAssessmentTests(limit: number = 100, offset: number =
     throw new Error(`Failed to fetch assessment tests: ${response.statusText}`);
   }
 
-  return response.json();
+  const json = await response.json();
+  const unwrapped = unwrapApi<AssessmentTestsResponse>(json);
+  return unwrapped;
 }
 
 export async function fetchTestHierarchy(testId: string): Promise<TestPartsResponse> {
@@ -169,11 +234,11 @@ export async function fetchTestHierarchy(testId: string): Promise<TestPartsRespo
     throw new Error(`Failed to fetch test hierarchy: ${response.statusText}`);
   }
 
-  return response.json();
+  const json = await response.json();
+  return unwrapApi<TestPartsResponse>(json);
 }
 
 export async function fetchItemDetails(itemId: string): Promise<ItemDetails> {
-  console.log('Fetching item details for:', itemId);
   const response = await fetch(
     `/api/ims/qti/v3p0/assessment-items/${itemId}`,
     {
@@ -188,13 +253,11 @@ export async function fetchItemDetails(itemId: string): Promise<ItemDetails> {
     throw new Error(`Failed to fetch item details: ${response.statusText}`);
   }
 
-  const data = await response.json();
-  console.log('Item details response:', JSON.stringify(data, null, 2));
+  const data = unwrapApi<ItemDetails>(await response.json());
   return data;
 }
 
 export async function fetchItemXML(xmlUrl: string): Promise<string> {
-  console.log('Fetching XML from URL:', xmlUrl);
   
   // The xmlUrl should be a pre-signed S3 URL that doesn't require authentication
   const response = await fetch(xmlUrl, {
@@ -211,11 +274,8 @@ export async function fetchItemXML(xmlUrl: string): Promise<string> {
   }
 
   const contentType = response.headers.get('content-type');
-  console.log('Response content-type:', contentType);
 
   const xmlContent = await response.text();
-  console.log('Fetched content length:', xmlContent.length);
-  console.log('Content preview:', xmlContent.substring(0, 500));
   
   // Check if we received HTML instead of XML
   if (xmlContent.includes('<!DOCTYPE html') || xmlContent.includes('<html')) {
@@ -329,7 +389,13 @@ export async function listStimuli(page: number = 1, pageSize: number = 20): Prom
       throw new Error(`Failed to fetch stimuli: ${response.status} ${response.statusText}`);
     }
 
-    return await response.json();
+    const json = await response.json();
+    const unwrapped = unwrapApi<StimuliListResponse>(json);
+    // Normalize stimuli content field if needed
+    if (Array.isArray((unwrapped as any).stimuli)) {
+      (unwrapped as any).stimuli = (unwrapped as any).stimuli.map(normalizeStimulusShape);
+    }
+    return unwrapped;
   } catch (error) {
     console.error('Failed to list stimuli:', error);
     throw error;
@@ -354,7 +420,32 @@ export async function createStimulus(stimulusData: CreateStimulusRequest): Promi
       throw new Error(`Failed to create stimulus: ${response.status} ${response.statusText}`);
     }
 
-    return await response.json();
+    const json = await response.json();
+    const unwrapped = normalizeStimulusShape(unwrapApi<Stimulus>(json));
+
+    // If upstream omitted id, try to recover it
+    if (!unwrapped?.id) {
+      const recoveredId = extractEntityId(json, 'stimulus');
+      if (recoveredId) {
+        (unwrapped as any).id = recoveredId;
+      } else {
+        // Final fallback: list and find by identifier or metadata.storyId
+        try {
+          const list = await listStimuli(1, 100);
+          const match = list.stimuli.find((s: any) => 
+            s.identifier === stimulusData.identifier ||
+            s?.metadata?.storyId === (stimulusData as any)?.metadata?.storyId
+          );
+          if (match?.id) {
+            return normalizeStimulusShape(match as any);
+          }
+        } catch (e) {
+          console.warn('createStimulus: fallback lookup failed', e);
+        }
+      }
+    }
+
+    return unwrapped;
   } catch (error) {
     console.error('Failed to create stimulus:', error);
     throw error;
@@ -378,7 +469,9 @@ export async function getStimulus(stimulusId: string): Promise<Stimulus> {
       throw new Error(`Failed to fetch stimulus: ${response.status} ${response.statusText}`);
     }
 
-    return await response.json();
+    const json = await response.json();
+    const unwrapped = unwrapApi<Stimulus>(json);
+    return normalizeStimulusShape(unwrapped);
   } catch (error) {
     console.error('Failed to get stimulus:', error);
     throw error;
@@ -403,7 +496,9 @@ export async function updateStimulus(stimulusId: string, updateData: UpdateStimu
       throw new Error(`Failed to update stimulus: ${response.status} ${response.statusText}`);
     }
 
-    return await response.json();
+    const json = await response.json();
+    const unwrapped = unwrapApi<Stimulus>(json);
+    return normalizeStimulusShape(unwrapped);
   } catch (error) {
     console.error('Failed to update stimulus:', error);
     throw error;
@@ -452,7 +547,26 @@ export async function createAssessmentTest(testData: CreateAssessmentTestRequest
       throw new Error(`Failed to create assessment test: ${response.status} ${response.statusText}`);
     }
 
-    return await response.json();
+    const json = await response.json();
+    let created = unwrapApi<AssessmentTestResponse>(json);
+    if (!created?.id) {
+      const recoveredId = extractEntityId(json, 'assessment');
+      if (recoveredId) {
+        (created as any).id = recoveredId;
+      } else {
+        // Fallback: search recently created tests for matching identifier/metadata
+        try {
+          const list = await fetchAssessmentTests(100, 0);
+          const match = (list.tests || []).find((t: any) => 
+            t.identifier === testData.identifier || t.title === testData.title
+          );
+          if (match?.id) return match as any;
+        } catch (e) {
+          console.warn('createAssessmentTest: fallback lookup failed', e);
+        }
+      }
+    }
+    return created;
   } catch (error) {
     console.error('Failed to create assessment test:', error);
     throw error;
@@ -476,7 +590,11 @@ export async function getAssessmentTest(testId: string): Promise<AssessmentTestR
       throw new Error(`Failed to fetch assessment test: ${response.status} ${response.statusText}`);
     }
 
-    return await response.json();
+    const json = await response.json();
+    const unwrapped = unwrapApi<AssessmentTestResponse>(json);
+    // Some backends return key "test" at top-level; unwrapApi handles it.
+    // Ensure metadata is present even if nested differently
+    return unwrapped as AssessmentTestResponse;
   } catch (error) {
     console.error('Failed to get assessment test:', error);
     throw error;
@@ -501,7 +619,8 @@ export async function updateAssessmentTest(testId: string, updateData: Partial<C
       throw new Error(`Failed to update assessment test: ${response.status} ${response.statusText}`);
     }
 
-    return await response.json();
+    const json = await response.json();
+    return unwrapApi<AssessmentTestResponse>(json);
   } catch (error) {
     console.error('Failed to update assessment test:', error);
     throw error;

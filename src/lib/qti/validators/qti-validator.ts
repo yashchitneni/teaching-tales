@@ -126,11 +126,9 @@ export class QTIValidator {
    * Initialize validator by loading QTI 3.0 schemas
    */
   async initialize(): Promise<void> {
-    console.log('🔧 Initializing QTI Validator with schema loading...');
     
     try {
       await this.loadSchemas();
-      console.log('✅ QTI Validator initialized successfully');
     } catch (error) {
       throw new QTIError(
         `Failed to initialize QTI Validator: ${error instanceof Error ? error.message : 'Unknown error'}`,
@@ -158,7 +156,6 @@ export class QTIValidator {
       };
 
       const loadTime = Date.now() - startTime;
-      console.log(`📋 Loaded QTI 3.0 schemas in ${loadTime}ms`);
 
     } catch (error) {
       throw new QTIError(
@@ -189,7 +186,6 @@ export class QTIValidator {
     const startTime = Date.now();
     const context = this.createValidationContext(options);
     
-    console.log('🔍 Validating Assessment Test XML...');
 
     try {
       // Basic XML well-formedness check
@@ -223,7 +219,6 @@ export class QTIValidator {
 
       this.updateValidationStats('assessmentTest', result);
       
-      console.log(`✅ Assessment Test validation completed in ${result.summary.validationTime}ms`);
       return result;
 
     } catch (error) {
@@ -242,7 +237,6 @@ export class QTIValidator {
     const startTime = Date.now();
     const context = this.createValidationContext(options);
     
-    console.log('🔍 Validating Assessment Section XML...');
 
     try {
       const basicValidation = this.validateXMLWellFormedness(xml);
@@ -265,7 +259,6 @@ export class QTIValidator {
 
       this.updateValidationStats('assessmentSection', result);
       
-      console.log(`✅ Assessment Section validation completed in ${result.summary.validationTime}ms`);
       return result;
 
     } catch (error) {
@@ -284,7 +277,6 @@ export class QTIValidator {
     const startTime = Date.now();
     const context = this.createValidationContext(options);
     
-    console.log('🔍 Validating Assessment Item XML...');
 
     try {
       const basicValidation = this.validateXMLWellFormedness(xml);
@@ -307,7 +299,6 @@ export class QTIValidator {
 
       this.updateValidationStats('assessmentItem', result);
       
-      console.log(`✅ Assessment Item validation completed in ${result.summary.validationTime}ms`);
       return result;
 
     } catch (error) {
@@ -326,7 +317,6 @@ export class QTIValidator {
     const startTime = Date.now();
     const context = this.createValidationContext(options);
     
-    console.log('🔍 Validating IMS Manifest XML...');
 
     try {
       const basicValidation = this.validateXMLWellFormedness(xml);
@@ -347,7 +337,6 @@ export class QTIValidator {
 
       this.updateValidationStats('manifest', result);
       
-      console.log(`✅ IMS Manifest validation completed in ${result.summary.validationTime}ms`);
       return result;
 
     } catch (error) {
@@ -364,7 +353,6 @@ export class QTIValidator {
    */
   async validatePackage(packageFiles: { [key: string]: string }, options: Partial<ValidationOptions> = {}): Promise<ValidationResult> {
     const startTime = Date.now();
-    console.log('🔍 Validating complete QTI package...');
 
     try {
       const results: ValidationResult[] = [];
@@ -395,8 +383,6 @@ export class QTIValidator {
       const finalResult = this.combineValidationResults(results);
       finalResult.summary.validationTime = Date.now() - startTime;
 
-      console.log(`✅ Package validation completed in ${finalResult.summary.validationTime}ms`);
-      console.log(`📊 Package Summary: ${finalResult.summary.totalErrors} errors, ${finalResult.summary.totalWarnings} warnings`);
 
       return finalResult;
 

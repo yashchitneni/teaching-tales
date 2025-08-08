@@ -281,10 +281,6 @@ export class RecoveryEngine {
     const fullConfig = { ...this.defaultConfig, ...config };
     const startTime = Date.now();
     
-    console.log('🔄 Starting recovery process...');
-    console.log(`  Strategy: ${fullConfig.strategy}`);
-    console.log(`  Level: ${fullConfig.level}`);
-    console.log(`  Mode: ${fullConfig.mode}`);
 
     const context: RecoveryContext = {
       originalError,
@@ -311,8 +307,6 @@ export class RecoveryEngine {
           result.performanceMetrics.recoveryTime = Date.now() - startTime;
           this.recordRecoveryResult(originalError.type as ExtendedQTIErrorType, result);
           
-          console.log(`✅ Recovery successful after ${attempt} attempt(s)`);
-          console.log(`  Content preservation: ${Math.round(result.performanceMetrics.contentPreservation * 100)}%`);
           
           return result;
         }
@@ -322,7 +316,6 @@ export class RecoveryEngine {
         // If strategy failed, try next level
         if (fullConfig.level < FallbackLevel.EMERGENCY) {
           fullConfig.level++;
-          console.log(`  ⬆️  Escalating to fallback level ${fullConfig.level}`);
         }
 
       } catch (error) {
@@ -361,7 +354,6 @@ export class RecoveryEngine {
     level: FallbackLevel,
     context: RecoveryContext
   ): Promise<RecoveryResult> {
-    console.log(`  🔧 Executing ${strategy} strategy at level ${level}...`);
     
     switch (strategy) {
       case GenerationStrategy.SIMPLIFIED:
@@ -558,7 +550,6 @@ export class RecoveryEngine {
     storyResponse: StoryGenerationResponse,
     context: RecoveryContext
   ): Promise<RecoveryResult> {
-    console.log('🚨 Executing emergency recovery - last resort');
     
     try {
       return await this.executeEmergencyGeneration(storyResponse, FallbackLevel.EMERGENCY, context);

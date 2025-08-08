@@ -119,11 +119,9 @@ export class ValidationPipeline {
    * Initialize the validation pipeline
    */
   async initialize(): Promise<void> {
-    console.log('🔧 Initializing QTI Validation Pipeline...');
     
     try {
       await this.validator.initialize();
-      console.log('✅ Validation Pipeline initialized successfully');
     } catch (error) {
       throw new QTIError(
         `Failed to initialize Validation Pipeline: ${error instanceof Error ? error.message : 'Unknown error'}`,
@@ -142,7 +140,6 @@ export class ValidationPipeline {
     options: Partial<ValidationOptions> = {}
   ): Promise<PipelineValidationResult> {
     const startTime = Date.now();
-    console.log('🚀 Running QTI Validation Pipeline...');
 
     const result: PipelineValidationResult = {
       success: true,
@@ -161,35 +158,30 @@ export class ValidationPipeline {
     try {
       // Step 1: Pre-generation validation
       if (this.config.enablePreValidation) {
-        console.log('🔍 Step 1: Pre-generation validation...');
         const preStart = Date.now();
         result.preValidation = await this.runPreValidation(storyResponse);
         result.performance.preValidationTime = Date.now() - preStart;
 
         if (!result.preValidation.inputValid && result.preValidation.blockingIssues.length > 0) {
           result.success = false;
-          console.log('❌ Pre-validation failed with blocking issues');
           return result;
         }
       }
 
       // Step 2: Post-generation validation
       if (this.config.enablePostValidation) {
-        console.log('🔍 Step 2: Post-generation validation...');
         const postStart = Date.now();
         result.postValidation = await this.runPostValidation(generatedPackage, options);
         result.performance.postValidationTime = Date.now() - postStart;
 
         // Apply auto-fixes if enabled
         if (this.config.autoFix && !result.postValidation.xmlValid) {
-          console.log('🔧 Applying automatic fixes...');
           result.autoFixesApplied = await this.applyAutoFixes(generatedPackage, result.postValidation);
         }
       }
 
       // Step 3: Generate compliance report
       if (this.config.reportingEnabled && result.postValidation) {
-        console.log('📊 Step 3: Generating compliance report...');
         const reportStart = Date.now();
         
         const packageInfo: PackageInfo = {
@@ -221,8 +213,6 @@ export class ValidationPipeline {
       // Determine overall success
       result.success = this.determineOverallSuccess(result);
 
-      console.log(`✅ Validation Pipeline completed in ${result.performance.totalTime}ms`);
-      console.log(`📊 Pipeline Success: ${result.success ? 'YES' : 'NO'}`);
 
       return result;
 
@@ -415,11 +405,9 @@ export class ValidationPipeline {
     // Apply fixes with high confidence
     const highConfidenceFixes = fixes.filter(fix => fix.confidence > 0.8);
     
-    console.log(`🔧 Applying ${highConfidenceFixes.length} high-confidence auto-fixes...`);
     
     // In a real implementation, these fixes would be applied to the actual XML
     highConfidenceFixes.forEach(fix => {
-      console.log(`  ✅ Fixed: ${fix.description}`);
     });
 
     return fixes;
@@ -572,7 +560,6 @@ export class ValidationPipeline {
    */
   updateConfiguration(newConfig: Partial<ValidationPipelineConfig>): void {
     this.config = { ...this.config, ...newConfig };
-    console.log('🔧 Validation pipeline configuration updated');
   }
 
   /**
@@ -580,7 +567,6 @@ export class ValidationPipeline {
    */
   reset(): void {
     this.performanceCache.clear();
-    console.log('🔄 Validation pipeline state reset');
   }
 }
 

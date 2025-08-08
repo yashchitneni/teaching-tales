@@ -150,17 +150,13 @@ export class QTIGenerator {
     const startTime = Date.now();
     
     try {
-      console.log('🚀 Starting QTI package generation...');
-      console.log('📖 Story:', storyResponse.title);
       
       const finalOptions = { ...DEFAULT_QTI_OPTIONS, ...options };
 
       // Step 1: Transform AI story to QTI package structure
-      console.log('🔄 Step 1: Transforming story to QTI structure...');
       const qtiPackage = await this.transformer.transformStoryToQTI(storyResponse, finalOptions);
 
       // Step 2: Generate XML files
-      console.log('🔄 Step 2: Generating XML files...');
       const files = await this.generateXMLFiles(qtiPackage, finalOptions);
 
       // Step 3: Calculate metadata
@@ -181,8 +177,7 @@ export class QTIGenerator {
         }
       };
 
-      console.log('✅ QTI package generation completed!');
-      console.log('📊 Summary:', {
+      console.debug('QTIGenerator.generatePackage', {
         identifier: qtiPackage.identifier,
         sections: result.metadata.sectionCount,
         items: result.metadata.itemCount,
@@ -221,16 +216,12 @@ export class QTIGenerator {
     const startTime = Date.now();
     
     try {
-      console.log('🚀 Starting validated QTI package generation...');
-      console.log('📖 Story:', storyResponse.title);
-      console.log('🔍 Validation enabled:', enableValidation);
       
       // Step 1: Generate the basic QTI package
       const generatedPackage = await this.generatePackage(storyResponse, options);
 
       // Step 2: Run validation pipeline if enabled
       if (enableValidation) {
-        console.log('🔄 Running validation pipeline...');
         
         // Initialize validation pipeline if needed
         await this.validationPipeline.initialize();
@@ -252,22 +243,15 @@ export class QTIGenerator {
         // Add validation results to the package
         generatedPackage.validation = validationResult;
 
-        console.log('📊 Validation Summary:');
-        console.log(`  - Success: ${validationResult.success ? 'YES' : 'NO'}`);
-        console.log(`  - Total Time: ${validationResult.performance.totalTime}ms`);
         
         if (validationResult.complianceReport) {
-          console.log(`  - Compliance Score: ${validationResult.complianceReport.overallScore}/100`);
-          console.log(`  - Critical Issues: ${validationResult.complianceReport.summary.criticalIssues}`);
         }
 
         if (validationResult.autoFixesApplied.length > 0) {
-          console.log(`  - Auto-fixes Applied: ${validationResult.autoFixesApplied.length}`);
         }
       }
 
       const totalTime = Date.now() - startTime;
-      console.log(`✅ Validated QTI package generation completed in ${totalTime}ms!`);
 
       return generatedPackage;
 
@@ -302,19 +286,12 @@ export class QTIGenerator {
     const startTime = Date.now();
     
     try {
-      console.log('🛡️  Starting resilient QTI package generation...');
-      console.log('📖 Story:', storyResponse.title);
-      console.log('🔧 Max Fallback Level:', fallbackLevel);
-      console.log('🔍 Validation enabled:', enableValidation);
       
       // Step 1: Edge case detection and handling
-      console.log('🔄 Step 1: Detecting and handling edge cases...');
       const edgeCases = this.edgeCaseDetector.detectStoryEdgeCases(storyResponse);
       
       if (edgeCases.length > 0) {
-        console.log(`  📊 Detected ${edgeCases.length} edge cases:`);
         edgeCases.forEach(edgeCase => {
-          console.log(`    - ${edgeCase.type}: ${edgeCase.description} (${edgeCase.severity})`);
         });
         
         const handlingResults = await this.edgeCaseHandler.handleEdgeCases(edgeCases);
@@ -325,7 +302,6 @@ export class QTIGenerator {
             criticalIssues++;
             console.warn(`    ⚠️  Failed to handle ${type}: ${result.warnings.join(', ')}`);
           } else if (result.modifications.length > 0) {
-            console.log(`    ✅ Handled ${type}: ${result.modifications.join(', ')}`);
           }
         });
         
@@ -335,7 +311,6 @@ export class QTIGenerator {
       }
 
       // Step 2: Attempt normal generation with error handling
-      console.log('🔄 Step 2: Attempting normal package generation...');
       let generatedPackage: GeneratedQTIPackage;
       
       try {
@@ -345,10 +320,8 @@ export class QTIGenerator {
           generatedPackage = await this.generatePackage(storyResponse, options);
         }
         
-        console.log('✅ Normal generation successful');
         
       } catch (error) {
-        console.log('⚠️  Normal generation failed, initiating recovery...');
         
         // Step 3: Error handling and recovery
         const enhancedError = error instanceof EnhancedQTIError ? error : 
@@ -374,7 +347,6 @@ export class QTIGenerator {
         });
 
         if (recoveryResult.success && recoveryResult.strategy === RecoveryStrategy.FALLBACK) {
-          console.log('🔄 Step 3: Attempting fallback recovery...');
           
           const fallbackResult = await this.recoveryEngine.attemptRecovery(
             storyResponse,
@@ -392,9 +364,6 @@ export class QTIGenerator {
           );
 
           if (fallbackResult.success && fallbackResult.generatedPackage) {
-            console.log('✅ Fallback recovery successful');
-            console.log(`  📊 Content Preservation: ${Math.round(fallbackResult.performanceMetrics.contentPreservation * 100)}%`);
-            console.log(`  ⚠️  Limitations: ${fallbackResult.limitations.join(', ')}`);
             
             // Convert recovered QTI package to GeneratedQTIPackage format
             generatedPackage = await this.convertRecoveredPackage(fallbackResult, storyResponse, options);
@@ -422,19 +391,12 @@ export class QTIGenerator {
       // Step 4: Final validation and reporting
       const totalTime = Date.now() - startTime;
       
-      console.log('📊 Resilient Generation Summary:');
-      console.log(`  - Total Time: ${totalTime}ms`);
-      console.log(`  - Edge Cases Handled: ${edgeCases.length}`);
-      console.log(`  - Package Generated: ✅`);
       
       if (generatedPackage.validation) {
-        console.log(`  - Validation Success: ${generatedPackage.validation.success ? '✅' : '⚠️'}`);
         if (generatedPackage.validation.complianceReport) {
-          console.log(`  - Compliance Score: ${generatedPackage.validation.complianceReport.overallScore}/100`);
         }
       }
 
-      console.log(`✅ Resilient QTI package generation completed in ${totalTime}ms!`);
       return generatedPackage;
 
     } catch (error) {
@@ -511,29 +473,22 @@ export class QTIGenerator {
     const startTime = Date.now();
     
     try {
-      console.log('🚀 Starting advanced QTI package generation with branching...');
-      console.log('📖 Story:', storyResponse.title);
-      console.log('🌳 Strategy:', progressionStrategy);
       
       const finalOptions = { ...DEFAULT_QTI_OPTIONS, ...options };
 
       // Step 1: Initialize story progression
-      console.log('🔄 Step 1: Initializing story progression...');
       const progressionState = this.storyProgressionService.initializeStoryProgression(
         storyResponse,
         progressionStrategy
       );
 
       // Step 2: Transform AI story to QTI package structure (enhanced)
-      console.log('🔄 Step 2: Transforming story to QTI structure with mapping...');
       const qtiPackage = await this.transformer.transformStoryToQTI(storyResponse, finalOptions);
 
       // Step 3: Build navigation graph
-      console.log('🔄 Step 3: Building navigation graph...');
       const navigationGraph = this.navigationService.buildNavigationGraph(qtiPackage.assessmentTest);
 
       // Step 4: Generate adaptive navigation paths
-      console.log('🔄 Step 4: Generating adaptive navigation paths...');
       const studentProfile = {
         gradeLevel: storyResponse.metadata?.gradeLevel || 'unknown',
         performanceLevel: 'proficient', // This would come from actual student data
@@ -545,13 +500,11 @@ export class QTIGenerator {
       );
 
       // Step 5: Generate branch rules
-      console.log('🔄 Step 5: Generating branch rules...');
       // We need to get the mapping results from the transformer
       // For now, we'll generate basic branch rules
       await this.generateStoryBranchRules(qtiPackage.assessmentTest, storyResponse);
 
       // Step 6: Enhance assessment test with branching
-      console.log('🔄 Step 6: Enhancing assessment with branch rules...');
       const enhancedAssessmentTest = await this.enhanceAssessmentWithBranching(
         qtiPackage.assessmentTest,
         storyResponse
@@ -559,7 +512,6 @@ export class QTIGenerator {
       qtiPackage.assessmentTest = enhancedAssessmentTest;
 
       // Step 7: Generate XML files
-      console.log('🔄 Step 7: Generating XML files with branching...');
       const files = await this.generateXMLFiles(qtiPackage, finalOptions);
 
       // Step 8: Calculate metadata
@@ -580,8 +532,7 @@ export class QTIGenerator {
         }
       };
 
-      console.log('✅ Advanced QTI package generation completed!');
-      console.log('📊 Advanced Summary:', {
+      console.debug('QTIGenerator.generateAdvancedPackage', {
         identifier: qtiPackage.identifier,
         sections: result.metadata.sectionCount,
         items: result.metadata.itemCount,
@@ -614,7 +565,6 @@ export class QTIGenerator {
     assessmentTest: QTIAssessmentTest,
     storyResponse: StoryGenerationResponse
   ): Promise<void> {
-    console.log('🌳 Generating story-specific branch rules...');
 
     // Create mock section and question mapping results for branch rule generation
     // In a full implementation, these would come from the actual mapping process
@@ -667,7 +617,6 @@ export class QTIGenerator {
       context
     );
 
-    console.log(`✅ Generated ${this.branchRuleEngine.getAllRules().length} branch rules`);
   }
 
   /**
@@ -677,7 +626,6 @@ export class QTIGenerator {
     assessmentTest: QTIAssessmentTest,
     storyResponse: StoryGenerationResponse
   ): Promise<QTIAssessmentTest> {
-    console.log('🔧 Enhancing assessment with branching logic...');
 
     // Get all branch rules
     const branchRules = this.branchRuleEngine.getAllRules();
@@ -693,11 +641,9 @@ export class QTIGenerator {
       
       if (sectionRules.length > 0) {
         section.branchRules = sectionRules;
-        console.log(`📎 Added ${sectionRules.length} branch rules to section ${section.identifier}`);
       }
     });
 
-    console.log('✅ Assessment enhanced with branching logic');
     return assessmentTest;
   }
 
@@ -720,7 +666,6 @@ export class QTIGenerator {
     qtiPackage: QTIPackage,
     options: QTIGenerationOptions
   ): Promise<GeneratedQTIPackage['files']> {
-    console.log('📄 Generating XML files...');
 
     // Generate assessment test XML
     const assessmentTestXML = await this.generateAssessmentTestXML(
@@ -753,7 +698,7 @@ export class QTIGenerator {
     // Generate IMS manifest XML
     const manifestXML = await this.generateManifestXML(qtiPackage, options);
 
-    console.log('✅ Generated XML files:', {
+    console.debug('QTIGenerator.generateXMLFiles counts', {
       assessmentTest: 1,
       sections: sections.length,
       items: items.length,
@@ -775,7 +720,6 @@ export class QTIGenerator {
     assessmentTest: QTIAssessmentTest,
     options: QTIGenerationOptions
   ): Promise<string> {
-    console.log('📝 Generating assessment test XML:', assessmentTest.identifier);
 
     // Prepare template context
     const context = {
@@ -822,7 +766,6 @@ export class QTIGenerator {
     section: QTIAssessmentSection,
     options: QTIGenerationOptions
   ): Promise<string> {
-    console.log('📑 Generating section XML:', section.identifier);
 
     // Prepare template context
     const context = {
@@ -866,7 +809,6 @@ export class QTIGenerator {
     item: QTIAssessmentItem,
     options: QTIGenerationOptions
   ): Promise<string> {
-    console.log('❓ Generating item XML:', item.identifier);
 
     // Prepare interaction-specific context
     const interactionContext = this.createInteractionContext(item, options);
@@ -976,7 +918,6 @@ export class QTIGenerator {
     qtiPackage: QTIPackage,
     options: QTIGenerationOptions
   ): Promise<string> {
-    console.log('📋 Generating manifest XML:', qtiPackage.manifest.identifier);
 
     const context = {
       MANIFEST_IDENTIFIER: qtiPackage.manifest.identifier,

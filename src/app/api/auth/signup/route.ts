@@ -7,8 +7,6 @@ export async function POST(request: NextRequest) {
   try {
     const { email, password, displayName } = await request.json();
     
-    console.log('[Signup API] Received signup request for:', email);
-
     // Validate required fields
     if (!email || !password || !displayName) {
       return NextResponse.json(
@@ -20,7 +18,6 @@ export async function POST(request: NextRequest) {
     // Call Timeback register endpoint
     let signupResponse;
     try {
-      console.log('[Signup API] Calling Timeback register endpoint');
       signupResponse = await axios.post(
         `${TIMEBACK_API_URL}/api/auth/register`,
         { 
@@ -33,8 +30,6 @@ export async function POST(request: NextRequest) {
           withCredentials: true
         }
       );
-      
-      console.log('[Signup API] Timeback register response:', signupResponse.data);
     } catch (error: any) {
       console.error('[Signup API] Timeback register error:', error.response?.data || error);
       

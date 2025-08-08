@@ -207,7 +207,6 @@ export class AdaptiveStoryProgressionService {
     storyResponse: StoryGenerationResponse,
     strategy: StoryProgressionStrategy = StoryProgressionStrategy.ADAPTIVE_PACING
   ): StoryProgressionState {
-    console.log('📖 Initializing adaptive story progression...');
     
     this.currentStrategy = strategy;
     
@@ -241,7 +240,6 @@ export class AdaptiveStoryProgressionService {
       }
     };
 
-    console.log(`✅ Story progression initialized with ${this.storyCheckpoints.size} checkpoints`);
     return this.progressionState;
   }
 
@@ -249,7 +247,6 @@ export class AdaptiveStoryProgressionService {
    * Create story checkpoints from story sections
    */
   private createStoryCheckpoints(storyResponse: StoryGenerationResponse): void {
-    console.log('🏁 Creating story checkpoints...');
     
     this.storyCheckpoints.clear();
     
@@ -276,7 +273,6 @@ export class AdaptiveStoryProgressionService {
     // Link checkpoints
     this.linkCheckpoints(storyResponse);
     
-    console.log(`✅ Created ${this.storyCheckpoints.size} story checkpoints`);
   }
 
   /**
@@ -367,7 +363,6 @@ export class AdaptiveStoryProgressionService {
       score: number;
     }
   ): StoryProgressionDecision {
-    console.log('🎯 Making story progression decision...');
     
     if (!this.progressionState) {
       throw new QTIError(
@@ -387,7 +382,6 @@ export class AdaptiveStoryProgressionService {
     // Validate story coherence
     this.validateStoryCoherence(decision);
     
-    console.log(`✅ Progression decision: ${decision.action} -> ${decision.target.sectionId}`);
     return decision;
   }
 

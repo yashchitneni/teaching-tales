@@ -3,16 +3,24 @@ import { cookies } from 'next/headers';
 
 const TIMEBACK_API_URL = process.env.NEXT_PUBLIC_TIMEBACK_API_URL || 'http://localhost:8080';
 
-// Helper to get auth token from cookies
-async function getAuthToken() {
+async function resolveAuthToken(request: NextRequest): Promise<string | undefined> {
   const cookieStore = await cookies();
-  return cookieStore.get('timeback-access-token')?.value;
+  let token = cookieStore.get('timeback-access-token')?.value;
+
+  if (!token) {
+    const authHeader = request.headers.get('authorization');
+    if (authHeader?.startsWith('Bearer ')) {
+      token = authHeader.substring(7);
+    }
+  }
+
+  return token;
 }
 
-// Proxy for any QTI endpoint
+// Proxy for any QTI endpoint (compat: maps to IMS v3p0)
 async function proxyQTIRequest(request: NextRequest, endpoint: string) {
   try {
-    const token = await getAuthToken();
+    const token = await resolveAuthToken(request);
     if (!token) {
       return NextResponse.json(
         { success: false, error: { message: 'Unauthorized' } },
@@ -22,9 +30,10 @@ async function proxyQTIRequest(request: NextRequest, endpoint: string) {
 
     const { searchParams } = new URL(request.url);
     const queryString = searchParams.toString();
-    const url = `${TIMEBACK_API_URL}/qti/${endpoint}${queryString ? `?${queryString}` : ''}`;
+    // Map legacy /api/qti/* to upstream /ims/qti/v3p0/* for consistency
+    const url = `${TIMEBACK_API_URL}/ims/qti/v3p0/${endpoint}${queryString ? `?${queryString}` : ''}`;
 
-    const response = await fetch(url, {
+    const upstreamResponse = await fetch(url, {
       method: request.method,
       headers: {
         'Authorization': `Bearer ${token}`,
@@ -33,16 +42,34 @@ async function proxyQTIRequest(request: NextRequest, endpoint: string) {
       body: request.method === 'GET' ? undefined : await request.text(),
     });
 
-    const data = await response.json();
+    const contentType = upstreamResponse.headers.get('content-type') || '';
 
-    if (!response.ok) {
-      return NextResponse.json(
-        { success: false, error: data },
-        { status: response.status }
-      );
+    if (!upstreamResponse.ok) {
+      if (contentType.includes('application/json')) {
+        const errorJson = await upstreamResponse.json().catch(() => ({}));
+        return NextResponse.json(
+          { success: false, error: errorJson },
+          { status: upstreamResponse.status }
+        );
+      }
+
+      const errorText = await upstreamResponse.text().catch(() => '');
+      return new NextResponse(errorText, {
+        status: upstreamResponse.status,
+        headers: { 'content-type': contentType || 'text/plain' }
+      });
     }
 
-    return NextResponse.json(data);
+    if (contentType.includes('application/json')) {
+      const data = await upstreamResponse.json();
+      return NextResponse.json(data);
+    }
+
+    const text = await upstreamResponse.text();
+    return new NextResponse(text, {
+      status: upstreamResponse.status,
+      headers: { 'content-type': contentType || 'text/plain' }
+    });
 
   } catch (error) {
     console.error(`QTI proxy error for ${endpoint}:`, error);
@@ -64,6 +91,11 @@ export async function POST(request: NextRequest) {
 }
 
 export async function PUT(request: NextRequest) {
+  const endpoint = request.nextUrl.pathname.split('/qti/')[1];
+  return proxyQTIRequest(request, endpoint);
+}
+
+export async function DELETE(request: NextRequest) {
   const endpoint = request.nextUrl.pathname.split('/qti/')[1];
   return proxyQTIRequest(request, endpoint);
 }

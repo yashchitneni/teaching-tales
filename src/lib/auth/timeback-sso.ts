@@ -156,14 +156,10 @@ class TimeBackSSO {
     token?: string;
     error?: string;
   }> {
-    console.log('[SSO] Login method called with:', { email, password: '***' });
     try {
-      console.log('[SSO] Getting fingerprint...');
       const fingerprint = await this.getFingerprint();
-      console.log('[SSO] Fingerprint:', fingerprint);
       
       const url = `${this.config.apiBaseUrl}/api/auth/login`;
-      console.log('[SSO] Making request to:', url);
       
       const response = await fetch(url, {
         method: 'POST',
@@ -177,15 +173,11 @@ class TimeBackSSO {
         }),
       });
 
-      console.log('[SSO] Response status:', response.status);
-      console.log('[SSO] Response ok:', response.ok);
 
       const data = await response.json();
-      console.log('[SSO] Response data:', data);
 
       // Handle the actual API response format: {"success":true,"data":{"accessToken":"...","idToken":"..."}}
       if (response.ok && data.success && data.data && data.data.accessToken) {
-        console.log('[SSO] Login successful, setting token');
         const token = data.data.accessToken;
         this.setToken(token);
         
@@ -219,7 +211,6 @@ class TimeBackSSO {
         };
       }
 
-      console.log('[SSO] Login failed - no success or no access token');
       return {
         success: false,
         error: data.message || 'Login failed',
