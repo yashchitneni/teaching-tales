@@ -17,7 +17,6 @@ async function resolveAuthToken(request: NextRequest): Promise<string | undefine
   return token;
 }
 
-// Proxy for any QTI endpoint (compat: maps to IMS v3p0)
 async function proxyQTIRequest(request: NextRequest, endpoint: string) {
   try {
     const token = await resolveAuthToken(request);
@@ -30,7 +29,6 @@ async function proxyQTIRequest(request: NextRequest, endpoint: string) {
 
     const { searchParams } = new URL(request.url);
     const queryString = searchParams.toString();
-    // Map legacy /api/qti/* to upstream /ims/qti/v3p0/* for consistency
     const url = `${TIMEBACK_API_URL}/ims/qti/v3p0/${endpoint}${queryString ? `?${queryString}` : ''}`;
 
     const upstreamResponse = await fetch(url, {
@@ -81,21 +79,23 @@ async function proxyQTIRequest(request: NextRequest, endpoint: string) {
 }
 
 export async function GET(request: NextRequest) {
-  const endpoint = request.nextUrl.pathname.split('/qti/')[1];
+  const endpoint = request.nextUrl.pathname.split('/ims/qti/v3p0/')[1];
   return proxyQTIRequest(request, endpoint);
 }
 
 export async function POST(request: NextRequest) {
-  const endpoint = request.nextUrl.pathname.split('/qti/')[1];
+  const endpoint = request.nextUrl.pathname.split('/ims/qti/v3p0/')[1];
   return proxyQTIRequest(request, endpoint);
 }
 
 export async function PUT(request: NextRequest) {
-  const endpoint = request.nextUrl.pathname.split('/qti/')[1];
+  const endpoint = request.nextUrl.pathname.split('/ims/qti/v3p0/')[1];
   return proxyQTIRequest(request, endpoint);
 }
 
 export async function DELETE(request: NextRequest) {
-  const endpoint = request.nextUrl.pathname.split('/qti/')[1];
+  const endpoint = request.nextUrl.pathname.split('/ims/qti/v3p0/')[1];
   return proxyQTIRequest(request, endpoint);
 }
+
+

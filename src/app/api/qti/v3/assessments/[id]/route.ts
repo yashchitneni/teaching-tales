@@ -4,10 +4,17 @@ import { QTIGenerator } from '@/lib/qti/generators/qti-generator';
 
 const TIMEBACK_API_URL = process.env.NEXT_PUBLIC_TIMEBACK_API_URL || 'http://localhost:8080';
 
-// Helper to get auth token from cookies
-async function getAuthToken() {
+// Resolve token from cookie or Authorization header
+async function resolveAuthToken(request: NextRequest): Promise<string | undefined> {
   const cookieStore = await cookies();
-  return cookieStore.get('timeback-access-token')?.value;
+  let token = cookieStore.get('timeback-access-token')?.value;
+  if (!token) {
+    const authHeader = request.headers.get('authorization');
+    if (authHeader?.startsWith('Bearer ')) {
+      token = authHeader.substring(7);
+    }
+  }
+  return token;
 }
 
 // Assessment response interfaces
@@ -42,7 +49,7 @@ export async function GET(
     console.log('📖 Loading QTI assessment:', params.id);
 
     // Authentication check
-    const token = await getAuthToken();
+    const token = await resolveAuthToken(request);
     if (!token) {
       console.error('❌ No authentication token found');
       return NextResponse.json(
@@ -69,8 +76,8 @@ export async function GET(
       includeSections
     });
 
-    // Fetch assessment data from TimeBack QTI API
-    const timebackResponse = await fetch(`${TIMEBACK_API_URL}/qti/v3/assessments/${params.id}`, {
+    // Fetch assessment data from TimeBack QTI API (IMS v3p0)
+    const timebackResponse = await fetch(`${TIMEBACK_API_URL}/ims/qti/v3p0/assessments/${params.id}`, {
       method: 'GET',
       headers: {
         'Authorization': `Bearer ${token}`,

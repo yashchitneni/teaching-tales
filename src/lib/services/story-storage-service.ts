@@ -46,7 +46,7 @@ export interface StoredStory {
 export class StoryStorageService {
   
   private static readonly STORAGE_KEY = 'teaching-tales-stories';
-  private static readonly USE_LOCAL_STORAGE = true; // Toggle for development
+  private static readonly USE_LOCAL_STORAGE = false; // Toggle for development
   
   /**
    * Save a generated story locally or to QTI API
@@ -119,8 +119,25 @@ export class StoryStorageService {
         character: storyMetadata.character
       });
 
-      const savedStimulus = await createStimulus(stimulusData);
-      
+      let savedStimulus = await createStimulus(stimulusData);
+
+      // Defensive: recover id if upstream omitted it
+      if (!savedStimulus?.id) {
+        console.warn('⚠️ Stimulus created but id missing. Attempting recovery via listStimuli...');
+        try {
+          const list = await listStimuli(1, 100);
+          const match = list.stimuli.find((s: any) => 
+            s.identifier === stimulusData.identifier ||
+            s?.metadata?.storyId === storyMetadata.storyId
+          );
+          if (match) {
+            savedStimulus = match as any;
+          }
+        } catch (e) {
+          console.warn('Stimulus id recovery failed:', e);
+        }
+      }
+
       console.log('✅ Story saved successfully to QTI API:', savedStimulus.id);
       
       // Create assessment tests for comprehension questions

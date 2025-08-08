@@ -245,10 +245,13 @@ export class QTIStoryLoaderService {
       // Parse story content
       let storyData: any;
       try {
-        storyData = JSON.parse(stimulus.contentText || '{}');
+        // Support both content and contentText shapes
+        const contentPayload = (stimulus as any).content ?? (stimulus as any).contentText ?? '{}';
+        storyData = typeof contentPayload === 'string' ? JSON.parse(contentPayload) : contentPayload;
       } catch (parseError) {
         console.warn('Failed to parse stimulus content, using raw text');
-        storyData = { content: stimulus.contentText };
+        const fallbackText = (stimulus as any).content ?? (stimulus as any).contentText ?? '';
+        storyData = { content: String(fallbackText) };
       }
 
       // Load associated assessments
@@ -301,8 +304,8 @@ export class QTIStoryLoaderService {
       try {
         console.log(`📝 Loading assessment: ${assessmentId}`);
         
-        // Load assessment from QTI API
-        const response = await fetch(`/api/qti/v3/assessments/${assessmentId}?format=${parseXML ? 'full' : 'json'}`);
+        // Load assessment from QTI API (IMS v3p0 proxy)
+        const response = await fetch(`/api/ims/qti/v3p0/assessments/${assessmentId}?format=${parseXML ? 'full' : 'json'}`);
         
         if (!response.ok) {
           console.warn(`Failed to load assessment ${assessmentId}: ${response.statusText}`);

@@ -3,10 +3,17 @@ import { cookies } from 'next/headers';
 
 const TIMEBACK_API_URL = process.env.NEXT_PUBLIC_TIMEBACK_API_URL || 'http://localhost:8080';
 
-// Helper to get auth token from cookies
-async function getAuthToken() {
+// Resolve token from cookie or Authorization header
+async function resolveAuthToken(request: NextRequest): Promise<string | undefined> {
   const cookieStore = await cookies();
-  return cookieStore.get('timeback-access-token')?.value;
+  let token = cookieStore.get('timeback-access-token')?.value;
+  if (!token) {
+    const authHeader = request.headers.get('authorization');
+    if (authHeader?.startsWith('Bearer ')) {
+      token = authHeader.substring(7);
+    }
+  }
+  return token;
 }
 
 // Response validation interfaces
@@ -136,7 +143,7 @@ export async function POST(request: NextRequest) {
     console.log('📝 QTI Response submission received');
 
     // Authentication check
-    const token = await getAuthToken();
+    const token = await resolveAuthToken(request);
     if (!token) {
       console.error('❌ No authentication token found');
       return NextResponse.json(
@@ -197,8 +204,8 @@ export async function POST(request: NextRequest) {
     
     console.log('📤 Sending processed response to TimeBack QTI API...');
 
-    // Submit to TimeBack QTI API
-    const timebackResponse = await fetch(`${TIMEBACK_API_URL}/qti/v3/responses`, {
+    // Submit to TimeBack QTI API (IMS v3p0)
+    const timebackResponse = await fetch(`${TIMEBACK_API_URL}/ims/qti/v3p0/responses`, {
       method: 'POST',
       headers: {
         'Authorization': `Bearer ${token}`,
@@ -265,7 +272,7 @@ export async function POST(request: NextRequest) {
 // GET endpoint to retrieve responses (optional, for debugging/admin)
 export async function GET(request: NextRequest) {
   try {
-    const token = await getAuthToken();
+    const token = await resolveAuthToken(request);
     if (!token) {
       return NextResponse.json(
         { success: false, error: { message: 'Unauthorized' } },
@@ -296,7 +303,7 @@ export async function GET(request: NextRequest) {
     if (studentId) queryParams.set('studentId', studentId);
 
     const timebackResponse = await fetch(
-      `${TIMEBACK_API_URL}/qti/v3/responses?${queryParams.toString()}`,
+      `${TIMEBACK_API_URL}/ims/qti/v3p0/responses?${queryParams.toString()}`,
       {
         method: 'GET',
         headers: {

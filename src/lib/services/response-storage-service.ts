@@ -171,7 +171,7 @@ export class ResponseStorageService {
         timestamp: response.timestamp
       };
 
-      const apiResponse = await fetch('/api/qti/v3/responses', {
+      const apiResponse = await fetch('/api/ims/qti/v3p0/responses', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

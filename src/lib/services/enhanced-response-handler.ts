@@ -591,7 +591,7 @@ export class EnhancedResponseHandler {
       for (const responseData of this.offlineQueue.responses) {
         try {
           // Re-process with backend
-          const response = await fetch('/api/qti/v3/responses', {
+          const response = await fetch('/api/ims/qti/v3p0/responses', {
             method: 'POST',
             headers: {
               'Content-Type': 'application/json'
