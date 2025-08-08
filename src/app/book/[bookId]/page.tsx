@@ -275,12 +275,12 @@ export default function StoryReadingPage() {
             await loadLegacyStoryFallback()
           }
         } else {
-          const legacyStory: Story = {
+            const legacyStory: Story = {
             id: result.story.id,
             title: result.story.title,
             sections: qtiSections.map((section, index) => ({
               id: (() => {
-                // Ensure robustness: handle numeric or string ids
+                // Normalize to a stable numeric index for legacy components
                 const raw = section.id as any
                 if (typeof raw === 'number') return raw
                 if (typeof raw === 'string') {
@@ -291,7 +291,7 @@ export default function StoryReadingPage() {
               })(),
               content: processVocabularyWords(section.content),
               questions: result.story.assessments
-                .filter(assessment => assessment.sectionId === section.id)
+                .filter(assessment => String(assessment.sectionId) === String(section.id))
                 .flatMap(assessment => assessment.questions.map(q => ({
                   id: q.id,
                   text: q.prompt,
@@ -626,11 +626,12 @@ export default function StoryReadingPage() {
     try {
       console.log('🔓 Checking section unlock conditions...')
 
-      // Get current student responses
-      const responses = await ResponseStorageService.getResponses({
-        studentId: studentId,
-        assessmentId: qtiStory.id
+      // Get current student responses (all), then filter to this story's assessments
+      const allResponses = await ResponseStorageService.getResponses({
+        studentId: studentId
       })
+      const validAssessmentIds = new Set(qtiStory.assessments.map(a => a.id))
+      const responses = allResponses.filter(r => validAssessmentIds.has(r.assessmentId))
 
       // Build section states for unlock engine
       const sectionStates = qtiStory.sections.map(section => {
@@ -651,7 +652,7 @@ export default function StoryReadingPage() {
           isInProgress: section.isInProgress,
           completedItems: sectionResponses.map(r => r.itemId),
           totalItems: qtiStory.assessments
-            .filter(a => a.sectionId === section.id)
+            .filter(a => String(a.sectionId) === String(section.id))
             .flatMap(a => a.questions.map(q => q.id)),
           score: totalScore,
           maxScore,
@@ -1080,7 +1081,7 @@ export default function StoryReadingPage() {
               </h4>
               
               {qtiStory.assessments
-                .filter(assessment => assessment.sectionId === currentQTISection.id)
+                .filter(assessment => String(assessment.sectionId) === String(currentQTISection.id))
                 .flatMap(assessment => assessment.questions)
                 .map(question => (
                   <QTIQuestionRenderer

@@ -8,8 +8,13 @@ function unwrapApi<T = any>(json: any): T {
     if ('success' in json && 'data' in json) {
       const data = (json as any).data;
       if (data && typeof data === 'object') {
+        // Nested entity keys inside data
         if ('stimulus' in data) return (data as any).stimulus as T;
         if ('assessment' in data) return (data as any).assessment as T;
+        if ('test' in data) return (data as any).test as T;
+        if ('stimulus' in data) return (data as any).stimulus as T;
+        if ('assessment' in data) return (data as any).assessment as T;
+        if ('test' in data) return (data as any).test as T;
         return data as T;
       }
       return (json as any).data as T;
@@ -19,11 +24,13 @@ function unwrapApi<T = any>(json: any): T {
     if ('success' in json) {
       if ('stimulus' in json) return (json as any).stimulus as T;
       if ('assessment' in json) return (json as any).assessment as T;
+      if ('test' in json) return (json as any).test as T;
     }
 
     // Bare entity shape: { stimulus: {...} } or { assessment: {...} }
     if ('stimulus' in json) return (json as any).stimulus as T;
     if ('assessment' in json) return (json as any).assessment as T;
+    if ('test' in json) return (json as any).test as T;
   }
   return json as T;
 }
@@ -590,7 +597,10 @@ export async function getAssessmentTest(testId: string): Promise<AssessmentTestR
     }
 
     const json = await response.json();
-    return unwrapApi<AssessmentTestResponse>(json);
+    const unwrapped = unwrapApi<AssessmentTestResponse>(json);
+    // Some backends return key "test" at top-level; unwrapApi handles it.
+    // Ensure metadata is present even if nested differently
+    return unwrapped as AssessmentTestResponse;
   } catch (error) {
     console.error('Failed to get assessment test:', error);
     throw error;

@@ -449,7 +449,17 @@ export class QTIStoryLoaderService {
           maxChoices: 1,
           minChoices: 1
         }],
-        correctResponse: [q.correct?.toString() || '0'],
+        correctResponse: [
+          (() => {
+            // Normalize to choice identifiers like "choice_0"
+            if (typeof q.correct === 'number') return `choice_${q.correct}`;
+            if (typeof q.correct === 'string') {
+              return q.correct.startsWith('choice_') ? q.correct : `choice_${q.correct}`;
+            }
+            // Fallback to first choice
+            return 'choice_0';
+          })()
+        ],
         scoring: {
           method: 'match_correct',
           maxScore: 1
@@ -463,7 +473,7 @@ export class QTIStoryLoaderService {
       return {
         id: assessmentId,
         title: assessmentData.title || 'Assessment',
-        sectionId: assessmentData.sectionId || 'unknown',
+        sectionId: String(assessmentData.sectionId ?? 'unknown'),
         questions,
         maxScore: questions.length,
         attempts: 0,
@@ -506,9 +516,10 @@ export class QTIStoryLoaderService {
     if (storyData.sections && Array.isArray(storyData.sections)) {
       storyData.sections.forEach((sectionData: any, index: number) => {
         const sectionId = String(sectionData.id ?? `section-${index}`);
-        const associatedAssessment = assessments.find(a => 
-          a.sectionId === sectionId || a.id.includes(sectionId)
-        );
+        const associatedAssessment = assessments.find(a => {
+          const aSectionId = String(a.sectionId ?? '');
+          return aSectionId === sectionId || a.id.includes(sectionId);
+        });
 
         sections.push({
           id: sectionId,
@@ -570,9 +581,9 @@ export class QTIStoryLoaderService {
   private static async loadStudentResponses(story: QTIStory, studentId: string): Promise<void> {
     try {
       // Load responses for all assessments
+      // Load all responses for this student, we'll filter per-assessment below
       const responses = await ResponseStorageService.getResponses({
-        studentId,
-        assessmentId: story.id
+        studentId
       });
 
       // Update assessment states based on responses
@@ -602,9 +613,9 @@ export class QTIStoryLoaderService {
   private static async updateSectionUnlockStates(story: QTIStory, studentId: string): Promise<void> {
     try {
       // Get student responses for unlock calculation
+      // Load all responses for this student for unlock evaluation
       const responses = await ResponseStorageService.getResponses({
-        studentId,
-        assessmentId: story.id
+        studentId
       });
 
       // Build section states for unlock engine
