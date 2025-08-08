@@ -99,26 +99,31 @@ export default function StoryReadingPage() {
 
   // Load story data from QTI API
   useEffect(() => {
-    loadStoryFromAPI()
-  }, [bookId, router])
+    // Only load when user is available
+    if (user) {
+      loadStoryFromAPI()
+    }
+  }, [bookId, router, user])
 
   // Update section unlock states when QTI story is loaded or responses change
   useEffect(() => {
-    if (qtiStory && user?.sourcedId) {
+    const studentId = user?.sourcedId || user?.id || user?.cognitoId;
+    if (qtiStory && studentId) {
       updateSectionUnlockStates()
     }
-  }, [qtiStory, user?.sourcedId])
+  }, [qtiStory, user])
 
   // Periodically check for unlock conditions (e.g., after answering questions)
   useEffect(() => {
-    if (qtiStory && user?.sourcedId) {
+    const studentId = user?.sourcedId || user?.id || user?.cognitoId;
+    if (qtiStory && studentId) {
       const interval = setInterval(() => {
         updateSectionUnlockStates()
       }, 30000) // Check every 30 seconds
 
       return () => clearInterval(interval)
     }
-  }, [qtiStory, user?.sourcedId])
+  }, [qtiStory, user])
 
   // Monitor online/offline status
   useEffect(() => {
@@ -171,18 +176,21 @@ export default function StoryReadingPage() {
 
   const loadStoryFromAPI = async () => {
     try {
-      if (!user?.sourcedId) {
+      // Use the same fallback pattern as story generation
+      const studentId = user?.sourcedId || user?.id || user?.cognitoId;
+      
+      if (!studentId) {
         console.error('❌ No authenticated user found')
         router.push('/login')
         return
       }
 
-      console.log('📖 Loading QTI story:', { bookId, studentId: user.sourcedId })
+      console.log('📖 Loading QTI story:', { bookId, studentId })
       setLoadingQTI(true)
       setQtiError(null)
       
       // Load story using new QTI service
-      const result = await QTIStoryLoaderService.loadStory(bookId, user.sourcedId, {
+      const result = await QTIStoryLoaderService.loadStory(bookId, studentId, {
         useCache: true,
         includeResponses: true,
         parseXML: true
@@ -376,7 +384,8 @@ export default function StoryReadingPage() {
 
   // Enhanced QTI question answering with full backend integration
   const handleQTIQuestionAnswer = async (questionId: string, response: any) => {
-    if (!qtiStory || !currentQTISection || !user?.sourcedId) {
+    const studentId = user?.sourcedId || user?.id || user?.cognitoId;
+    if (!qtiStory || !currentQTISection || !studentId) {
       console.warn('❌ Missing required data for QTI response processing')
       return
     }
@@ -408,7 +417,7 @@ export default function StoryReadingPage() {
         assessment,
         currentQTISection,
         qtiStory,
-        user.sourcedId,
+        studentId,
         response,
         timeSpent,
         attempts
@@ -496,7 +505,8 @@ export default function StoryReadingPage() {
 
   // Check and update section unlock states based on current progress
   const updateSectionUnlockStates = async () => {
-    if (!qtiStory || !user?.sourcedId) {
+    const studentId = user?.sourcedId || user?.id || user?.cognitoId;
+    if (!qtiStory || !studentId) {
       return
     }
 
@@ -505,7 +515,7 @@ export default function StoryReadingPage() {
 
       // Get current student responses
       const responses = await ResponseStorageService.getResponses({
-        studentId: user.sourcedId,
+        studentId: studentId,
         assessmentId: qtiStory.id
       })
 
@@ -542,7 +552,7 @@ export default function StoryReadingPage() {
 
       // Create unlock context
       const unlockContext: UnlockContext = {
-        studentId: user.sourcedId,
+        studentId: studentId,
         assessmentId: qtiStory.id,
         currentSection: currentQTISection?.id || '',
         targetSection: qtiStory.sections[qtiStory.sections.length - 1]?.id || '',

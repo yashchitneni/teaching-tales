@@ -3,15 +3,41 @@ import { cookies } from 'next/headers'
 import { StoryGenerationService } from '@/lib/ai'
 import { StoryStorageService } from '@/lib/services/story-storage-service'
 
+const TIMEBACK_API_URL = process.env.NEXT_PUBLIC_TIMEBACK_API_URL || 'http://localhost:8080';
+
 export async function POST(request: NextRequest) {
   try {
-    const cookieStore = await cookies()
-    let token = cookieStore.get('timeback-access-token')?.value
-    const authHeader = request.headers.get('authorization')
-    if (!token && authHeader?.startsWith('Bearer ')) token = authHeader.substring(7)
+    // Authentication validation - check for access token
+    const cookieStore = await cookies();
+    let token = cookieStore.get('timeback-access-token')?.value;
+
+    // If no cookie, check Authorization header
+    if (!token) {
+      const authHeader = request.headers.get('authorization');
+      if (authHeader?.startsWith('Bearer ')) {
+        token = authHeader.substring(7);
+      }
+    }
 
     if (!token) {
-      return NextResponse.json({ success: false, error: { message: 'Not authenticated' } }, { status: 401 })
+      return NextResponse.json(
+        { success: false, error: { message: 'Not authenticated' } },
+        { status: 401 }
+      );
+    }
+
+    // Validate token with TimeBack API
+    const userResponse = await fetch(`${TIMEBACK_API_URL}/api/auth/me`, {
+      headers: {
+        'Authorization': `Bearer ${token}`,
+      },
+    });
+
+    if (!userResponse.ok) {
+      return NextResponse.json(
+        { success: false, error: { message: 'Invalid or expired token' } },
+        { status: 401 }
+      );
     }
 
     const body = await request.json()
