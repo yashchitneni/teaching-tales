@@ -115,6 +115,7 @@ export class QTIResponseProcessor {
       const cacheKey = `${context.item.identifier}-${JSON.stringify(normalizedResponse)}`;
       this.processingCache.set(cacheKey, result);
 
+      console.debug('QTIResponseProcessor.processed', {
         itemId: context.item.identifier,
         score: `${result.score}/${result.maxScore}`,
         correct: result.isCorrect,

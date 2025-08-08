@@ -108,6 +108,7 @@ export class EnhancedResponseHandler {
     const startTime = Date.now();
     
     try {
+      console.debug('EnhancedResponseHandler.processResponse received', {
         questionId: question.id,
         assessmentId: assessment.id,
         sectionId: section.id,
@@ -139,6 +140,7 @@ export class EnhancedResponseHandler {
       // Process response locally for immediate feedback
       const processedResponse = await this.processResponseLocally(question, response);
       
+      console.debug('EnhancedResponseHandler.localProcessing', {
         score: `${processedResponse.score}/${processedResponse.maxScore}`,
         correct: processedResponse.isCorrect
       });

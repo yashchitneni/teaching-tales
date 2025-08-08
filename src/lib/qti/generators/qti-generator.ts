@@ -177,6 +177,7 @@ export class QTIGenerator {
         }
       };
 
+      console.debug('QTIGenerator.generatePackage', {
         identifier: qtiPackage.identifier,
         sections: result.metadata.sectionCount,
         items: result.metadata.itemCount,
@@ -531,6 +532,7 @@ export class QTIGenerator {
         }
       };
 
+      console.debug('QTIGenerator.generateAdvancedPackage', {
         identifier: qtiPackage.identifier,
         sections: result.metadata.sectionCount,
         items: result.metadata.itemCount,
@@ -696,6 +698,7 @@ export class QTIGenerator {
     // Generate IMS manifest XML
     const manifestXML = await this.generateManifestXML(qtiPackage, options);
 
+    console.debug('QTIGenerator.generateXMLFiles counts', {
       assessmentTest: 1,
       sections: sections.length,
       items: items.length,

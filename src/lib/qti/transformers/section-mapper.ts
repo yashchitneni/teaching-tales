@@ -198,8 +198,9 @@ export class SectionMapper {
         itemReferences
       };
 
+      console.debug('SectionMapper.mapSection', {
         identifier: sectionIdentifier,
-        items: result.itemCount,
+        items: result.metadata.itemCount,
         complexity: analysis.complexityScore,
         type: analysis.sectionType
       });

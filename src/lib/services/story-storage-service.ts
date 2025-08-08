@@ -486,11 +486,12 @@ export class StoryStorageService {
       storyId: string;
       enableOneRosterIntegration?: boolean;
     }
-  ): Promise<{ 
+  ): Promise<{
     stimulus: Stimulus; 
     assessments: StoryAssessment[];
     oneRosterIntegration?: OneRosterIntegrationResult;
   }> {
+    console.debug('StoryStorageService.saveStoryLocally', {
       title: storyResponse.title,
       universe: storyMetadata.universe,
       character: storyMetadata.character,

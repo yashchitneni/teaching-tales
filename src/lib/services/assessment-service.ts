@@ -42,6 +42,7 @@ export class AssessmentService {
     }
   ): Promise<StoryAssessment[]> {
     try {
+      console.debug('AssessmentService.createStoryAssessments', {
         storyId,
         sectionCount: sections.length
       });

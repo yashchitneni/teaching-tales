@@ -88,6 +88,7 @@ export class AIToQTITransformer {
     try {
       const finalOptions = { ...DEFAULT_QTI_OPTIONS, ...options };
       
+      console.debug('AIToQTITransformer.transformStoryToQTI input', {
         title: storyResponse.title,
         sections: storyResponse.sections.length,
         totalQuestions: storyResponse.sections.reduce((sum, s) => sum + s.questions.length, 0),
@@ -134,6 +135,7 @@ export class AIToQTITransformer {
         metadata: this.createPackageMetadata(context)
       };
 
+      console.debug('AIToQTITransformer.transformStoryToQTI output', {
         identifier: qtiPackage.identifier,
         sections: assessmentTest.sections.length,
         items: assessmentTest.sections.reduce((sum, s) => sum + s.items.length, 0)

@@ -498,6 +498,7 @@ export default function StoryReadingPage() {
         [questionId]: result
       }))
 
+      console.debug('QTI response processed', {
         success: result.success,
         score: `${result.processedResponse.score}/${result.processedResponse.maxScore}`,
         correct: result.processedResponse.isCorrect,

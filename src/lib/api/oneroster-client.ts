@@ -507,6 +507,7 @@ export async function createLineItem(lineItemData: LineItemCreationData): Promis
  * Enroll a student in a OneRoster class
  */
 export async function enrollStudent(enrollmentData: EnrollmentCreationData): Promise<EnrollmentResponse> {
+  console.debug('OneRoster enrollStudent', {
     userId: enrollmentData.userId,
     classId: enrollmentData.classId,
     role: enrollmentData.role
@@ -565,6 +566,7 @@ export async function enrollStudent(enrollmentData: EnrollmentCreationData): Pro
  * Update or create a result (grade) for a student
  */
 export async function updateResult(resultData: ResultData): Promise<ResultResponse> {
+  console.debug('OneRoster updateResult', {
     lineItemId: resultData.lineItemId,
     studentId: resultData.studentId,
     score: `${resultData.scoreGiven}/${resultData.scoreMaximum}`

@@ -68,6 +68,7 @@ export class GradebookService {
     options: GradeCalculationOptions = {}
   ): Promise<GradeSubmissionResult> {
     try {
+      console.debug('GradebookService.submitToGradebook', {
         lineItemId: gradeData.lineItemId,
         studentId: gradeData.studentId,
         score: `${gradeData.totalScore}/${gradeData.maxPossibleScore}`,

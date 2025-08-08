@@ -97,6 +97,7 @@ export class ResponseStorageService {
     };
 
     try {
+      console.debug('ResponseStorageService.storeResponse', {
         assessmentId,
         studentId,
         itemId,

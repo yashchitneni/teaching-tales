@@ -186,9 +186,10 @@ export class OneRosterIntegrationService {
 
       const executionTime = Date.now() - startTime;
       
+      console.debug('OneRosterIntegrationService.createStoryIntegration', {
         classId: classResult.classId,
         lineItemCount: successfulLineItems.length,
-        enrollmentId: enrollmentResult.enrollmentId,
+        enrollmentId,
         executionTime: `${executionTime}ms`
       });
 

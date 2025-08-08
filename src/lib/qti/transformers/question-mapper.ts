@@ -263,6 +263,7 @@ export class QuestionMapper {
         }
       };
 
+      console.debug('QuestionMapper.mapQuestion', {
         identifier: itemIdentifier,
         type: interactionType,
         difficulty: analysis.difficulty,

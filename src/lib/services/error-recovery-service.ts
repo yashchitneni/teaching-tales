@@ -70,6 +70,7 @@ export class ErrorRecoveryService {
     const planId = `recovery-${storyId}-${Date.now()}`;
     const operations: RecoveryOperation[] = [];
 
+    console.debug('ErrorRecoveryService.createOneRosterRecoveryPlan', {
       storyId,
       stimulusId,
       integrationError: integrationResult.error
@@ -230,6 +231,7 @@ export class ErrorRecoveryService {
 
       const duration = Date.now() - startTime;
       
+      console.debug('ErrorRecoveryService.executeRecoveryPlan completed', {
         planId,
         completed: completedOperations,
         failed: failedOperations,

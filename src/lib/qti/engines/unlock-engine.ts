@@ -144,6 +144,7 @@ export class UnlockEngine {
         }
       };
 
+      console.debug('UnlockEngine.checkUnlockConditions', {
         unlockedCount: unlockedSections.length,
         nextAvailable: nextAvailableSections.length,
         evaluationTime: `${evaluationTime}ms`
