@@ -232,7 +232,6 @@ export class BranchRuleEngine {
     questionResults: QuestionMappingResult[][],
     context: AIToQTITransformationContext
   ): Promise<BranchRuleDefinition[]> {
-    console.log('🌳 Generating story-based branch rules...');
     
     const generatedRules: BranchRuleDefinition[] = [];
 
@@ -295,7 +294,6 @@ export class BranchRuleEngine {
     // Register all generated rules
     generatedRules.forEach(rule => this.addRule(rule));
 
-    console.log(`✅ Generated ${generatedRules.length} branch rules`);
     return generatedRules;
   }
 
@@ -500,7 +498,6 @@ export class BranchRuleEngine {
     }
     this.rulesByComponent.get(rule.sourceComponent)!.push(rule);
     
-    console.log(`➕ Added branch rule: ${rule.name} (${rule.id})`);
   }
 
   /**
@@ -521,7 +518,6 @@ export class BranchRuleEngine {
       }
     }
     
-    console.log(`➖ Removed branch rule: ${ruleId}`);
     return true;
   }
 
@@ -536,7 +532,6 @@ export class BranchRuleEngine {
     componentId: string,
     context: BranchingContext
   ): BranchRuleEvaluationResult {
-    console.log(`🔍 Evaluating branch rules for component: ${componentId}`);
     
     const componentRules = this.rulesByComponent.get(componentId) || [];
     const enabledRules = componentRules.filter(rule => rule.enabled);
@@ -562,7 +557,6 @@ export class BranchRuleEngine {
       const evaluation = this.evaluateRule(rule, context);
       
       if (evaluation.shouldApply) {
-        console.log(`✅ Applied branch rule: ${rule.name}`);
         return {
           ...evaluation,
           appliedRule: rule,

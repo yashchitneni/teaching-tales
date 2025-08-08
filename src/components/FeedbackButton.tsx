@@ -7,7 +7,6 @@ export function FeedbackButton() {
       style={{ writingMode: 'vertical-rl' }}
       onClick={() => {
         // Handle feedback click
-        console.log('Feedback clicked')
       }}
     >
       Feedback

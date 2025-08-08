@@ -486,7 +486,6 @@ export class QTIErrorHandler {
    * Execute retry recovery
    */
   private async executeRetryRecovery(error: EnhancedQTIError): Promise<RecoveryResult> {
-    console.log(`🔄 Attempting retry recovery for error ${error.id}...`);
     
     // Add delay before retry (exponential backoff)
     const attempt = this.recoveryAttempts.get(`${error.type}_${error.context.operation}`) || 1;
@@ -507,7 +506,6 @@ export class QTIErrorHandler {
    * Execute fallback recovery
    */
   private async executeFallbackRecovery(error: EnhancedQTIError): Promise<RecoveryResult> {
-    console.log(`🔄 Attempting fallback recovery for error ${error.id}...`);
     
     const fallbackData = await this.generateFallbackData(error);
     
@@ -525,7 +523,6 @@ export class QTIErrorHandler {
    * Execute partial recovery
    */
   private async executePartialRecovery(error: EnhancedQTIError): Promise<RecoveryResult> {
-    console.log(`🔄 Attempting partial recovery for error ${error.id}...`);
     
     return {
       success: true,
@@ -540,7 +537,6 @@ export class QTIErrorHandler {
    * Execute system reset recovery
    */
   private async executeSystemResetRecovery(error: EnhancedQTIError): Promise<RecoveryResult> {
-    console.log(`🔄 Attempting system reset recovery for error ${error.id}...`);
     
     // Clear caches and reset state
     this.resetSystemState();
@@ -627,7 +623,6 @@ export class QTIErrorHandler {
     // Reset error patterns (keep for analysis)
     // this.errorPatterns.clear(); - Keep for learning
     
-    console.log('🔄 System state has been reset for recovery');
   }
 
   /**
@@ -737,7 +732,6 @@ export class QTIErrorHandler {
   clearHistory(): void {
     this.errorHistory = [];
     this.recoveryAttempts.clear();
-    console.log('🧹 Error history cleared');
   }
 }
 

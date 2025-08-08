@@ -62,14 +62,12 @@ export class S3Service {
         CacheControl: 'max-age=31536000', // Cache for 1 year
       };
 
-      console.log(`📤 Uploading image to S3: ${key}`);
       
       const command = new PutObjectCommand(uploadParams);
       await this.s3Client.send(command);
 
       // Return public URL
       const imageUrl = `https://${this.bucketName}.s3.amazonaws.com/${key}`;
-      console.log(`✅ Image uploaded successfully: ${imageUrl}`);
       
       return imageUrl;
 
@@ -88,7 +86,6 @@ export class S3Service {
    */
   async downloadAndUpload(imageUrl: string, fileName: string): Promise<string> {
     try {
-      console.log(`📥 Downloading image from: ${imageUrl}`);
       
       const response = await fetch(imageUrl);
       if (!response.ok) {
@@ -104,7 +101,6 @@ export class S3Service {
       console.error('❌ Download and upload failed:', error);
       
       // Fallback to original URL if S3 upload fails
-      console.log('🔄 Falling back to original image URL');
       return imageUrl;
     }
   }

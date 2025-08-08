@@ -194,7 +194,6 @@ export class QTIXMLParser {
    */
   static parseQTIXML(xmlContent: string): ParsedQTIContent {
     try {
-      console.log('📄 Parsing QTI XML content...');
       
       // Create DOM parser
       const parser = new DOMParser();
@@ -260,7 +259,6 @@ export class QTIXMLParser {
       toolVersion: root.getAttribute('toolVersion')
     };
 
-    console.log('✅ QTI Assessment Test parsed successfully');
 
     return {
       assessmentTest,
@@ -320,7 +318,6 @@ export class QTIXMLParser {
       toolVersion: root.getAttribute('toolVersion')
     };
 
-    console.log('✅ QTI Assessment Item parsed successfully');
 
     return {
       assessmentTest,

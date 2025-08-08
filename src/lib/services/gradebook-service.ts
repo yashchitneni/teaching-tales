@@ -68,7 +68,6 @@ export class GradebookService {
     options: GradeCalculationOptions = {}
   ): Promise<GradeSubmissionResult> {
     try {
-      console.log('📊 Submitting grade to OneRoster gradebook:', {
         lineItemId: gradeData.lineItemId,
         studentId: gradeData.studentId,
         score: `${gradeData.totalScore}/${gradeData.maxPossibleScore}`,
@@ -111,12 +110,10 @@ export class GradebookService {
         }
       };
 
-      console.log('📤 Sending result to OneRoster API...');
 
       // Submit to OneRoster
       const oneRosterResult = await updateResult(resultData);
 
-      console.log('✅ Grade submitted successfully to OneRoster');
 
       return {
         success: true,
@@ -154,7 +151,6 @@ export class GradebookService {
     if (options.customScoring) {
       // Note: This would require responses to be passed in, 
       // for now we'll use the calculated total score
-      console.log('🧮 Using custom scoring algorithm');
     }
 
     // Apply attempt penalty
@@ -164,7 +160,6 @@ export class GradebookService {
         options.maxPenalty || 0.5 // Default max penalty of 50%
       );
       finalScore = finalScore * (1 - penalty);
-      console.log(`📉 Applied attempt penalty: ${(penalty * 100).toFixed(1)}%`);
     }
 
     // Apply minimum score
@@ -252,7 +247,6 @@ export class GradebookService {
       failed: number;
     };
   }> {
-    console.log(`📊 Submitting batch of ${grades.length} grades...`);
 
     const successful: GradeSubmissionResult[] = [];
     const failed: GradeSubmissionResult[] = [];
@@ -294,7 +288,6 @@ export class GradebookService {
       failed: failed.length
     };
 
-    console.log(`✅ Batch submission completed:`, summary);
 
     return {
       successful,
@@ -442,7 +435,6 @@ export class GradebookService {
     const failed: Array<{ assessmentId: string; error: string }> = [];
 
     try {
-      console.log('🔄 Synchronizing grades for story:', story.title);
 
       // Get OneRoster integration data
       const oneRosterIntegration = story.metadata.oneRosterIntegration;
@@ -466,7 +458,6 @@ export class GradebookService {
           const assessmentResponses = responsesByAssessment[assessment.id] || [];
           
           if (assessmentResponses.length === 0) {
-            console.log(`⏭️ Skipping assessment ${assessment.id} - no responses`);
             continue;
           }
 
@@ -512,7 +503,6 @@ export class GradebookService {
           const result = await this.submitGrade(gradeData);
           synchronized.push(result);
 
-          console.log(`✅ Grade synchronized for assessment ${assessment.id}: ${gradeData.accuracy.toFixed(1)}%`);
 
         } catch (error) {
           console.error(`❌ Failed to sync grade for assessment ${assessment.id}:`, error);
@@ -523,7 +513,6 @@ export class GradebookService {
         }
       }
 
-      console.log(`✅ Grade synchronization completed: ${synchronized.length} successful, ${failed.length} failed`);
 
       return {
         synchronized,

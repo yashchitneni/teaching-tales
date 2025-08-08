@@ -73,7 +73,6 @@ export class QTIResponseProcessor {
     const warnings: string[] = [];
 
     try {
-      console.log('🔄 Processing QTI response for item:', context.item.identifier);
 
       // Normalize the response based on interaction type
       const normalizedResponse = this.normalizeResponse(
@@ -116,7 +115,6 @@ export class QTIResponseProcessor {
       const cacheKey = `${context.item.identifier}-${JSON.stringify(normalizedResponse)}`;
       this.processingCache.set(cacheKey, result);
 
-      console.log('✅ Response processed successfully:', {
         itemId: context.item.identifier,
         score: `${result.score}/${result.maxScore}`,
         correct: result.isCorrect,

@@ -19,8 +19,8 @@ export function TopNav() {
       <div className="flex items-center justify-between px-4 h-16">
         {/* Logo */}
         <div className="flex items-center">
-          <Link href="/dashboard" className="flex items-center">
-            <div className="w-8 h-8 bg-white rounded-full mr-2"></div>
+        <Link href="/dashboard" className="flex items-center">
+            <img src="/logo.svg" alt="TeachTales" className="w-8 h-8 mr-2" />
             <span className="font-bold text-lg">TeachTales</span>
           </Link>
         </div>

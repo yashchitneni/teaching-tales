@@ -97,7 +97,6 @@ export class ResponseStorageService {
     };
 
     try {
-      console.log('💾 Storing response:', {
         assessmentId,
         studentId,
         itemId,
@@ -113,7 +112,6 @@ export class ResponseStorageService {
         storedResponse.submittedAt = timestamp;
         this.storeResponseLocally(storedResponse);
         
-        console.log('✅ Response stored and synced successfully');
         return {
           success: true,
           responseId: onlineResult.responseId || responseId,
@@ -219,7 +217,6 @@ export class ResponseStorageService {
       }
 
       localStorage.setItem(this.STORAGE_KEY, JSON.stringify(existingResponses));
-      console.log('💾 Response stored locally');
 
     } catch (error) {
       console.error('❌ Failed to store response locally:', error);
@@ -255,7 +252,6 @@ export class ResponseStorageService {
         });
         
         localStorage.setItem(this.SYNC_QUEUE_KEY, JSON.stringify(queue));
-        console.log('📋 Added to sync queue');
       }
     } catch (error) {
       console.error('❌ Failed to add to sync queue:', error);
@@ -280,7 +276,6 @@ export class ResponseStorageService {
    */
   static async getResponses(query: ResponseQuery = {}): Promise<StoredResponse[]> {
     try {
-      console.log('📖 Retrieving responses with query:', query);
 
       // Get local responses first
       let responses = this.getResponsesFromLocalStorage();
@@ -315,7 +310,6 @@ export class ResponseStorageService {
       // Sort by timestamp (newest first)
       responses.sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime());
 
-      console.log(`✅ Retrieved ${responses.length} responses`);
       return responses;
 
     } catch (error) {
@@ -388,7 +382,6 @@ export class ResponseStorageService {
    * Sync pending responses to online API
    */
   static async syncPendingResponses(): Promise<{ synced: number; failed: number; remaining: number }> {
-    console.log('🔄 Starting sync of pending responses...');
 
     const queue = this.getSyncQueue();
     const responses = this.getResponsesFromLocalStorage();
@@ -421,7 +414,6 @@ export class ResponseStorageService {
           response.submittedAt = new Date().toISOString();
           this.storeResponseLocally(response);
           synced++;
-          console.log(`✅ Synced response ${response.id}`);
         } else {
           // Add back to queue with incremented retry count
           updatedQueue.push({
@@ -450,7 +442,6 @@ export class ResponseStorageService {
     localStorage.setItem(this.SYNC_QUEUE_KEY, JSON.stringify(updatedQueue));
 
     const remaining = updatedQueue.length;
-    console.log(`🔄 Sync completed: ${synced} synced, ${failed} failed, ${remaining} remaining`);
 
     return { synced, failed, remaining };
   }
@@ -461,7 +452,6 @@ export class ResponseStorageService {
   static clearAllResponses(): void {
     localStorage.removeItem(this.STORAGE_KEY);
     localStorage.removeItem(this.SYNC_QUEUE_KEY);
-    console.log('🗑️ All stored responses cleared');
   }
 
   /**

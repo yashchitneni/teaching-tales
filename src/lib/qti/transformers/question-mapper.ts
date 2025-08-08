@@ -144,14 +144,11 @@ export class QuestionMapper {
     sectionIndex: number,
     context: AIToQTITransformationContext
   ): Promise<QuestionMappingResult[]> {
-    console.log('❓ Mapping comprehension questions to QTI items...');
-    console.log(`📊 Processing ${questions.length} questions in section ${sectionIndex + 1}`);
 
     const results: QuestionMappingResult[] = [];
 
     for (let i = 0; i < questions.length; i++) {
       const question = questions[i];
-      console.log(`🔍 Mapping question ${i + 1}: ${question.question.substring(0, 50)}...`);
       
       const result = await this.mapQuestion(
         question,
@@ -166,8 +163,6 @@ export class QuestionMapper {
     // Apply cross-question optimizations
     await this.optimizeQuestionSet(results, context);
 
-    console.log('✅ Question mapping completed');
-    console.log(`📈 Results: ${results.length} items, avg difficulty: ${this.calculateAverageDifficulty(results)}`);
 
     return results;
   }
@@ -268,7 +263,6 @@ export class QuestionMapper {
         }
       };
 
-      console.log(`✅ Mapped question ${questionIndex + 1}:`, {
         identifier: itemIdentifier,
         type: interactionType,
         difficulty: analysis.difficulty,
@@ -853,7 +847,6 @@ export class QuestionMapper {
     results: QuestionMappingResult[],
     context: AIToQTITransformationContext
   ): Promise<void> {
-    console.log('🔧 Optimizing question set...');
     
     // Analyze difficulty progression
     const difficulties = results.map(r => r.analysis.difficulty);
@@ -866,10 +859,8 @@ export class QuestionMapper {
           result.item.timeLimits = Math.ceil(result.item.timeLimits * 1.2);
         }
       });
-      console.log('⏱️ Extended time limits for high difficulty question set');
     }
     
-    console.log('✅ Question set optimization completed');
   }
 
   /**

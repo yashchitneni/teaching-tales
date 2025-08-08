@@ -43,7 +43,6 @@ export default function StoryLoadingPage() {
 
     // Prevent multiple calls by checking if generation is already in progress
     if (isGeneratingRef.current) {
-      console.log('Story generation already in progress, skipping...')
       return
     }
 
@@ -82,14 +81,10 @@ export default function StoryLoadingPage() {
 
   const generateStory = async () => {
     try {
-      console.log('Generating story with:', { universe, character, spark })
-      
       // Use current authenticated user for book creation
       if (!user) {
         throw new Error('You must be logged in to create a story.')
       }
-      
-      console.log('Creating story for current user:', user.name)
       
       // Generate a unique book ID for this story session
       const storyId = crypto.randomUUID()
@@ -112,7 +107,6 @@ export default function StoryLoadingPage() {
       // No need to store initial metadata since we save complete stories
       
       // Generate real AI story using our server-side API
-      console.log('🎭 Starting AI story generation...')
       
       const response = await fetch('/api/generate-story', {
         method: 'POST',
@@ -136,10 +130,7 @@ export default function StoryLoadingPage() {
       
       const storyResponse = await response.json()
       
-      console.log('✅ AI story generation completed!')
-      
       // Save complete story to QTI Stimuli API and create assessment tests
-      console.log('💾 Saving story to QTI API with OneRoster integration...')
       const { 
         stimulus: savedStimulus, 
         assessments, 
@@ -154,18 +145,9 @@ export default function StoryLoadingPage() {
         enableOneRosterIntegration: true // Enable OneRoster integration
       })
       
-      console.log('✅ Story and assessments saved to QTI API successfully!')
-      console.log(`📚 Created ${assessments.length} assessment tests`)
-      
       // Log OneRoster integration results
       if (oneRosterIntegration) {
-        if (oneRosterIntegration.success) {
-          console.log('🏫 OneRoster integration completed:', {
-            classId: oneRosterIntegration.classId,
-            lineItemCount: oneRosterIntegration.lineItemIds?.length || 0,
-            enrollmentId: oneRosterIntegration.enrollmentId
-          })
-        } else {
+        if (!oneRosterIntegration.success) {
           console.warn('⚠️ OneRoster integration failed:', oneRosterIntegration.error)
           // Story creation continues even if OneRoster integration fails
         }

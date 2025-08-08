@@ -569,7 +569,6 @@ export class EdgeCaseHandler {
    * Handle a single edge case
    */
   private async handleSingleEdgeCase(detection: EdgeCaseDetection): Promise<EdgeCaseHandlingResult> {
-    console.log(`🔧 Handling edge case: ${detection.type} (${detection.severity})`);
 
     switch (detection.suggestedStrategy) {
       case EdgeCaseStrategy.IGNORE:
@@ -605,7 +604,6 @@ export class EdgeCaseHandler {
    * Handle ignore strategy
    */
   private handleIgnore(detection: EdgeCaseDetection): EdgeCaseHandlingResult {
-    console.log(`  ℹ️  Ignoring edge case: ${detection.description}`);
     
     return {
       success: true,
@@ -639,7 +637,6 @@ export class EdgeCaseHandler {
    * Handle sanitize strategy
    */
   private handleSanitize(detection: EdgeCaseDetection): EdgeCaseHandlingResult {
-    console.log(`  🧹 Sanitizing data for: ${detection.description}`);
     
     let sanitizedValue = detection.affectedData;
     const modifications: string[] = [];
@@ -692,7 +689,6 @@ export class EdgeCaseHandler {
    * Handle substitute strategy
    */
   private handleSubstitute(detection: EdgeCaseDetection): EdgeCaseHandlingResult {
-    console.log(`  🔄 Substituting value for: ${detection.description}`);
     
     let substitutedValue = detection.affectedData;
     const modifications: string[] = [];
@@ -760,7 +756,6 @@ export class EdgeCaseHandler {
    * Handle retry strategy
    */
   private async handleRetry(detection: EdgeCaseDetection): Promise<EdgeCaseHandlingResult> {
-    console.log(`  🔄 Retrying operation for: ${detection.description}`);
     
     // For now, just return success - actual retry logic would depend on context
     return {

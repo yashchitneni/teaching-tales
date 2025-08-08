@@ -95,10 +95,8 @@ export class OneRosterIntegrationService {
     const createdResources: RollbackData['createdResources'] = [];
 
     try {
-      console.log('🏫 Starting OneRoster integration for story:', data.storyTitle);
 
       // Step 1: Get student and school information
-      console.log('👤 Fetching student information...');
       const studentInfo = await this.getStudentInfo(data.studentId);
       let studentInfoData = studentInfo.data;
       let canEnroll = true;
@@ -119,7 +117,6 @@ export class OneRosterIntegrationService {
       }
 
       // Step 2: Create OneRoster class
-      console.log('🏫 Creating OneRoster class...');
       const classResult = await this.createStoryClass(data, studentInfoData);
       if (!classResult.success) {
         operationsFailed.push('class_creation');
@@ -134,7 +131,6 @@ export class OneRosterIntegrationService {
       });
 
       // Step 3: Create line items for each assessment
-      console.log('📝 Creating line items for assessments...');
       const lineItemResults = await this.createAssessmentLineItems(
         classResult.classId!,
         data.assessments,
@@ -166,7 +162,6 @@ export class OneRosterIntegrationService {
       // Step 4: Enroll student in class
       let enrollmentId: string | undefined;
       if (canEnroll) {
-        console.log('👨‍🎓 Enrolling student in class...');
         const enrollmentResult = await this.enrollStudentInClass(
           classResult.classId!,
           data.studentId,
@@ -186,13 +181,11 @@ export class OneRosterIntegrationService {
           enrollmentId = enrollmentResult.enrollmentId;
         }
       } else {
-        console.log('ℹ️ Skipping enrollment step because student was not found');
         operationsFailed.push('student_enrollment_skipped');
       }
 
       const executionTime = Date.now() - startTime;
       
-      console.log('✅ OneRoster integration completed successfully:', {
         classId: classResult.classId,
         lineItemCount: successfulLineItems.length,
         enrollmentId: enrollmentResult.enrollmentId,
@@ -223,7 +216,6 @@ export class OneRosterIntegrationService {
       
       // Attempt rollback of created resources
       if (createdResources.length > 0) {
-        console.log('🔄 Attempting rollback of created resources...');
         await this.rollbackCreatedResources(createdResources);
       }
 
@@ -487,7 +479,6 @@ export class OneRosterIntegrationService {
     const successful = [];
     const failed = [];
 
-    console.log(`📊 Submitting ${grades.length} grades to OneRoster...`);
 
     for (const grade of grades) {
       try {
@@ -535,7 +526,6 @@ export class OneRosterIntegrationService {
       await new Promise(resolve => setTimeout(resolve, 300));
     }
 
-    console.log(`✅ Grade submission completed: ${successful.length} successful, ${failed.length} failed`);
 
     return { successful, failed };
   }
@@ -546,7 +536,6 @@ export class OneRosterIntegrationService {
   private static async rollbackCreatedResources(
     resources: RollbackData['createdResources']
   ): Promise<void> {
-    console.log(`🔄 Attempting to rollback ${resources.length} created resources...`);
 
     // Note: OneRoster API typically doesn't support DELETE operations
     // In a real implementation, you might:
@@ -556,7 +545,6 @@ export class OneRosterIntegrationService {
 
     for (const resource of resources) {
       try {
-        console.log(`🔄 Would rollback ${resource.type} ${resource.id}`);
         // Actual rollback implementation would go here
         
       } catch (error) {
@@ -564,7 +552,6 @@ export class OneRosterIntegrationService {
       }
     }
 
-    console.log('⚠️ Rollback completed (note: OneRoster resources may need manual cleanup)');
   }
 
   /**

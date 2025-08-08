@@ -110,14 +110,11 @@ export class SectionMapper {
     sections: StorySection[],
     context: AIToQTITransformationContext
   ): Promise<SectionMappingResult[]> {
-    console.log('🗺️ Mapping story sections to QTI sections...');
-    console.log(`📊 Processing ${sections.length} sections`);
 
     const results: SectionMappingResult[] = [];
 
     for (let i = 0; i < sections.length; i++) {
       const section = sections[i];
-      console.log(`📑 Mapping section ${i + 1}: ${section.content.substring(0, 50)}...`);
       
       const result = await this.mapSection(section, i, context);
       results.push(result);
@@ -126,8 +123,6 @@ export class SectionMapper {
     // Apply cross-section optimizations
     await this.optimizeSectionRelationships(results, context);
 
-    console.log('✅ Section mapping completed');
-    console.log(`📈 Results: ${results.length} sections, ${results.reduce((sum, r) => sum + r.itemCount, 0)} total items`);
 
     return results;
   }
@@ -203,7 +198,6 @@ export class SectionMapper {
         itemReferences
       };
 
-      console.log(`✅ Mapped section ${sectionIndex + 1}:`, {
         identifier: sectionIdentifier,
         items: result.itemCount,
         complexity: analysis.complexityScore,
@@ -455,7 +449,6 @@ export class SectionMapper {
     results: SectionMappingResult[],
     context: AIToQTITransformationContext
   ): Promise<void> {
-    console.log('🔧 Optimizing section relationships...');
     
     // Analyze section flow and adjust timing
     for (let i = 0; i < results.length; i++) {
@@ -473,11 +466,9 @@ export class SectionMapper {
       // Add section dependencies for narrative flow
       if (next && this.shouldCreateDependency(current, next)) {
         // This would be used in branching logic (Phase 4)
-        console.log(`📎 Creating dependency: ${next.section.identifier} depends on ${current.section.identifier}`);
       }
     }
     
-    console.log('✅ Section relationship optimization completed');
   }
 
   /**

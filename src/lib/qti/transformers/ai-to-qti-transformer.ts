@@ -88,8 +88,6 @@ export class AIToQTITransformer {
     try {
       const finalOptions = { ...DEFAULT_QTI_OPTIONS, ...options };
       
-      console.log('🔄 Transforming AI story to QTI package...');
-      console.log('📊 Story:', {
         title: storyResponse.title,
         sections: storyResponse.sections.length,
         totalQuestions: storyResponse.sections.reduce((sum, s) => sum + s.questions.length, 0),
@@ -136,8 +134,6 @@ export class AIToQTITransformer {
         metadata: this.createPackageMetadata(context)
       };
 
-      console.log('✅ QTI transformation completed');
-      console.log('📦 Package:', {
         identifier: qtiPackage.identifier,
         sections: assessmentTest.sections.length,
         items: assessmentTest.sections.reduce((sum, s) => sum + s.items.length, 0)
@@ -170,7 +166,6 @@ export class AIToQTITransformer {
       }
     );
 
-    console.log('🏗️ Creating assessment test with enhanced mapping:', testIdentifier);
 
     // Register test in relationship manager
     this.relationshipManager.registerComponent(testIdentifier, 'test', storyResponse.title);
@@ -270,7 +265,6 @@ export class AIToQTITransformer {
     // Generate section identifier
     const sectionIdentifier = this.identifierGenerator.generateSectionIdentifier(sectionIndex);
     
-    console.log(`📑 Transforming section ${sectionIndex + 1}:`, sectionIdentifier);
 
     // Transform questions to assessment items
     const items: QTIAssessmentItem[] = [];
@@ -329,7 +323,6 @@ export class AIToQTITransformer {
     // Generate item identifier
     const itemIdentifier = this.identifierGenerator.generateItemIdentifier(sectionIndex, questionIndex);
     
-    console.log(`❓ Transforming question ${questionIndex + 1}:`, itemIdentifier, `(${question.type})`);
 
     // Determine interaction type
     const interactionType = this.getInteractionType(question.type);
@@ -576,7 +569,6 @@ export class AIToQTITransformer {
     
     const manifestId = this.identifierGenerator.generateManifestIdentifier();
     
-    console.log('📋 Creating IMS manifest:', manifestId);
 
     // Create resources for test and all items
     const resources: IMSResource[] = [];

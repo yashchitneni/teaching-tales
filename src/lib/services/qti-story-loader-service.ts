@@ -161,13 +161,11 @@ export class QTIStoryLoaderService {
     const { useCache = true, includeResponses = true, parseXML = true } = options;
 
     try {
-      console.log('📖 Loading QTI story:', { storyId, studentId, options });
 
       // Check cache first
       if (useCache) {
         const cachedStory = this.getCachedStory(storyId);
         if (cachedStory) {
-          console.log('✅ Story loaded from cache');
           return {
             success: true,
             story: cachedStory,
@@ -193,7 +191,6 @@ export class QTIStoryLoaderService {
           this.cacheStory(storyId, qtiResult.story);
         }
 
-        console.log('✅ Story loaded from QTI API successfully');
         return {
           ...qtiResult,
           loadTime: Date.now() - startTime
@@ -201,7 +198,6 @@ export class QTIStoryLoaderService {
       }
 
       // Fallback to localStorage
-      console.log('🔄 Falling back to localStorage...');
       const localResult = await this.loadFromLocalStorage(storyId);
       
       return {
@@ -341,7 +337,6 @@ export class QTIStoryLoaderService {
 
     for (const assessmentId of assessmentIds) {
       try {
-        console.log(`📝 Loading assessment: ${assessmentId}`);
         // Use client helper to normalize shapes returned by upstream
         const test = await getAssessmentTest(assessmentId);
         if (!test) continue;
@@ -362,7 +357,6 @@ export class QTIStoryLoaderService {
       }
     }
 
-    console.log(`✅ Loaded ${assessments.length} assessments`);
     return assessments;
   }
 
@@ -600,7 +594,6 @@ export class QTIStoryLoaderService {
         }
       });
 
-      console.log(`✅ Loaded ${responses.length} student responses`);
 
     } catch (error) {
       console.error('❌ Error loading student responses:', error);
@@ -661,7 +654,6 @@ export class QTIStoryLoaderService {
         }
       });
 
-      console.log(`✅ Updated unlock states: ${unlockResult.unlockedSections.length} sections unlocked`);
 
     } catch (error) {
       console.error('❌ Error updating section unlock states:', error);
@@ -788,7 +780,6 @@ export class QTIStoryLoaderService {
    */
   static clearCache(): void {
     this.storyCache.clear();
-    console.log('🧹 Story cache cleared');
   }
 
   /**

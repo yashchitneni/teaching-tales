@@ -105,7 +105,6 @@ export function ConnectionStatusIndicator({
     if (!status.isOnline || status.syncInProgress) return;
 
     try {
-      console.log('🔄 Manual sync triggered');
       await EnhancedResponseHandler.syncOfflineResponses();
       
       // Update status after sync

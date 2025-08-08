@@ -46,8 +46,6 @@ export async function GET(
   { params }: { params: { id: string } }
 ) {
   try {
-    console.log('📖 Loading QTI assessment:', params.id);
-
     // Authentication check
     const token = await resolveAuthToken(request);
     if (!token) {
@@ -68,13 +66,6 @@ export async function GET(
     const format = searchParams.get('format') || 'json'; // 'json', 'xml', 'full'
     const includeItems = searchParams.get('includeItems') === 'true';
     const includeSections = searchParams.get('includeSections') === 'true';
-
-    console.log('🔍 Assessment request parameters:', {
-      id: params.id,
-      format,
-      includeItems,
-      includeSections
-    });
 
     // Fetch assessment data from TimeBack QTI API (IMS v3p0)
     const timebackResponse = await fetch(`${TIMEBACK_API_URL}/ims/qti/v3p0/assessments/${params.id}`, {
@@ -119,7 +110,6 @@ export async function GET(
     }
 
     const assessmentData = await timebackResponse.json();
-    console.log('✅ Assessment data retrieved from TimeBack API');
 
     // Handle different response formats
     switch (format) {
@@ -160,11 +150,8 @@ async function handleXMLFormat(
   token: string
 ): Promise<NextResponse> {
   try {
-    console.log('🔧 Generating QTI XML for assessment:', assessmentId);
-
     // Check if we have XML stored directly
     if (assessmentData.xml) {
-      console.log('✅ Using stored QTI XML');
       return new NextResponse(assessmentData.xml, {
         status: 200,
         headers: {
@@ -176,16 +163,12 @@ async function handleXMLFormat(
 
     // If no stored XML, try to generate it from the assessment data
     if (assessmentData.sections && assessmentData.items) {
-      console.log('🔄 Generating QTI XML from assessment structure...');
-      
       // Convert TimeBack assessment format to our story format for QTI generation
       const storyFormat = convertAssessmentToStoryFormat(assessmentData);
       
       // Generate QTI XML using our generator
       const qtiGenerator = new QTIGenerator();
       const qtiPackage = await qtiGenerator.generatePackage(storyFormat);
-      
-      console.log('✅ QTI XML generated successfully');
       
       return new NextResponse(qtiPackage.files.assessmentTest, {
         status: 200,
@@ -197,7 +180,6 @@ async function handleXMLFormat(
     }
 
     // Fallback: return basic XML structure
-    console.log('⚠️ Generating basic QTI XML structure');
     const basicXML = generateBasicQTIXML(assessmentData);
     
     return new NextResponse(basicXML, {
@@ -225,8 +207,6 @@ async function handleFullFormat(
   includeSections: boolean
 ): Promise<NextResponse> {
   try {
-    console.log('📋 Preparing full assessment response');
-
     const response: QTIAssessmentResponse = {
       assessment: {
         id: assessmentData.id || assessmentId,
@@ -290,8 +270,6 @@ async function handleJSONFormat(
   includeSections: boolean
 ): Promise<NextResponse> {
   try {
-    console.log('📄 Preparing JSON assessment response');
-
     const response: any = {
       id: assessmentData.id,
       identifier: assessmentData.identifier,

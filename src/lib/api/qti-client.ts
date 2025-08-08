@@ -239,7 +239,6 @@ export async function fetchTestHierarchy(testId: string): Promise<TestPartsRespo
 }
 
 export async function fetchItemDetails(itemId: string): Promise<ItemDetails> {
-  console.log('Fetching item details for:', itemId);
   const response = await fetch(
     `/api/ims/qti/v3p0/assessment-items/${itemId}`,
     {
@@ -255,12 +254,10 @@ export async function fetchItemDetails(itemId: string): Promise<ItemDetails> {
   }
 
   const data = unwrapApi<ItemDetails>(await response.json());
-  console.log('Item details response:', JSON.stringify(data, null, 2));
   return data;
 }
 
 export async function fetchItemXML(xmlUrl: string): Promise<string> {
-  console.log('Fetching XML from URL:', xmlUrl);
   
   // The xmlUrl should be a pre-signed S3 URL that doesn't require authentication
   const response = await fetch(xmlUrl, {
@@ -277,11 +274,8 @@ export async function fetchItemXML(xmlUrl: string): Promise<string> {
   }
 
   const contentType = response.headers.get('content-type');
-  console.log('Response content-type:', contentType);
 
   const xmlContent = await response.text();
-  console.log('Fetched content length:', xmlContent.length);
-  console.log('Content preview:', xmlContent.substring(0, 500));
   
   // Check if we received HTML instead of XML
   if (xmlContent.includes('<!DOCTYPE html') || xmlContent.includes('<html')) {

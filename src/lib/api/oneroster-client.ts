@@ -390,7 +390,6 @@ interface ResultResponse {
  * Create a new OneRoster class
  */
 export async function createClass(classData: ClassCreationData): Promise<ClassResponse> {
-  console.log('🏫 Creating OneRoster class:', classData.title);
 
   // Validate required fields
   if (!classData.title || !classData.courseId || !classData.schoolId || !classData.termIds?.length) {
@@ -433,7 +432,6 @@ export async function createClass(classData: ClassCreationData): Promise<ClassRe
     });
 
     const result = await handleResponse<ClassResponse>(response);
-    console.log('✅ OneRoster class created successfully:', result.class.sourcedId);
     return result;
 
   } catch (error) {
@@ -446,7 +444,6 @@ export async function createClass(classData: ClassCreationData): Promise<ClassRe
  * Create a new OneRoster line item (assignment/assessment)
  */
 export async function createLineItem(lineItemData: LineItemCreationData): Promise<LineItemResponse> {
-  console.log('📝 Creating OneRoster line item:', lineItemData.title);
 
   // Validate required fields
   if (!lineItemData.title || !lineItemData.classId || !lineItemData.assignDate || 
@@ -498,7 +495,6 @@ export async function createLineItem(lineItemData: LineItemCreationData): Promis
     });
 
     const result = await handleResponse<LineItemResponse>(response);
-    console.log('✅ OneRoster line item created successfully:', result.lineItem.sourcedId);
     return result;
 
   } catch (error) {
@@ -511,7 +507,6 @@ export async function createLineItem(lineItemData: LineItemCreationData): Promis
  * Enroll a student in a OneRoster class
  */
 export async function enrollStudent(enrollmentData: EnrollmentCreationData): Promise<EnrollmentResponse> {
-  console.log('👨‍🎓 Enrolling student in OneRoster class:', {
     userId: enrollmentData.userId,
     classId: enrollmentData.classId,
     role: enrollmentData.role
@@ -558,7 +553,6 @@ export async function enrollStudent(enrollmentData: EnrollmentCreationData): Pro
     });
 
     const result = await handleResponse<EnrollmentResponse>(response);
-    console.log('✅ Student enrolled successfully:', result.enrollment.sourcedId);
     return result;
 
   } catch (error) {
@@ -571,7 +565,6 @@ export async function enrollStudent(enrollmentData: EnrollmentCreationData): Pro
  * Update or create a result (grade) for a student
  */
 export async function updateResult(resultData: ResultData): Promise<ResultResponse> {
-  console.log('📊 Updating OneRoster result:', {
     lineItemId: resultData.lineItemId,
     studentId: resultData.studentId,
     score: `${resultData.scoreGiven}/${resultData.scoreMaximum}`
@@ -613,7 +606,6 @@ export async function updateResult(resultData: ResultData): Promise<ResultRespon
     });
 
     const result = await handleResponse<ResultResponse>(response);
-    console.log('✅ OneRoster result updated successfully:', result.result.sourcedId);
     return result;
 
   } catch (error) {

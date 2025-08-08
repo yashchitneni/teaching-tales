@@ -295,7 +295,7 @@ GRADE 6-8 SPECIFIC REQUIREMENTS:
       // First, try parsing as-is
       return JSON.parse(response);
     } catch (error) {
-      console.log('🔧 Initial JSON parse failed, trying fallbacks...');
+
       
       // If that fails, try to extract JSON from markdown code blocks
       const codeBlockMatch = response.match(/```(?:json)?\s*([\s\S]*?)\s*```/);
@@ -303,13 +303,13 @@ GRADE 6-8 SPECIFIC REQUIREMENTS:
         try {
           return JSON.parse(codeBlockMatch[1]);
         } catch (innerError) {
-          console.log('🔧 Code block JSON parse failed, trying fixes...');
+
           // Try to fix common JSON issues in code blocks
           const fixedJson = this.fixCommonJsonIssues(codeBlockMatch[1]);
           try {
             return JSON.parse(fixedJson);
           } catch (finalError) {
-            console.log('🔧 Trying aggressive repair for code block JSON...');
+
             const repaired = this.repairJsonLoose(codeBlockMatch[1]);
             try {
               return JSON.parse(repaired);
@@ -328,13 +328,13 @@ GRADE 6-8 SPECIFIC REQUIREMENTS:
         try {
           return JSON.parse(jsonMatch[0]);
         } catch (innerError) {
-          console.log('🔧 Extracted JSON parse failed, trying fixes...');
+
           // Try to fix common JSON issues in extracted content
           const fixedJson = this.fixCommonJsonIssues(jsonMatch[0]);
           try {
             return JSON.parse(fixedJson);
           } catch (finalError) {
-            console.log('🔧 Trying aggressive repair for extracted JSON...');
+
             const repaired = this.repairJsonLoose(jsonMatch[0]);
             try {
               return JSON.parse(repaired);

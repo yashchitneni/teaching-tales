@@ -8,11 +8,7 @@ export async function POST(request: NextRequest) {
     // Very simple, safe prompt
     const simplePrompt = `Write a short, simple story about a friendly cat who finds a ball of yarn. The story should be appropriate for children ages 8-10. Make it exactly 3 sentences long.`
     
-    console.log('🧪 Testing simple generation...')
-    
     const response = await geminiClient.generateContent(simplePrompt)
-    
-    console.log('✅ Simple generation successful!')
     
     return NextResponse.json({
       success: true,

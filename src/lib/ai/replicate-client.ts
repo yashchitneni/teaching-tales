@@ -54,8 +54,6 @@ export class ReplicateClient {
       // Enhance prompt for educational content safety
       const enhancedPrompt = this.enhancePromptForEducation(prompt, options.gradeLevel);
       
-      console.log('🎨 Generating image with Replicate...');
-      console.log('📝 Enhanced prompt:', enhancedPrompt);
 
       const input = {
         prompt: enhancedPrompt,
@@ -74,7 +72,6 @@ export class ReplicateClient {
       }
 
       const imageUrl = output[0] as string;
-      console.log('✅ Image generated successfully:', imageUrl);
       
       return imageUrl;
 

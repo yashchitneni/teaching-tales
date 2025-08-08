@@ -89,16 +89,7 @@ export default function StoryReadingPage() {
 
   const bookId = params.bookId as string
 
-  // Debug: surface core state in console for quick diagnosis
-  useEffect(() => {
-    // Avoid logging huge objects every render
-    console.log('[BookPage] context', {
-      bookId,
-      hasUser: !!user,
-      authLoading,
-      isAuthenticated
-    })
-  }, [bookId, user, authLoading, isAuthenticated])
+
 
   // Function to convert vocabulary markdown to HTML with hover tooltips
   const processVocabularyWords = (content: string) => {
@@ -110,22 +101,17 @@ export default function StoryReadingPage() {
 
   // Load story data from QTI API (or fallback) based on auth state
   useEffect(() => {
-    console.log('[BookPage] load effect', { bookId, hasUser: !!user, authLoading })
     if (user) {
       loadStoryFromAPI()
       return
     }
     // If auth has resolved and there's no user, attempt a safe anonymous load
     if (!authLoading) {
-      console.warn('[BookPage] No authenticated user; attempting anonymous story load')
       loadStoryWithoutAuth()
     }
   }, [bookId, router, user, authLoading])
 
-  // Emit render-state transitions for easier debugging of loading UI
-  useEffect(() => {
-    console.log('[BookPage] render-state', { loadingQTI, hasStory: !!story, qtiError })
-  }, [loadingQTI, story, qtiError])
+
 
   // Update section unlock states when QTI story is loaded or responses change
   useEffect(() => {
@@ -150,7 +136,6 @@ export default function StoryReadingPage() {
   // Monitor online/offline status
   useEffect(() => {
     const handleOnline = () => {
-      console.log('🌐 Connection restored')
       setOfflineMode(false)
       
       // Trigger sync of offline responses
@@ -158,7 +143,6 @@ export default function StoryReadingPage() {
     }
 
     const handleOffline = () => {
-      console.log('📱 Connection lost - switching to offline mode')
       setOfflineMode(true)
     }
 
@@ -178,12 +162,7 @@ export default function StoryReadingPage() {
     setPendingSync(true)
     
     try {
-      console.log('🔄 Syncing offline responses...')
       const result = await EnhancedResponseHandler.syncOfflineResponses()
-      
-      if (result.synced > 0) {
-        console.log(`✅ Successfully synced ${result.synced} offline responses`)
-      }
       
       if (result.failed > 0) {
         console.warn(`⚠️ Failed to sync ${result.failed} responses:`, result.errors)
@@ -207,7 +186,7 @@ export default function StoryReadingPage() {
         return
       }
 
-      console.log('📖 Loading QTI story:', { bookId, studentId })
+
       setLoadingQTI(true)
       setQtiError(null)
       
@@ -219,12 +198,7 @@ export default function StoryReadingPage() {
       })
       
       if (result.success && result.story) {
-        console.log('✅ QTI story loaded successfully:', {
-          source: result.source,
-          loadTime: `${result.loadTime}ms`,
-          sections: result.story.sections.length,
-          assessments: result.story.assessments.length
-        })
+
         
         setQtiStory(result.story)
         setCurrentQTISection(result.story.sections[0] || null)
@@ -265,7 +239,6 @@ export default function StoryReadingPage() {
               }
               setStory(transformed)
               setStoryMeta(storedStory)
-              console.log('✅ Content populated from Storage Service fallback')
             } else {
               console.warn('⚠️ Storage Service fallback returned no sections; trying legacy localStorage fallback')
               await loadLegacyStoryFallback()
@@ -305,7 +278,6 @@ export default function StoryReadingPage() {
             imageUrl: result.story.imageUrl
           }
           setStory(legacyStory)
-          console.log('✅ Legacy story format created for backward compatibility')
         }
         
         // Also try to load story metadata from story storage service for new features
@@ -313,17 +285,14 @@ export default function StoryReadingPage() {
           const storedStory = await StoryStorageService.getStory(bookId)
           if (storedStory) {
             setStoryMeta(storedStory)
-            console.log('✅ Story metadata loaded from storage service')
           }
         } catch (metaError) {
-          console.log('ℹ️ Story metadata not available from storage service')
         }
       } else {
         console.error('❌ Failed to load QTI story:', result.error)
         setQtiError(result.error || 'Unknown error')
         
         // Try story storage service as first fallback
-        console.log('🔄 Trying Story Storage Service fallback...')
         try {
           const storedStory = await StoryStorageService.getStory(bookId)
           if (storedStory) {
@@ -348,13 +317,10 @@ export default function StoryReadingPage() {
             }
             setStory(transformedStory)
             setStoryMeta(storedStory)
-            console.log('✅ Story loaded from storage service fallback')
             return
           } else {
-            console.log('📝 Story not found in storage service, trying localStorage...')
           }
         } catch (storageError) {
-          console.log('⚠️ Story storage service failed, trying localStorage...', storageError)
         }
         
         // Still try legacy loading as final fallback
@@ -389,12 +355,10 @@ export default function StoryReadingPage() {
           }
           setStory(transformedStory)
           setStoryMeta(storedStory)
-          console.log('✅ Story loaded from storage service after QTI error')
         } else {
           await loadLegacyStoryFallback()
         }
       } catch (storageError) {
-        console.log('⚠️ Storage service also failed, trying localStorage...', storageError)
         await loadLegacyStoryFallback()
       }
     } finally {
@@ -409,7 +373,6 @@ export default function StoryReadingPage() {
       setQtiError(null)
 
       // First try the StoryStorageService (uses QTI API via proxy)
-      console.log('📖 Attempting anonymous story load via storage service')
       const storedStory = await StoryStorageService.getStory(bookId)
       if (storedStory && storedStory.sections) {
         const transformedStory: Story = {
@@ -432,11 +395,9 @@ export default function StoryReadingPage() {
         }
         setStory(transformedStory)
         setStoryMeta(storedStory)
-        console.log('✅ Anonymous story load success via storage service')
         return
       }
 
-      console.log('ℹ️ Anonymous path: no story in storage, trying legacy localStorage fallback')
       await loadLegacyStoryFallback()
     } catch (error) {
       console.error('❌ Anonymous story load failed:', error)
@@ -447,7 +408,6 @@ export default function StoryReadingPage() {
   }
 
   const loadLegacyStoryFallback = async () => {
-    console.log('🔄 Attempting legacy story loading as fallback...')
     
     try {
       const stories = JSON.parse(localStorage.getItem('teaching-tales-stories') || '[]')
@@ -473,17 +433,14 @@ export default function StoryReadingPage() {
           imageUrl: foundStory.imageUrl
         }
         setStory(transformedStory)
-        console.log('✅ Legacy story loaded from localStorage')
         
         // Also try to set story meta from story storage service for new features
         try {
           const storedStory = await StoryStorageService.getStory(bookId)
           if (storedStory) {
             setStoryMeta(storedStory)
-            console.log('✅ Story metadata loaded from storage service')
           }
         } catch (metaError) {
-          console.log('ℹ️ Story metadata not available from storage service')
         }
       } else {
         console.error('❌ Story not found in any source')
@@ -504,7 +461,6 @@ export default function StoryReadingPage() {
     }
 
     try {
-      console.log('🔄 Processing enhanced QTI response:', { questionId, response })
       
       setProcessingResponse(questionId)
 
@@ -542,7 +498,6 @@ export default function StoryReadingPage() {
         [questionId]: result
       }))
 
-      console.log('✅ Enhanced response processing completed:', {
         success: result.success,
         score: `${result.processedResponse.score}/${result.processedResponse.maxScore}`,
         correct: result.processedResponse.isCorrect,
@@ -552,7 +507,6 @@ export default function StoryReadingPage() {
 
       // Handle section unlocks
       if (result.sectionUnlocked?.unlockedSections.length) {
-        console.log('🎉 New sections unlocked:', result.sectionUnlocked.unlockedSections)
         
         // Update section unlock states
         const newUnlockStates = { ...sectionUnlockStates }
@@ -575,7 +529,6 @@ export default function StoryReadingPage() {
 
         // Show unlock message (you could use a toast notification here)
         if (result.sectionUnlocked.message) {
-          console.log('🎉 Unlock message:', result.sectionUnlocked.message)
         }
       }
 
@@ -624,7 +577,6 @@ export default function StoryReadingPage() {
     }
 
     try {
-      console.log('🔓 Checking section unlock conditions...')
 
       // Get current student responses (all), then filter to this story's assessments
       const allResponses = await ResponseStorageService.getResponses({
@@ -680,7 +632,6 @@ export default function StoryReadingPage() {
       const unlockResult = UnlockEngine.checkUnlockConditions(unlockContext)
 
       if (unlockResult.success && unlockResult.unlockedSections.length > 0) {
-        console.log(`✅ Unlocked ${unlockResult.unlockedSections.length} new sections:`, unlockResult.unlockedSections)
 
         // Update QTI story sections
         const updatedStory = { ...qtiStory }
@@ -711,7 +662,6 @@ export default function StoryReadingPage() {
 
         // Show unlock message to user
         if (unlockResult.message) {
-          console.log('🎉 Unlock message:', unlockResult.message)
           // You could show this in a toast notification
         }
       }
@@ -733,7 +683,6 @@ export default function StoryReadingPage() {
       return
     }
 
-    console.log('📖 Navigating to section:', { sectionId, sectionIndex, title: section.title })
     
     setCurrentQTISection(section)
     setCurrentSectionIndex(sectionIndex)

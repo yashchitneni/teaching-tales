@@ -140,8 +140,6 @@ function processResponseData(responseData: QTIResponseSubmission): any {
 
 export async function POST(request: NextRequest) {
   try {
-    console.log('📝 QTI Response submission received');
-
     // Authentication check
     const token = await resolveAuthToken(request);
     if (!token) {
@@ -176,12 +174,6 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    console.log('🔍 Validating response submission:', {
-      assessmentId: body.assessmentId,
-      studentId: body.studentId,
-      itemCount: body.itemResponses?.length || 0
-    });
-
     // Validate request payload
     const validation = validateResponseSubmission(body);
     if (!validation.isValid) {
@@ -201,8 +193,6 @@ export async function POST(request: NextRequest) {
 
     // Process and enrich the response data
     const processedData = processResponseData(body);
-    
-    console.log('📤 Sending processed response to TimeBack QTI API...');
 
     // Submit to TimeBack QTI API (IMS v3p0)
     const timebackResponse = await fetch(`${TIMEBACK_API_URL}/ims/qti/v3p0/responses`, {
@@ -235,8 +225,6 @@ export async function POST(request: NextRequest) {
         { status: timebackResponse.status }
       );
     }
-
-    console.log('✅ Response successfully stored in QTI system');
 
     // Return success response with confirmation
     return NextResponse.json({

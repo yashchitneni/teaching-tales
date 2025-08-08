@@ -70,7 +70,6 @@ export class ErrorRecoveryService {
     const planId = `recovery-${storyId}-${Date.now()}`;
     const operations: RecoveryOperation[] = [];
 
-    console.log('📋 Creating recovery plan for failed OneRoster integration:', {
       storyId,
       stimulusId,
       integrationError: integrationResult.error
@@ -155,7 +154,6 @@ export class ErrorRecoveryService {
     // Store the recovery plan
     this.storeRecoveryPlan(recoveryPlan);
 
-    console.log(`📋 Recovery plan created with ${operations.length} operations`);
     return recoveryPlan;
   }
 
@@ -169,7 +167,6 @@ export class ErrorRecoveryService {
     const errors: string[] = [];
 
     try {
-      console.log('🔄 Executing recovery plan:', planId);
 
       const plan = this.getRecoveryPlan(planId);
       if (!plan) {
@@ -183,7 +180,6 @@ export class ErrorRecoveryService {
       // Execute operations in order
       for (const operation of plan.operations) {
         try {
-          console.log(`🔄 Executing operation: ${operation.operation}`);
           
           operation.status = 'in_progress';
           operation.attempts += 1;
@@ -194,7 +190,6 @@ export class ErrorRecoveryService {
           if (success) {
             operation.status = 'completed';
             completedOperations++;
-            console.log(`✅ Operation completed: ${operation.operation}`);
           } else {
             throw new Error(`Operation ${operation.operation} failed`);
           }
@@ -211,7 +206,6 @@ export class ErrorRecoveryService {
 
           // Retry logic
           if (operation.attempts < operation.maxAttempts) {
-            console.log(`🔄 Retrying operation ${operation.operation} (attempt ${operation.attempts + 1}/${operation.maxAttempts})`);
             
             // Add delay before retry
             await new Promise(resolve => setTimeout(resolve, this.RETRY_DELAY));
@@ -236,7 +230,6 @@ export class ErrorRecoveryService {
 
       const duration = Date.now() - startTime;
       
-      console.log('🔄 Recovery plan execution completed:', {
         planId,
         completed: completedOperations,
         failed: failedOperations,
@@ -296,7 +289,6 @@ export class ErrorRecoveryService {
     try {
       const { type, id } = operation.targetResource;
       
-      console.log(`🔄 Rolling back ${type} ${id}`);
 
       switch (type) {
         case 'class':
@@ -304,17 +296,14 @@ export class ErrorRecoveryService {
         case 'enrollment':
           // OneRoster resources typically can't be deleted, only marked as "tobedeleted"
           // In a real implementation, you would call the appropriate API
-          console.log(`⚠️ OneRoster ${type} ${id} marked for administrative cleanup`);
           return true;
 
         case 'assessment':
           // Assessment cleanup would go here
-          console.log(`🔄 Assessment ${id} rollback completed`);
           return true;
 
         case 'story':
           // Story rollback (if needed)
-          console.log(`🔄 Story ${id} rollback completed`);
           return true;
 
         default:
@@ -333,11 +322,9 @@ export class ErrorRecoveryService {
    */
   private static async executeRetryOperation(operation: RecoveryOperation): Promise<boolean> {
     try {
-      console.log(`🔄 Retrying operation: ${operation.operation}`);
 
       // For now, we'll mark retry operations as completed
       // In a real implementation, you would re-attempt the original operation
-      console.log(`⚠️ Retry operation logged for manual intervention: ${operation.operation}`);
       
       return true;
 
@@ -355,7 +342,6 @@ export class ErrorRecoveryService {
       const { type, id } = operation.targetResource;
 
       if (type === 'story' && operation.operation === 'clean_oneroster_metadata') {
-        console.log(`🧹 Cleaning OneRoster metadata from stimulus ${id}`);
         
         try {
           await updateStimulus(id, {
@@ -369,7 +355,6 @@ export class ErrorRecoveryService {
             }
           });
           
-          console.log(`✅ Stimulus metadata cleaned: ${id}`);
           return true;
 
         } catch (updateError) {
@@ -391,7 +376,6 @@ export class ErrorRecoveryService {
    */
   private static async executeFallbackOperation(operation: RecoveryOperation): Promise<boolean> {
     try {
-      console.log(`🔄 Executing fallback: ${operation.operation}`);
       
       // Fallback operations would be implemented here
       // For example, creating a simplified class structure or using default settings
@@ -475,7 +459,6 @@ export class ErrorRecoveryService {
       return { executed: 0, successful: 0, failed: 0 };
     }
 
-    console.log(`🔄 Executing ${pendingPlans.length} pending recovery plans...`);
 
     let successful = 0;
     let failed = 0;
@@ -497,7 +480,6 @@ export class ErrorRecoveryService {
       await new Promise(resolve => setTimeout(resolve, 1000));
     }
 
-    console.log(`✅ Recovery execution completed: ${successful} successful, ${failed} failed`);
 
     return {
       executed: pendingPlans.length,
@@ -520,7 +502,6 @@ export class ErrorRecoveryService {
       
       localStorage.setItem(this.STORAGE_KEY, JSON.stringify(activePlans));
       
-      console.log(`🧹 Cleared ${clearedCount} completed recovery plans`);
       return clearedCount;
 
     } catch (error) {

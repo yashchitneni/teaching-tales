@@ -23,8 +23,6 @@ export default function MyStoriesPage() {
   const loadStoriesFromAPI = async () => {
     try {
       setLoading(true)
-      console.log('📚 Loading stories from QTI API...')
-      
       // Load stories from QTI Stimuli API
       const storiesFromAPI = await StoryStorageService.getUserStories()
       
@@ -34,20 +32,17 @@ export default function MyStoriesPage() {
       )
       
       setStories(sortedStories)
-      console.log(`✅ Loaded ${sortedStories.length} stories from QTI API`)
       
     } catch (error) {
       console.error('❌ Error loading stories from QTI API:', error)
       
       // Fallback to localStorage if QTI API fails
-      console.log('🔄 Falling back to localStorage...')
       try {
         const storedStories = JSON.parse(localStorage.getItem('teaching-tales-stories') || '[]')
         const sortedStories = storedStories.sort((a: any, b: any) => 
           new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
         )
         setStories(sortedStories)
-        console.log(`📱 Loaded ${sortedStories.length} stories from localStorage fallback`)
       } catch (localError) {
         console.error('❌ Fallback to localStorage also failed:', localError)
         setStories([])
@@ -68,16 +63,12 @@ export default function MyStoriesPage() {
   const handleDeleteStory = async (storyId: string) => {
     if (confirm('Are you sure you want to delete this story? This action cannot be undone.')) {
       try {
-        console.log('🗑️ Deleting story:', storyId)
-        
         // Delete from QTI API
         await StoryStorageService.deleteStory(storyId)
         
         // Update local state
         const updatedStories = stories.filter(story => story.id !== storyId)
         setStories(updatedStories)
-        
-        console.log('✅ Story deleted successfully')
       } catch (error) {
         console.error('❌ Error deleting story:', error)
         alert('Failed to delete story. Please try again.')

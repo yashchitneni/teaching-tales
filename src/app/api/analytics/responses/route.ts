@@ -50,8 +50,6 @@ interface AnalyticsStorage {
  */
 export async function POST(request: NextRequest) {
   try {
-    console.log('📊 Received analytics batch submission');
-
     // Parse request body
     const batch: AnalyticsBatch = await request.json();
     
@@ -79,14 +77,10 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    console.log(`📦 Processing analytics batch: ${batch.batchId} (${batch.responses.length} responses)`);
-
     // Store analytics data
     const result = await storeAnalyticsBatch(batch);
 
     if (result.success) {
-      console.log(`✅ Analytics batch stored successfully: ${batch.batchId}`);
-      
       return NextResponse.json({
         success: true,
         batchId: batch.batchId,
@@ -128,8 +122,6 @@ export async function GET(request: NextRequest) {
     const storyId = searchParams.get('storyId');
     const sessionId = searchParams.get('sessionId');
     const limit = parseInt(searchParams.get('limit') || '100');
-
-    console.log('📊 Analytics data request:', { studentId, storyId, sessionId, limit });
 
     // Retrieve analytics data
     const result = await getAnalyticsData({
@@ -302,9 +294,7 @@ async function loadAnalyticsStorage(): Promise<AnalyticsStorage> {
 async function saveAnalyticsStorage(storage: AnalyticsStorage): Promise<void> {
   try {
     // In production, this would save to a database
-    // For development, we'll log the operation
-    
-    console.log(`💾 Analytics storage updated: ${storage.totalResponses} total responses`);
+    // For development, we'll implement a simple storage approach
     
     // In a real implementation, you would:
     // - Save to database (PostgreSQL, MongoDB, etc.)
@@ -324,8 +314,6 @@ function processAnalyticsAsync(batch: AnalyticsBatch): void {
   // Process analytics in the background without blocking the response
   setTimeout(async () => {
     try {
-      console.log(`📈 Processing analytics insights for batch: ${batch.batchId}`);
-      
       // Calculate batch statistics
       const stats = {
         batchId: batch.batchId,
@@ -339,8 +327,6 @@ function processAnalyticsAsync(batch: AnalyticsBatch): void {
         }, {} as Record<string, number>),
         timestamp: Date.now()
       };
-      
-      console.log('📊 Batch analytics:', stats);
       
       // In production, you would:
       // - Send to analytics service (Google Analytics, Mixpanel, etc.)

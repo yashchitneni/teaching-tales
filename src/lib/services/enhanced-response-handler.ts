@@ -108,7 +108,6 @@ export class EnhancedResponseHandler {
     const startTime = Date.now();
     
     try {
-      console.log('🔄 Processing enhanced QTI response:', {
         questionId: question.id,
         assessmentId: assessment.id,
         sectionId: section.id,
@@ -140,7 +139,6 @@ export class EnhancedResponseHandler {
       // Process response locally for immediate feedback
       const processedResponse = await this.processResponseLocally(question, response);
       
-      console.log('✅ Local response processing completed:', {
         score: `${processedResponse.score}/${processedResponse.maxScore}`,
         correct: processedResponse.isCorrect
       });
@@ -196,7 +194,6 @@ export class EnhancedResponseHandler {
     
     try {
       // Step 1: Store response in backend
-      console.log('💾 Storing response in backend...');
       const storedResponse = await ResponseStorageService.storeResponse(
         responseData.assessmentId,
         responseData.studentId,
@@ -213,7 +210,6 @@ export class EnhancedResponseHandler {
       // Step 2: Submit to OneRoster gradebook (if integrated)
       let gradebookResult;
       if (story.metadata.oneRosterIntegration?.classId) {
-        console.log('📊 Submitting to OneRoster gradebook...');
         gradebookResult = await this.submitToGradebook(
           responseData,
           processedResponse,
@@ -222,7 +218,6 @@ export class EnhancedResponseHandler {
       }
 
       // Step 3: Check for section unlocks
-      console.log('🔓 Checking section unlock conditions...');
       const sectionUnlockResult = await this.checkSectionUnlocks(
         responseData,
         processedResponse,
@@ -245,7 +240,6 @@ export class EnhancedResponseHandler {
       console.error('❌ Online response processing failed:', error);
       
       // Fall back to offline processing
-      console.log('🔄 Falling back to offline processing...');
       return await this.processResponseOffline(responseData, processedResponse);
     }
   }
@@ -259,7 +253,6 @@ export class EnhancedResponseHandler {
   ): Promise<ResponseProcessingResult> {
     
     try {
-      console.log('📱 Processing response offline...');
 
       // Store in offline queue
       this.offlineQueue.responses.push(responseData);
@@ -268,7 +261,6 @@ export class EnhancedResponseHandler {
       // Add to pending batch
       this.addToBatch(responseData);
 
-      console.log('✅ Response queued for offline sync');
 
       return {
         success: true,
@@ -499,7 +491,6 @@ export class EnhancedResponseHandler {
       this.batchTimer = null;
     }
 
-    console.log(`📦 Processing response batch: ${batch.batchId} (${batch.responses.length} responses)`);
 
     // Add to offline queue
     this.offlineQueue.batches.push(batch);
@@ -539,7 +530,6 @@ export class EnhancedResponseHandler {
       if (response.ok) {
         batch.status = 'completed';
         batch.submittedAt = Date.now();
-        console.log(`✅ Response batch submitted successfully: ${batch.batchId}`);
       } else {
         throw new Error(`HTTP ${response.status}: ${response.statusText}`);
       }
@@ -553,7 +543,6 @@ export class EnhancedResponseHandler {
 
       // Retry if under limit
       if (batch.retryCount < this.MAX_RETRY_ATTEMPTS) {
-        console.log(`🔄 Scheduling batch retry: ${batch.batchId} (attempt ${batch.retryCount + 1})`);
         
         setTimeout(() => {
           this.submitBatch(batch);
@@ -585,7 +574,6 @@ export class EnhancedResponseHandler {
     const errors: string[] = [];
 
     try {
-      console.log(`🔄 Syncing ${this.offlineQueue.responses.length} offline responses...`);
 
       // Process offline responses
       for (const responseData of this.offlineQueue.responses) {
@@ -636,7 +624,6 @@ export class EnhancedResponseHandler {
       this.offlineQueue.batches = this.offlineQueue.batches.filter(b => b.status !== 'completed');
       this.offlineQueue.lastSyncAttempt = Date.now();
 
-      console.log(`✅ Offline sync completed: ${synced} synced, ${failed} failed`);
 
       return { synced, failed, errors };
 
@@ -689,7 +676,6 @@ export class EnhancedResponseHandler {
       const stored = localStorage.getItem(this.STORAGE_KEY);
       if (stored) {
         this.offlineQueue = { ...this.offlineQueue, ...JSON.parse(stored) };
-        console.log(`📱 Loaded ${this.offlineQueue.responses.length} offline responses`);
       }
     } catch (error) {
       console.error('❌ Failed to load offline queue:', error);
@@ -728,7 +714,6 @@ export class EnhancedResponseHandler {
       this.batchTimer = null;
     }
     localStorage.removeItem(this.STORAGE_KEY);
-    console.log('🧹 Offline response data cleared');
   }
 }
 
@@ -738,10 +723,8 @@ if (typeof window !== 'undefined') {
   
   // Auto-sync when connection is restored
   window.addEventListener('online', () => {
-    console.log('🌐 Connection restored, syncing offline responses...');
     EnhancedResponseHandler.syncOfflineResponses().then(result => {
       if (result.synced > 0) {
-        console.log(`✅ Synced ${result.synced} offline responses`);
       }
     });
   });

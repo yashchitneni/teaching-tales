@@ -114,7 +114,6 @@ export class RelationshipManager {
     title?: string,
     parentId?: string
   ): void {
-    console.log(`📝 Registering component: ${id} (${type})`);
 
     const component: ComponentReference = {
       id,
@@ -175,7 +174,6 @@ export class RelationshipManager {
       metadata: { required: true, strength: 1.0 }
     });
 
-    console.log(`🔗 Added parent-child relationship: ${parentId} -> ${childId}`);
   }
 
   /**
@@ -209,7 +207,6 @@ export class RelationshipManager {
       metadata: { required, strength: required ? 1.0 : 0.5 }
     });
 
-    console.log(`🎯 Added dependency: ${dependentId} depends on ${dependencyId}`);
   }
 
   /**
@@ -236,7 +233,6 @@ export class RelationshipManager {
     }
 
     this.relationships.delete(relationshipId);
-    console.log(`🗑️ Removed relationship: ${relationshipId}`);
     return true;
   }
 
@@ -402,7 +398,6 @@ export class RelationshipManager {
    * @returns Validation result with detailed analysis
    */
   validateHierarchy(): HierarchyValidationResult {
-    console.log('🔍 Validating hierarchy structure...');
 
     const errors: ValidationError[] = [];
     const warnings: ValidationWarning[] = [];
@@ -462,7 +457,6 @@ export class RelationshipManager {
         : `Hierarchy validation failed with ${errors.length} error(s) and ${warnings.length} warning(s)`
     };
 
-    console.log('✅ Hierarchy validation completed:', result.summary);
     return result;
   }
 

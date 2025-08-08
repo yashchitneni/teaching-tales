@@ -55,8 +55,6 @@ export class IntegrationTestUtils {
     const steps: TestStepResult[] = [];
 
     try {
-      console.log('🧪 Starting complete integration workflow test...');
-
       // Step 1: Create mock story data
       const mockData = this.createMockStoryData();
       steps.push({
@@ -124,8 +122,6 @@ export class IntegrationTestUtils {
       }
 
       const totalDuration = Date.now() - startTime;
-      
-      console.log('✅ Complete integration workflow test completed successfully');
 
       return {
         testName,
@@ -161,8 +157,6 @@ export class IntegrationTestUtils {
     const steps: TestStepResult[] = [];
 
     try {
-      console.log('🧪 Testing OneRoster integration in isolation...');
-
       // Create test data
       const mockData = this.createMockStoryData();
       const mockAssessments = this.createMockAssessments();
@@ -215,8 +209,6 @@ export class IntegrationTestUtils {
     const steps: TestStepResult[] = [];
 
     try {
-      console.log('🧪 Testing error recovery workflow...');
-
       // Create mock failed integration
       const mockFailedIntegration = {
         success: false,
@@ -297,8 +289,6 @@ export class IntegrationTestUtils {
     results: IntegrationTestResult[];
     summary: string;
   }> {
-    console.log('🧪 Running all integration tests...');
-
     const tests = [
       () => this.testCompleteIntegrationWorkflow(),
       () => this.testOneRosterIntegrationOnly(),
@@ -312,9 +302,7 @@ export class IntegrationTestUtils {
         const result = await test();
         results.push(result);
         
-        if (result.success) {
-          console.log(`✅ ${result.testName}: PASSED (${result.duration}ms)`);
-        } else {
+        if (!result.success) {
           console.error(`❌ ${result.testName}: FAILED - ${result.error}`);
         }
 
@@ -337,8 +325,6 @@ export class IntegrationTestUtils {
     const failedTests = results.filter(r => !r.success).length;
     
     const summary = `Integration Tests: ${passedTests}/${results.length} passed, ${failedTests} failed`;
-    
-    console.log(`🧪 ${summary}`);
 
     return {
       totalTests: results.length,

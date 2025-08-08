@@ -99,7 +99,6 @@ export class UnlockEngine {
     const conditionsNotMet: string[] = [];
 
     try {
-      console.log('🔓 Checking unlock conditions for assessment:', context.assessmentId);
 
       // Get current section states
       const sectionStates = [...context.sectionStates];
@@ -121,7 +120,6 @@ export class UnlockEngine {
           section.isUnlocked = true;
           section.unlockedAt = Date.now();
           unlockedSections.push(section.id);
-          console.log(`✅ Unlocked section: ${section.id} (${section.title})`);
         }
       }
 
@@ -146,7 +144,6 @@ export class UnlockEngine {
         }
       };
 
-      console.log('🔓 Unlock evaluation completed:', {
         unlockedCount: unlockedSections.length,
         nextAvailable: nextAvailableSections.length,
         evaluationTime: `${evaluationTime}ms`
