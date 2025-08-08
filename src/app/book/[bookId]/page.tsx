@@ -779,7 +779,7 @@ export default function StoryReadingPage() {
     }
   }, [currentSectionIndex, currentQuestionIndex])
 
-  const handleQuestionAnswer = (answerIndex: number) => {
+  const handleQuestionAnswer = async (answerIndex: number) => {
     // Special case: -1 means "continue" button was clicked after answering
     if (answerIndex === -1) {
       // Clear selected answer for next question
@@ -813,10 +813,55 @@ export default function StoryReadingPage() {
       return
     }
 
-    // Regular answer submission - save the answer
+    // Regular answer submission - save the answer locally first
     const newAnswers = [...answers]
     newAnswers[currentQuestionIndex] = answerIndex
     setAnswers(newAnswers)
+
+    // Persist via QTI pipeline if available
+    try {
+      const studentId = user?.sourcedId || user?.id || user?.cognitoId;
+      if (qtiStory && currentQTISection && studentId) {
+        const currentQs = getCurrentSectionQuestions()
+        const legacyQ = currentQs[currentQuestionIndex]
+        if (legacyQ) {
+          // Find the matching assessment and QTI question by ID
+          const assessment = qtiStory.assessments.find(a => 
+            String(a.sectionId) === String(currentQTISection.id) && a.questions.some(q => q.id === legacyQ.id)
+          ) || qtiStory.assessments.find(a => String(a.sectionId) === String(currentQTISection.id))
+
+          const qtiQuestion = assessment?.questions.find(q => q.id === legacyQ.id)
+          if (assessment && qtiQuestion) {
+            setProcessingResponse(qtiQuestion.id)
+            const choiceIdentifier = qtiQuestion.interactions?.[0]?.choices?.[answerIndex]?.identifier ?? String(answerIndex)
+            const timeSpent = Date.now() - startTime
+            const attempts = (responseResults[qtiQuestion.id]?.processedResponse.attempts || 0) + 1
+            const result = await EnhancedResponseHandler.processResponse(
+              qtiQuestion,
+              assessment,
+              currentQTISection,
+              qtiStory,
+              studentId,
+              choiceIdentifier,
+              timeSpent,
+              attempts
+            )
+
+            setResponseResults(prev => ({
+              ...prev,
+              [qtiQuestion.id]: result
+            }))
+
+            // Recalculate unlocks
+            await updateSectionUnlockStates()
+          }
+        }
+      }
+    } catch (e) {
+      console.error('❌ QTI persistence failed:', e)
+    } finally {
+      setProcessingResponse(null)
+    }
   }
 
   // Prepare next chapter options and chapter-wide quiz
@@ -1073,28 +1118,7 @@ export default function StoryReadingPage() {
             </div>
           )}
 
-          {/* QTI Questions (if available) */}
-          {qtiStory && currentQTISection && (
-            <div className="p-4 border-b border-gray-200">
-              <h4 className="font-semibold text-sm text-gray-700 mb-3">
-                Section Questions
-              </h4>
-              
-              {qtiStory.assessments
-                .filter(assessment => String(assessment.sectionId) === String(currentQTISection.id))
-                .flatMap(assessment => assessment.questions)
-                .map(question => (
-                  <QTIQuestionRenderer
-                    key={question.id}
-                    question={question}
-                    onResponse={handleQTIQuestionAnswer}
-                    showFeedback={responseProcessingEnabled}
-                    className="mb-4 text-sm"
-                  />
-                ))
-              }
-            </div>
-          )}
+          {/* Removed duplicate unstyled QTI question list to avoid duplication. GuidedQuestions remains as the styled UI. */}
 
           {/* Legacy Questions Panel */}
           {!showAssessment ? (
