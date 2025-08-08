@@ -279,7 +279,16 @@ export default function StoryReadingPage() {
             id: result.story.id,
             title: result.story.title,
             sections: qtiSections.map((section, index) => ({
-              id: parseInt(section.id.replace(/\D/g, '')) || index,
+              id: (() => {
+                // Ensure robustness: handle numeric or string ids
+                const raw = section.id as any
+                if (typeof raw === 'number') return raw
+                if (typeof raw === 'string') {
+                  const num = parseInt(raw.replace(/\D/g, ''))
+                  return Number.isFinite(num) ? num : index
+                }
+                return index
+              })(),
               content: processVocabularyWords(section.content),
               questions: result.story.assessments
                 .filter(assessment => assessment.sectionId === section.id)

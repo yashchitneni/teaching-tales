@@ -505,7 +505,7 @@ export class QTIStoryLoaderService {
 
     if (storyData.sections && Array.isArray(storyData.sections)) {
       storyData.sections.forEach((sectionData: any, index: number) => {
-        const sectionId = sectionData.id || `section-${index}`;
+        const sectionId = String(sectionData.id ?? `section-${index}`);
         const associatedAssessment = assessments.find(a => 
           a.sectionId === sectionId || a.id.includes(sectionId)
         );
