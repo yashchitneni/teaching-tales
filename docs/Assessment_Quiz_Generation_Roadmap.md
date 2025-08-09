@@ -70,15 +70,20 @@ Notes
 
 ---
 
-## Phase 3 — Questions generation API endpoint
-- [ ] Create `src/app/api/generate-questions/route.ts`
-  - [ ] Auth: cookie/bearer; verify via `${NEXT_PUBLIC_TIMEBACK_API_URL}/api/auth/me`
-  - [ ] Input: `{ sectionContent, sectionIndex, gradeLevel, storyMetadata, constraints? }`
+## Phase 3 — Questions generation API endpoint 🚧 IN PROGRESS
+- [x] Create `src/app/api/generate-questions/route.ts` ✅
+  - [x] Feature flag check (fail-fast mechanism) ✅
+  - [x] POST method skeleton with comprehensive JSDoc ✅
+  - [x] Structured logging with request tracking ✅
+  - [x] Auth: cookie/bearer; verify via `${NEXT_PUBLIC_TIMEBACK_API_URL}/api/auth/me` ✅
+  - [x] Input: `{ sectionContent, sectionIndex, gradeLevel, storyMetadata, constraints? }` ✅
   - [ ] Use `GeminiClient` + `question-generation-service` from Phase 2
   - [ ] Run validation; return `{ sectionIndex, questions[] }`
   - [ ] Log latency/size; redact PII
 - [ ] Integration test for API endpoint
   - [ ] Test auth, validation, error handling
+
+**📋 Detailed Phase 3 roadmap: `docs/Phase_3_Detailed_Roadmap.md` 🚧 IN PROGRESS**
 
 ---
 

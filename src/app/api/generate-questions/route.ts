@@ -1,0 +1,469 @@
+import { NextRequest, NextResponse } from 'next/server';
+import { cookies } from 'next/headers';
+import { QuestionGenerationService, SectionQuestionGenInput, SectionQuestionsResult } from '@/lib/ai';
+import { FEATURE_FLAGS } from '@/lib/config';
+
+const TIMEBACK_API_URL = process.env.NEXT_PUBLIC_TIMEBACK_API_URL || 'http://localhost:8080';
+
+/**
+ * POST /api/generate-questions
+ * 
+ * Generates comprehension questions for a specific story section
+ * 
+ * @route POST /api/generate-questions
+ * @auth Required (TimeBack cookie or Bearer token)
+ * @feature Gated by QTI_SPLIT_GENERATION_ENABLED flag (fail-fast)
+ * 
+ * @body {SectionQuestionGenInput} Section content and generation parameters
+ * @returns {SectionQuestionsResult} Generated questions with metadata
+ * 
+ * @example Request:
+ * ```json
+ * {
+ *   "sectionContent": "Alice found a mysterious door in the enchanted forest...",
+ *   "sectionIndex": 0,
+ *   "gradeLevel": "4-5",
+ *   "constraints": {
+ *     "questionCount": 2,
+ *     "questionTypes": ["comprehension", "inference"]
+ *   },
+ *   "storyMetadata": {
+ *     "universe": "Fantasy Adventure",
+ *     "character": "Alice",
+ *     "spark": "Mysterious Door",
+ *     "studentId": "student-123"
+ *   }
+ * }
+ * ```
+ * 
+ * @example Success Response:
+ * ```json
+ * {
+ *   "success": true,
+ *   "data": {
+ *     "sectionIndex": 0,
+ *     "questions": [
+ *       {
+ *         "id": "q1",
+ *         "type": "multiple_choice",
+ *         "question": "What did Alice find in the forest?",
+ *         "options": ["A door", "A key", "A rabbit", "A tree"],
+ *         "correct": 0,
+ *         "explanation": "The text states Alice found a mysterious door.",
+ *         "questionType": "comprehension",
+ *         "difficultyLevel": 2
+ *       }
+ *     ],
+ *     "metadata": {
+ *       "generationTimeMs": 1500,
+ *       "modelUsed": "gemini-2.0-flash",
+ *       "retryCount": 0,
+ *       "validationPassed": true
+ *     }
+ *   }
+ * }
+ * ```
+ * 
+ * @example Error Response:
+ * ```json
+ * {
+ *   "success": false,
+ *   "error": {
+ *     "message": "Split question generation is not enabled",
+ *     "code": "FEATURE_DISABLED"
+ *   }
+ * }
+ * ```
+ */
+export async function POST(request: NextRequest) {
+  try {
+    // Feature flag check (fail fast - before any processing)
+    if (!FEATURE_FLAGS.QTI_SPLIT_GENERATION_ENABLED) {
+      console.log('⚠️ Split generation disabled by feature flag');
+      return NextResponse.json(
+        { 
+          success: false, 
+          error: { 
+            message: 'Split question generation is not enabled',
+            code: 'FEATURE_DISABLED'
+          } 
+        },
+        { status: 501 } // Not Implemented
+      );
+    }
+
+    const requestId = crypto.randomUUID();
+    console.log('🚀 Split generation enabled, processing request:', {
+      flagEnabled: FEATURE_FLAGS.QTI_SPLIT_GENERATION_ENABLED,
+      timestamp: new Date().toISOString(),
+      requestId
+    });
+
+    // Authentication implementation (Task 3.3)
+    // Get token from cookie or header (following /api/generate-story pattern)
+    const cookieStore = await cookies();
+    let token = cookieStore.get('timeback-access-token')?.value;
+
+    if (!token) {
+      const authHeader = request.headers.get('authorization');
+      if (authHeader?.startsWith('Bearer ')) {
+        token = authHeader.substring(7);
+      }
+    }
+
+    if (!token) {
+      console.log('❌ Authentication failed: No token provided', {
+        requestId,
+        timestamp: new Date().toISOString()
+      });
+      return NextResponse.json(
+        { success: false, error: { message: 'Not authenticated' } },
+        { status: 401 }
+      );
+    }
+
+    // Validate token with TimeBack API
+    let userData;
+    try {
+      const userResponse = await fetch(`${TIMEBACK_API_URL}/api/auth/me`, {
+        headers: { 'Authorization': `Bearer ${token}` },
+      });
+
+      if (!userResponse.ok) {
+        console.log('❌ Authentication failed: TimeBack API rejected token', {
+          requestId,
+          status: userResponse.status,
+          statusText: userResponse.statusText,
+          timestamp: new Date().toISOString()
+        });
+        return NextResponse.json(
+          { success: false, error: { message: 'Invalid or expired token' } },
+          { status: 401 }
+        );
+      }
+
+      userData = await userResponse.json();
+      
+      if (!userData.success || !userData.data) {
+        console.log('❌ Authentication failed: Invalid user data from TimeBack', {
+          requestId,
+          hasSuccess: !!userData.success,
+          hasData: !!userData.data,
+          timestamp: new Date().toISOString()
+        });
+        return NextResponse.json(
+          { success: false, error: { message: 'Invalid or expired token' } },
+          { status: 401 }
+        );
+      }
+
+    } catch (error: any) {
+      console.error('❌ Authentication failed: TimeBack API error', {
+        requestId,
+        error: error.message,
+        timestamp: new Date().toISOString()
+      });
+      return NextResponse.json(
+        { success: false, error: { message: 'Authentication service unavailable' } },
+        { status: 503 }
+      );
+    }
+
+    // Extract user information for logging and request processing
+    const timebackUser = userData.data.user;
+    const authenticatedUser = {
+      id: timebackUser.id || timebackUser.cognitoId,
+      email: timebackUser.email,
+      cognitoId: timebackUser.cognitoId,
+      role: timebackUser.role === 'student' ? 'student' : 'student', // Always map to student for our app
+      name: timebackUser.name || timebackUser.email?.split('@')[0],
+    };
+
+    console.log('✅ Authentication successful', {
+      requestId,
+      userId: authenticatedUser.id,
+      userEmail: authenticatedUser.email?.substring(0, 3) + '***', // PII redaction
+      timestamp: new Date().toISOString()
+    });
+
+    // Request validation and processing (Task 3.4)
+    let body: SectionQuestionGenInput;
+    try {
+      body = await request.json();
+    } catch (error) {
+      console.log('❌ Request parsing failed: Invalid JSON', {
+        requestId,
+        timestamp: new Date().toISOString()
+      });
+      return NextResponse.json(
+        { 
+          success: false, 
+          error: { 
+            message: 'Invalid JSON in request body',
+            code: 'INVALID_JSON'
+          } 
+        },
+        { status: 400 }
+      );
+    }
+
+    // Validate required fields
+    if (!body.sectionContent || !body.gradeLevel || typeof body.sectionIndex !== 'number') {
+      console.log('❌ Request validation failed: Missing required fields', {
+        requestId,
+        hasSectionContent: !!body.sectionContent,
+        hasGradeLevel: !!body.gradeLevel,
+        sectionIndexType: typeof body.sectionIndex,
+        timestamp: new Date().toISOString()
+      });
+      return NextResponse.json(
+        { 
+          success: false, 
+          error: { 
+            message: 'Missing required fields',
+            details: 'sectionContent, gradeLevel, and sectionIndex are required',
+            code: 'MISSING_REQUIRED_FIELDS'
+          } 
+        },
+        { status: 400 }
+      );
+    }
+
+    // Input sanitization for security
+    // Sanitize section content length
+    if (body.sectionContent.length > 10000) {
+      console.log('❌ Request validation failed: Section content too long', {
+        requestId,
+        contentLength: body.sectionContent.length,
+        timestamp: new Date().toISOString()
+      });
+      return NextResponse.json(
+        { 
+          success: false, 
+          error: { 
+            message: 'Section content too long (max 10000 characters)',
+            code: 'CONTENT_TOO_LONG'
+          } 
+        },
+        { status: 400 }
+      );
+    }
+
+    if (body.sectionContent.length < 10) {
+      console.log('❌ Request validation failed: Section content too short', {
+        requestId,
+        contentLength: body.sectionContent.length,
+        timestamp: new Date().toISOString()
+      });
+      return NextResponse.json(
+        { 
+          success: false, 
+          error: { 
+            message: 'Section content too short (min 10 characters)',
+            code: 'CONTENT_TOO_SHORT'
+          } 
+        },
+        { status: 400 }
+      );
+    }
+
+    // Validate sectionIndex bounds
+    if (body.sectionIndex < 0 || body.sectionIndex > 100) {
+      console.log('❌ Request validation failed: Invalid section index', {
+        requestId,
+        sectionIndex: body.sectionIndex,
+        timestamp: new Date().toISOString()
+      });
+      return NextResponse.json(
+        { 
+          success: false, 
+          error: { 
+            message: 'Invalid section index (must be between 0 and 100)',
+            code: 'INVALID_SECTION_INDEX'
+          } 
+        },
+        { status: 400 }
+      );
+    }
+
+    // Validate grade level format using existing patterns
+    const validGradeLevels = ['K-1', '2-3', '4-5', '6-8'];
+    if (!validGradeLevels.includes(body.gradeLevel)) {
+      console.log('❌ Request validation failed: Invalid grade level', {
+        requestId,
+        gradeLevel: body.gradeLevel,
+        validGradeLevels,
+        timestamp: new Date().toISOString()
+      });
+      return NextResponse.json(
+        { 
+          success: false, 
+          error: { 
+            message: `Invalid grade level. Must be one of: ${validGradeLevels.join(', ')}`,
+            code: 'INVALID_GRADE_LEVEL'
+          } 
+        },
+        { status: 400 }
+      );
+    }
+
+    // Sanitize optional constraints if provided
+    if (body.constraints) {
+      // Validate questionCount
+      if (body.constraints.questionCount !== undefined) {
+        if (typeof body.constraints.questionCount !== 'number' || 
+            body.constraints.questionCount < 1 || 
+            body.constraints.questionCount > 5) {
+          console.log('❌ Request validation failed: Invalid question count', {
+            requestId,
+            questionCount: body.constraints.questionCount,
+            timestamp: new Date().toISOString()
+          });
+          return NextResponse.json(
+            { 
+              success: false, 
+              error: { 
+                message: 'Invalid question count (must be between 1 and 5)',
+                code: 'INVALID_QUESTION_COUNT'
+              } 
+            },
+            { status: 400 }
+          );
+        }
+      }
+
+      // Validate questionTypes
+      if (body.constraints.questionTypes) {
+        const validTypes = ['comprehension', 'vocabulary', 'inference'];
+        const invalidTypes = body.constraints.questionTypes.filter(type => !validTypes.includes(type));
+        if (invalidTypes.length > 0) {
+          console.log('❌ Request validation failed: Invalid question types', {
+            requestId,
+            invalidTypes,
+            validTypes,
+            timestamp: new Date().toISOString()
+          });
+          return NextResponse.json(
+            { 
+              success: false, 
+              error: { 
+                message: `Invalid question types: ${invalidTypes.join(', ')}. Valid types: ${validTypes.join(', ')}`,
+                code: 'INVALID_QUESTION_TYPES'
+              } 
+            },
+            { status: 400 }
+          );
+        }
+      }
+
+      // Validate length constraints
+      if (body.constraints.maxQuestionLength !== undefined) {
+        if (typeof body.constraints.maxQuestionLength !== 'number' || 
+            body.constraints.maxQuestionLength < 10 || 
+            body.constraints.maxQuestionLength > 500) {
+          return NextResponse.json(
+            { 
+              success: false, 
+              error: { 
+                message: 'Invalid maxQuestionLength (must be between 10 and 500)',
+                code: 'INVALID_MAX_QUESTION_LENGTH'
+              } 
+            },
+            { status: 400 }
+          );
+        }
+      }
+
+      if (body.constraints.maxOptionLength !== undefined) {
+        if (typeof body.constraints.maxOptionLength !== 'number' || 
+            body.constraints.maxOptionLength < 5 || 
+            body.constraints.maxOptionLength > 200) {
+          return NextResponse.json(
+            { 
+              success: false, 
+              error: { 
+                message: 'Invalid maxOptionLength (must be between 5 and 200)',
+                code: 'INVALID_MAX_OPTION_LENGTH'
+              } 
+            },
+            { status: 400 }
+          );
+        }
+      }
+    }
+
+    // Validate optional storyMetadata if provided
+    if (body.storyMetadata) {
+      const requiredMetadataFields = ['universe', 'character', 'spark', 'studentId'];
+      const missingFields = requiredMetadataFields.filter(field => !body.storyMetadata![field]);
+      if (missingFields.length > 0) {
+        console.log('❌ Request validation failed: Incomplete story metadata', {
+          requestId,
+          missingFields,
+          timestamp: new Date().toISOString()
+        });
+        return NextResponse.json(
+          { 
+            success: false, 
+            error: { 
+              message: `Missing required story metadata fields: ${missingFields.join(', ')}`,
+              code: 'INCOMPLETE_STORY_METADATA'
+            } 
+          },
+          { status: 400 }
+        );
+      }
+    }
+
+    console.log('✅ Request validation successful', {
+      requestId,
+      sectionIndex: body.sectionIndex,
+      gradeLevel: body.gradeLevel,
+      contentLength: body.sectionContent.length,
+      hasConstraints: !!body.constraints,
+      hasStoryMetadata: !!body.storyMetadata,
+      timestamp: new Date().toISOString()
+    });
+
+    // Service integration will be added in task 3.5
+    // Error handling will be enhanced in task 3.6
+
+    // Placeholder response for now (includes validated request data)
+    return NextResponse.json({
+      success: true,
+      data: {
+        message: 'Request validation and processing implemented - implementation continues in subsequent tasks',
+        phase: 'Phase 3 Task 3.4 Complete',
+        validatedInput: {
+          sectionIndex: body.sectionIndex,
+          gradeLevel: body.gradeLevel,
+          contentLength: body.sectionContent.length,
+          questionCount: body.constraints?.questionCount || 2,
+          questionTypes: body.constraints?.questionTypes || ['comprehension', 'inference']
+        },
+        user: {
+          id: authenticatedUser.id,
+          name: authenticatedUser.name
+        }
+      }
+    });
+
+  } catch (error: any) {
+    console.error('❌ Unexpected error in generate-questions endpoint:', {
+      error: error.message,
+      stack: error.stack,
+      timestamp: new Date().toISOString()
+    });
+    
+    return NextResponse.json(
+      { 
+        success: false, 
+        error: { 
+          message: 'Internal server error',
+          code: 'INTERNAL_ERROR'
+        } 
+      },
+      { status: 500 }
+    );
+  }
+}
