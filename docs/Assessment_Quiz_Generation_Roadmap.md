@@ -2,6 +2,7 @@
 
 - Reference: `docs/Assessment_Quiz_Generation_Nuclear_Plan.md`
 - Objective: Split story generation and question generation, per-section, gated by feature flags, with minimal diffs to avoid conflicts.
+- **Key Insight**: Questions can be generated asynchronously after story display - users read first, questions appear when ready.
 
 ---
 
@@ -52,6 +53,8 @@ Notes
 - [ ] Add unit tests for prompt and service
   - [ ] Mock AI responses, test validation integration
 
+**📋 Detailed Phase 2 roadmap: `docs/Phase_2_Detailed_Roadmap.md`**
+
 ---
 
 ## Phase 3 — Questions generation API endpoint
@@ -75,25 +78,28 @@ Notes
 
 ---
 
-## Phase 5 — Story save orchestration (flag-gated)
+## Phase 5 — Story save orchestration (flag-gated, async approach)
 - [ ] In `src/lib/services/story-storage-service.ts` update `saveStory`:
   - [ ] If flag off → current behavior (no changes)
-  - [ ] If flag on:
-    - [ ] Step 1: Create stimulus (sections only)
-    - [ ] Step 2: For each section, call `/api/generate-questions` (parallel with concurrency cap)
-    - [ ] Step 3: Validate; dedupe; retry once on failure
-    - [ ] Step 4: `createSectionAssessmentsFromQuestions` to persist assessments
-    - [ ] Step 5: Update stimulus metadata with `assessmentIds`
-- [ ] Integration test: full story save flow with flag on/off
+  - [ ] If flag on (SIMPLIFIED ASYNC APPROACH):
+    - [ ] Step 1: Create stimulus (sections without questions) - return success immediately
+    - [ ] Step 2: User sees story instantly and starts reading
+    - [ ] Step 3: Generate questions asynchronously in background (fire-and-forget)
+    - [ ] Step 4: Questions populate progressively as ready
+    - [ ] Step 5: Update stimulus metadata with `assessmentIds` when complete
+- [ ] **Benefits**: Instant story display, no user blocking, simpler error handling
+- [ ] Integration test: story appears immediately, questions populate async
 
 ---
 
-## Phase 6 — UI progressive availability (flag-gated)
-- [ ] In `src/app/book/[bookId]/page.tsx` (no breaking changes):
-  - [ ] When flag off: existing behavior unchanged
-  - [ ] When flag on: show story immediately, then poll/refresh assessments by ids from stimulus metadata
-  - [ ] Render per-section "Questions loading…" indicator until ready
-- [ ] UI tests for progressive rendering and loading states
+## Phase 6 — UI progressive availability (flag-gated, minimal changes)
+- [ ] In `src/components/GuidingQuestions.tsx` (MINIMAL UI changes):
+  - [ ] **Option A**: Show "✨ Questions coming soon..." when questions array is empty
+  - [ ] **Option B**: Hide question panel entirely until questions are ready (even simpler)
+  - [ ] **Option C**: Progressive section reveal as questions become available
+- [ ] **Estimated work**: 2-4 hours total (vs original complex polling/refresh)
+- [ ] **Benefits**: Preserves existing beautiful UI, adds gentle enhancement
+- [ ] UI tests for empty question states and progressive population
 
 ---
 
@@ -104,11 +110,13 @@ Notes
 
 ---
 
-## Phase 8 — Telemetry and monitoring
+## Phase 8 — Telemetry and monitoring (async-aware)
 - [ ] Add structured logs for `/api/generate-questions` (latency, output size, validation/retry counts)
-- [ ] Log assessment creation outcomes per section
+- [ ] Log assessment creation outcomes per section (background processing)
+- [ ] Monitor async question generation success/failure rates
+- [ ] Track time-to-questions-ready metrics (user experience impact)
 - [ ] Add lightweight metrics to compare correctness disputes pre/post flag enablement
-- [ ] Dashboard/monitoring setup for flag rollout
+- [ ] Dashboard/monitoring setup for flag rollout with async-specific metrics
 
 ---
 
@@ -120,27 +128,30 @@ Notes
 
 ---
 
-## Phase 10 — Controlled rollout and validation
+## Phase 10 — Controlled rollout and validation (simplified with async)
 - **Stage 1: Development validation**
   - [ ] Enable flags in development environment
-  - [ ] Generate test stories and validate question generation
+  - [ ] Generate test stories and validate question generation (async)
   - [ ] Verify correctness scoring and assessment flow
+  - [ ] Test user experience: story appears instantly, questions populate later
   - [ ] Review logs and metrics for issues
 
-- **Stage 2: Staging validation**
+- **Stage 2: Staging validation** 
   - [ ] Enable flags in staging environment
-  - [ ] Run comprehensive E2E tests
-  - [ ] Load test question generation endpoint
+  - [ ] Run comprehensive E2E tests (story immediate, questions async)
+  - [ ] Load test question generation endpoint (background processing)
   - [ ] Validate against production-like data
 
-- **Stage 3: Production rollout (gradual)**
+- **Stage 3: Production rollout (lower risk with async)**
   - [ ] Enable for internal testers (cookie/tenant/flag gate)
   - [ ] Monitor error rates and correctness metrics
-  - [ ] Expand to limited user cohort (5-10%)
+  - [ ] **Lower risk**: Stories always work immediately, questions are enhancement
+  - [ ] Expand to limited user cohort (10-25%) - safer than original plan
   - [ ] Full rollout after metrics show stability
 
-- **Stage 4: Fallback preparedness**
+- **Stage 4: Fallback preparedness (safer)**
   - [ ] Document instant rollback procedure (toggle flags to false)
+  - [ ] **Benefit**: Rollback only affects question generation, not story creation
   - [ ] Test rollback in staging environment
   - [ ] Monitor for any rollback-related issues
 
@@ -152,6 +163,26 @@ Notes
 - [ ] No renames/moves of shared modules
 - [ ] No changes to existing proxy endpoints
 - [ ] Keep default flags false until rollout
+
+---
+
+## 🚀 Async Approach Benefits Summary
+
+**User Experience Improvements:**
+- ✅ **Instant story access**: No waiting for question generation
+- ✅ **Natural reading flow**: Read first, questions enhance later
+- ✅ **Never blocked**: Questions are progressive enhancement, not gating
+
+**Implementation Benefits:**
+- ✅ **Simpler UI changes**: 2-4 hours vs weeks of complex polling logic
+- ✅ **Decoupled systems**: Story creation independent of question generation
+- ✅ **Better error handling**: Question failures don't break stories
+- ✅ **Easier testing**: Components can be tested independently
+
+**Rollout Advantages:**
+- ✅ **Lower risk**: Stories always work, questions are bonus feature
+- ✅ **Safer rollback**: Only affects question enhancement, not core experience
+- ✅ **Gradual enhancement**: Can test with larger user cohorts safely
 
 ---
 

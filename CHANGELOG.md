@@ -12,10 +12,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Feature flag `NEXT_PUBLIC_QTI_SPLIT_GENERATION` for client-side split generation UI features (default: disabled)
 - Environment variables documentation in `docs/Environment_Variables.md`
 - Comprehensive roadmap for split generation implementation in `docs/Assessment_Quiz_Generation_Roadmap.md`
+- Detailed Phase 2 implementation roadmap in `docs/Phase_2_Detailed_Roadmap.md`
 
 ### Changed
 - Updated `src/lib/config.ts` with `FEATURE_FLAGS` and `CLIENT_FEATURE_FLAGS` exports
 - Enhanced `sst.config.ts` with feature flag environment variables
+- **OPTIMIZATION**: Split generation approach changed to async processing
+  - Stories now appear instantly (3-5 seconds), questions generate in background
+  - Simplified UI implementation reduces frontend work from weeks to 2-4 hours
+  - Lower rollout risk: stories always work, questions are progressive enhancement
 
 ### Technical Notes
 - **No behavior changes** when feature flags are disabled (default state)
