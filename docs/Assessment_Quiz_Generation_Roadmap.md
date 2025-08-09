@@ -209,15 +209,27 @@ Notes
 
 ---
 
-## Phase 8 — Telemetry and monitoring (async-aware)
-- [ ] Add structured logs for `/api/generate-questions` (latency, output size, validation/retry counts)
-- [ ] Log assessment creation outcomes per section (background processing)
-- [ ] Monitor async question generation success/failure rates
-- [ ] Track time-to-questions-ready metrics (user experience impact)
-- [ ] Add lightweight metrics to compare correctness disputes pre/post flag enablement
-- [ ] Dashboard/monitoring setup for flag rollout with async-specific metrics
+## Phase 8 — Advanced Telemetry, Analytics & Production Observability (ROADMAP READY)
+- [ ] Enhanced event tracking system with comprehensive user interaction and system performance capture
+- [ ] Educational analytics engine transforming telemetry data into learning effectiveness insights  
+- [ ] ML-powered optimization service with predictive intelligence and automated recommendations
+- [ ] Production monitoring dashboard with intelligent alerting and predictive issue detection
+- [ ] Business intelligence reporting with educational impact measurement and ROI analysis
+- [ ] Comprehensive integration testing and performance validation for production deployment
 
-**Note**: Phase 5.7 added some performance monitoring, but complete Phase 8 telemetry scope remains pending.
+**📋 Detailed Phase 8 roadmap: `docs/Phase_8_Detailed_Roadmap.md` ✅ ROADMAP COMPLETE**
+
+**🎯 Phase 8 Planned Benefits:**
+- **Advanced Telemetry**: Comprehensive event capture across all user interactions, system performance, and educational outcomes
+- **Educational Analytics**: Transform raw metrics into actionable learning effectiveness insights and predictive recommendations  
+- **ML-Driven Optimization**: Automated continuous improvement with safe auto-implementation of performance enhancements
+- **Production Excellence**: Enterprise-grade monitoring, intelligent alerting, and operational dashboards
+- **Business Intelligence**: Executive reporting, educational impact measurement, and data-driven decision support
+- **Seamless Integration**: Built on Phase 7's monitoring foundation with zero breaking changes
+
+**Estimated Implementation Time**: 14-18 hours development + 6-8 hours testing
+
+**Note**: Phase 8 detailed roadmap completed with optimized order of operations. Implementation pending.
 
 ---
 
