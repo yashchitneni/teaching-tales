@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { cookies } from 'next/headers';
-import { QuestionGenerationService, SectionQuestionGenInput, SectionQuestionsResult } from '@/lib/ai';
+import { QuestionGenerationService, SectionQuestionGenInput, SectionQuestionsResult, AIServiceError } from '@/lib/ai';
 import { FEATURE_FLAGS } from '@/lib/config';
 
 const TIMEBACK_API_URL = process.env.NEXT_PUBLIC_TIMEBACK_API_URL || 'http://localhost:8080';
@@ -93,10 +93,15 @@ export async function POST(request: NextRequest) {
     }
 
     const requestId = crypto.randomUUID();
+    const requestStartTime = Date.now();
+    
     console.log('🚀 Split generation enabled, processing request:', {
       flagEnabled: FEATURE_FLAGS.QTI_SPLIT_GENERATION_ENABLED,
+      requestId,
       timestamp: new Date().toISOString(),
-      requestId
+      userAgent: request.headers.get('user-agent')?.substring(0, 50) + '...',
+      origin: request.headers.get('origin'),
+      contentLength: request.headers.get('content-length')
     });
 
     // Authentication implementation (Task 3.3)
@@ -415,55 +420,329 @@ export async function POST(request: NextRequest) {
       }
     }
 
+    // Enhanced request/response size logging for monitoring
+    const requestSizeBytes = JSON.stringify(body).length;
+    const contentWords = body.sectionContent.split(/\s+/).length;
+    
     console.log('✅ Request validation successful', {
       requestId,
       sectionIndex: body.sectionIndex,
       gradeLevel: body.gradeLevel,
       contentLength: body.sectionContent.length,
+      contentWords: contentWords,
+      requestSizeBytes: requestSizeBytes,
       hasConstraints: !!body.constraints,
       hasStoryMetadata: !!body.storyMetadata,
+      constraintDetails: body.constraints ? {
+        questionCount: body.constraints.questionCount,
+        questionTypes: body.constraints.questionTypes?.join(','),
+        hasLengthLimits: !!(body.constraints.maxQuestionLength || body.constraints.maxOptionLength)
+      } : null,
+      // PII-safe story metadata logging
+      storyMetadataDetails: body.storyMetadata ? {
+        universe: body.storyMetadata.universe,
+        character: body.storyMetadata.character,
+        spark: body.storyMetadata.spark,
+        studentId: body.storyMetadata.studentId.substring(0, 8) + '***' // PII redaction
+      } : null,
       timestamp: new Date().toISOString()
     });
 
-    // Service integration will be added in task 3.5
-    // Error handling will be enhanced in task 3.6
+    // Service integration (Task 3.5)
+    // Initialize service instance
+    const questionService = new QuestionGenerationService();
 
-    // Placeholder response for now (includes validated request data)
-    return NextResponse.json({
-      success: true,
-      data: {
-        message: 'Request validation and processing implemented - implementation continues in subsequent tasks',
-        phase: 'Phase 3 Task 3.4 Complete',
-        validatedInput: {
-          sectionIndex: body.sectionIndex,
-          gradeLevel: body.gradeLevel,
-          contentLength: body.sectionContent.length,
-          questionCount: body.constraints?.questionCount || 2,
-          questionTypes: body.constraints?.questionTypes || ['comprehension', 'inference']
-        },
-        user: {
-          id: authenticatedUser.id,
-          name: authenticatedUser.name
-        }
+    // Call service with validated input and capture timing
+    const serviceStartTime = Date.now();
+    let result: SectionQuestionsResult;
+    
+    try {
+      console.log('🔄 Calling QuestionGenerationService', {
+        requestId,
+        sectionIndex: body.sectionIndex,
+        gradeLevel: body.gradeLevel,
+        timestamp: new Date().toISOString()
+      });
+
+      result = await questionService.generateQuestionsForSection(body);
+
+      const serviceEndTime = Date.now();
+      const serviceCallDuration = serviceEndTime - serviceStartTime;
+
+      console.log('✅ QuestionGenerationService completed successfully', {
+        requestId,
+        sectionIndex: result.sectionIndex,
+        questionCount: result.questions.length,
+        serviceCallDurationMs: serviceCallDuration,
+        generationTimeMs: result.metadata.generationTimeMs,
+        modelUsed: result.metadata.modelUsed,
+        retryCount: result.metadata.retryCount,
+        validationPassed: result.metadata.validationPassed,
+        userId: authenticatedUser.id,
+        timestamp: new Date().toISOString()
+      });
+
+      // Validate service response before returning
+      if (!result || !result.questions || !Array.isArray(result.questions) || result.questions.length === 0) {
+        console.error('❌ Invalid service response: No questions generated', {
+          requestId,
+          result: result ? { sectionIndex: result.sectionIndex, questionsLength: result.questions?.length } : null,
+          timestamp: new Date().toISOString()
+        });
+        return NextResponse.json(
+          { 
+            success: false, 
+            error: { 
+              message: 'Question generation failed - no questions produced',
+              code: 'NO_QUESTIONS_GENERATED'
+            } 
+          },
+          { status: 422 } // Unprocessable Entity
+        );
       }
-    });
+
+      // Verify questions have required structure
+      const invalidQuestions = result.questions.filter(q => !q.id || !q.question || !q.explanation);
+      if (invalidQuestions.length > 0) {
+        console.error('❌ Invalid service response: Questions missing required fields', {
+          requestId,
+          invalidQuestionCount: invalidQuestions.length,
+          totalQuestions: result.questions.length,
+          timestamp: new Date().toISOString()
+        });
+        return NextResponse.json(
+          { 
+            success: false, 
+            error: { 
+              message: 'Question generation failed - invalid question structure',
+              code: 'INVALID_QUESTION_STRUCTURE'
+            } 
+          },
+          { status: 422 }
+        );
+      }
+
+      // Add performance metadata and response size logging
+      const totalRequestTime = Date.now() - requestStartTime;
+      const responseData = {
+        success: true,
+        data: {
+          sectionIndex: result.sectionIndex,
+          questions: result.questions,
+          metadata: {
+            ...result.metadata,
+            serviceCallDurationMs: serviceCallDuration,
+            totalRequestTimeMs: totalRequestTime,
+            requestId,
+            userId: authenticatedUser.id,
+            timestamp: new Date().toISOString()
+          }
+        }
+      };
+      
+      // Enhanced response logging with size metrics
+      const responseSizeBytes = JSON.stringify(responseData).length;
+      const questionWords = result.questions.reduce((total, q) => 
+        total + q.question.split(/\s+/).length + (q.explanation?.split(/\s+/).length || 0), 0
+      );
+      
+      console.log('🎉 Request completed successfully', {
+        requestId,
+        userId: authenticatedUser.id,
+        sectionIndex: result.sectionIndex,
+        questionCount: result.questions.length,
+        questionWords: questionWords,
+        responseSizeBytes: responseSizeBytes,
+        performance: {
+          totalRequestTimeMs: totalRequestTime,
+          serviceCallDurationMs: serviceCallDuration,
+          generationTimeMs: result.metadata.generationTimeMs,
+          validationTimeMs: totalRequestTime - serviceCallDuration,
+          retryCount: result.metadata.retryCount
+        },
+        quality: {
+          modelUsed: result.metadata.modelUsed,
+          validationPassed: result.metadata.validationPassed,
+          avgQuestionLength: Math.round(result.questions.reduce((total, q) => total + q.question.length, 0) / result.questions.length)
+        },
+        rateLimit: {
+          // Preparation hooks for future rate limiting
+          userRequestCount: 1, // Placeholder - would be tracked per user
+          ipRequestCount: 1,   // Placeholder - would be tracked per IP
+          windowStart: new Date().toISOString()
+        },
+        timestamp: new Date().toISOString()
+      });
+      
+      return NextResponse.json(responseData);
+
+    } catch (error: any) {
+      const serviceEndTime = Date.now();
+      const serviceCallDuration = serviceEndTime - serviceStartTime;
+
+      // Handle service-level errors gracefully with appropriate HTTP codes
+      console.error('❌ QuestionGenerationService error', {
+        requestId,
+        error: error.message,
+        errorCode: error.code,
+        errorName: error.name,
+        isRetryable: error.isRetryable,
+        serviceCallDurationMs: serviceCallDuration,
+        userId: authenticatedUser.id,
+        timestamp: new Date().toISOString()
+      });
+
+      // Handle AIServiceError from Phase 2 service
+      if (error.name === 'AIServiceError' || error.constructor.name === 'AIServiceError') {
+        return NextResponse.json(
+          { 
+            success: false, 
+            error: { 
+              message: 'AI service error during question generation', 
+              details: error.message,
+              code: error.code || 'AI_SERVICE_ERROR',
+              retryable: error.isRetryable || false
+            },
+            metadata: {
+              serviceCallDurationMs: serviceCallDuration,
+              requestId,
+              timestamp: new Date().toISOString()
+            }
+          },
+          { status: error.isRetryable ? 503 : 422 } // Service Unavailable vs Unprocessable Entity
+        );
+      }
+
+      // Handle validation errors from Phase 1 validator
+      if (error.name === 'ValidationError' || error.message?.includes('validation')) {
+        return NextResponse.json(
+          { 
+            success: false, 
+            error: { 
+              message: 'Question validation failed', 
+              details: error.message,
+              code: 'VALIDATION_ERROR'
+            },
+            metadata: {
+              serviceCallDurationMs: serviceCallDuration,
+              requestId,
+              timestamp: new Date().toISOString()
+            }
+          },
+          { status: 400 }
+        );
+      }
+
+      // Handle timeout errors
+      if (error.name === 'TimeoutError' || error.message?.includes('timeout')) {
+        return NextResponse.json(
+          { 
+            success: false, 
+            error: { 
+              message: 'Question generation timed out', 
+              details: 'Service took too long to respond',
+              code: 'GENERATION_TIMEOUT',
+              retryable: true
+            },
+            metadata: {
+              serviceCallDurationMs: serviceCallDuration,
+              requestId,
+              timestamp: new Date().toISOString()
+            }
+          },
+          { status: 504 } // Gateway Timeout
+        );
+      }
+
+      // Generic service error
+      return NextResponse.json(
+        { 
+          success: false, 
+          error: { 
+            message: 'Question generation service error', 
+            details: error.message,
+            code: 'SERVICE_ERROR'
+          },
+          metadata: {
+            serviceCallDurationMs: serviceCallDuration,
+            requestId,
+            timestamp: new Date().toISOString()
+          }
+        },
+        { status: 500 }
+      );
+    }
 
   } catch (error: any) {
+    // Enhanced top-level error handling with comprehensive logging
+    const totalRequestTime = Date.now() - requestStartTime;
+    
     console.error('❌ Unexpected error in generate-questions endpoint:', {
-      error: error.message,
-      stack: error.stack,
+      requestId: requestId || 'unknown',
+      error: {
+        message: error.message,
+        name: error.name,
+        code: error.code,
+        stack: process.env.NODE_ENV === 'development' ? error.stack : undefined
+      },
+      performance: {
+        totalRequestTimeMs: totalRequestTime,
+        failurePoint: 'top-level-catch'
+      },
+      request: {
+        method: request.method,
+        url: request.url,
+        userAgent: request.headers.get('user-agent')?.substring(0, 50) + '...',
+        contentType: request.headers.get('content-type')
+      },
+      rateLimit: {
+        // Enhanced error tracking for rate limiting decisions
+        errorType: 'UNEXPECTED_ERROR',
+        shouldPenalize: false // Top-level errors shouldn't count against rate limits
+      },
       timestamp: new Date().toISOString()
     });
+
+    // Enhanced error classification for top-level errors
+    let statusCode = 500;
+    let errorCode = 'INTERNAL_ERROR';
+    let errorMessage = 'Internal server error';
+
+    // Network/connection errors
+    if (error.code === 'ENOTFOUND' || error.code === 'ECONNREFUSED' || error.code === 'ETIMEDOUT') {
+      statusCode = 503;
+      errorCode = 'SERVICE_UNAVAILABLE';
+      errorMessage = 'Service temporarily unavailable';
+    }
+
+    // Memory/resource errors
+    if (error.name === 'RangeError' || error.message?.includes('Maximum call stack')) {
+      statusCode = 507;
+      errorCode = 'INSUFFICIENT_STORAGE';
+      errorMessage = 'Request too complex to process';
+    }
+
+    // Request parsing errors (shouldn't happen here, but safety net)
+    if (error instanceof SyntaxError || error.message?.includes('JSON')) {
+      statusCode = 400;
+      errorCode = 'MALFORMED_REQUEST';
+      errorMessage = 'Request could not be processed';
+    }
     
     return NextResponse.json(
       { 
         success: false, 
         error: { 
-          message: 'Internal server error',
-          code: 'INTERNAL_ERROR'
-        } 
+          message: errorMessage,
+          code: errorCode,
+          requestId: requestId || undefined
+        },
+        metadata: {
+          totalRequestTimeMs: totalRequestTime,
+          timestamp: new Date().toISOString()
+        }
       },
-      { status: 500 }
+      { status: statusCode }
     );
   }
 }
