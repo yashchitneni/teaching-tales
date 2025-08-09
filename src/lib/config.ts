@@ -6,6 +6,9 @@ export const API_CONFIG = {
 
 export const FEATURE_FLAGS = {
   QTI_SPLIT_GENERATION_ENABLED: process.env.QTI_SPLIT_GENERATION_ENABLED === 'true',
+  QTI_ASYNC_ASSESSMENTS_ENABLED: process.env.QTI_ASYNC_ASSESSMENTS_ENABLED === 'true',
+  // Phase 5: Controls async story save orchestration where stories display instantly while questions generate in background
+  QTI_ASYNC_STORY_SAVE_ENABLED: process.env.QTI_ASYNC_STORY_SAVE_ENABLED === 'true',
 } as const;
 
 export const CLIENT_FEATURE_FLAGS = {

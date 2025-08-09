@@ -1,5 +1,6 @@
 'use client'
 
+import { useState, useEffect } from 'react'
 import { Button } from '@/components/ui/button'
 
 interface Question {
@@ -8,6 +9,13 @@ interface Question {
   options: string[]
   correctAnswer: number
   explanation?: string
+}
+
+interface QuestionStatusState {
+  questionsReady: boolean;
+  status: 'pending' | 'generating' | 'creating_assessments' | 'completed' | 'failed';
+  progress?: number;
+  error?: string;
 }
 
 interface GuidingQuestionsProps {
@@ -19,6 +27,8 @@ interface GuidingQuestionsProps {
   onSelectAnswer?: (answerIndex: number) => void
   /** When true, this is the final section of the chapter and the last question should show "View Results" */
   isLastSection?: boolean
+  /** Stimulus ID for async question status polling */
+  stimulusId?: string
 }
 
 export function GuidingQuestions({ 
@@ -28,14 +38,112 @@ export function GuidingQuestions({
   answers,
   selectedAnswer,
   onSelectAnswer,
-  isLastSection = false
+  isLastSection = false,
+  stimulusId
 }: GuidingQuestionsProps) {
+  const [questionStatus, setQuestionStatus] = useState<QuestionStatusState>({
+    questionsReady: questions.length > 0,
+    status: questions.length > 0 ? 'completed' : 'pending'
+  });
+
+  // Poll for question status if questions aren't ready and we have a stimulus ID
+  useEffect(() => {
+    if (questionStatus.questionsReady || questionStatus.status === 'failed' || !stimulusId) {
+      return;
+    }
+
+    const pollInterval = setInterval(async () => {
+      try {
+        const response = await fetch(`/api/story-question-status/${stimulusId}`);
+        if (response.ok) {
+          const status = await response.json();
+          setQuestionStatus(status);
+          
+          // If questions are ready, refresh the page to load them
+          // In production, you might want to fetch questions directly instead
+          if (status.questionsReady && !questions.length) {
+            window.location.reload();
+          }
+        }
+      } catch (error) {
+        console.error('Failed to check question status:', error);
+      }
+    }, 3000); // Poll every 3 seconds
+
+    return () => clearInterval(pollInterval);
+  }, [stimulusId, questionStatus.questionsReady, questions.length]);
+
+  // Handle different question states
+  if (!questionStatus.questionsReady && stimulusId) {
+    return (
+      <div className="p-6">
+        <div className="bg-blue-50 border border-blue-200 rounded-lg p-6">
+          <div className="text-center">
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto mb-4"></div>
+            <h3 className="text-lg font-semibold text-blue-900 mb-2">
+              Questions Coming Soon! ✨
+            </h3>
+            <p className="text-blue-700 mb-4">
+              Your comprehension questions are being generated in the background. 
+              Keep reading and they'll appear shortly!
+            </p>
+            
+            {questionStatus.progress !== undefined && (
+              <div className="w-full bg-blue-200 rounded-full h-2 mb-2">
+                <div 
+                  className="bg-blue-600 h-2 rounded-full transition-all duration-300"
+                  style={{ width: `${Math.round(questionStatus.progress * 100)}%` }}
+                ></div>
+              </div>
+            )}
+            
+            <p className="text-sm text-blue-600 capitalize">
+              Status: {questionStatus.status.replace('_', ' ')}
+            </p>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  if (questionStatus.status === 'failed') {
+    return (
+      <div className="p-6">
+        <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-6">
+          <div className="text-center">
+            <h3 className="text-lg font-semibold text-yellow-900 mb-2">
+              Questions Temporarily Unavailable
+            </h3>
+            <p className="text-yellow-700 mb-4">
+              There was an issue generating questions for this story. 
+              You can still enjoy reading! Questions might become available later.
+            </p>
+            <button 
+              onClick={() => window.location.reload()} 
+              className="bg-yellow-600 text-white px-4 py-2 rounded hover:bg-yellow-700 transition-colors"
+            >
+              Try Again
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   // Guard against empty list or out-of-bounds index
   if (!questions || questions.length === 0) {
     return (
       <div className="p-6">
-        <h2 className="text-xl font-bold mb-2 text-gray-900">Guiding Questions</h2>
-        <p className="text-sm text-gray-600">No questions available for this section.</p>
+        <div className="bg-gray-50 border border-gray-200 rounded-lg p-6">
+          <div className="text-center">
+            <h3 className="text-lg font-semibold text-gray-900 mb-2">
+              No Questions Available
+            </h3>
+            <p className="text-gray-600">
+              This story doesn't have comprehension questions yet.
+            </p>
+          </div>
+        </div>
       </div>
     )
   }

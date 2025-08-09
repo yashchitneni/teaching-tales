@@ -14,6 +14,8 @@ import {
   type StoryClassCreationData,
   type OneRosterIntegrationResult 
 } from './oneroster-integration-service';
+import { BackgroundQuestionService, AsyncStoryMetadata } from './background-question-service';
+import { FEATURE_FLAGS } from '@/lib/config';
 
 export interface StoredStory {
   id: string;
@@ -43,13 +45,22 @@ export interface StoredStory {
   metadata?: Record<string, any>;
 }
 
+export interface AsyncSaveStoryResult {
+  stimulus: Stimulus; 
+  assessments: StoryAssessment[];
+  oneRosterIntegration?: OneRosterIntegrationResult;
+  // Async-specific fields
+  questionGenerationJobId?: string;
+  questionsReady: boolean;
+}
+
 export class StoryStorageService {
   
   private static readonly STORAGE_KEY = 'teaching-tales-stories';
   private static readonly USE_LOCAL_STORAGE = false; // Toggle for development
   
   /**
-   * Save a generated story locally or to QTI API
+   * Save a generated story - routes to sync or async based on feature flag
    */
   static async saveStory(
     storyResponse: StoryGenerationResponse,
@@ -67,6 +78,21 @@ export class StoryStorageService {
     assessments: StoryAssessment[];
     oneRosterIntegration?: OneRosterIntegrationResult;
   }> {
+    // Route to async version if enabled (check all required flags)
+    const asyncEnabled = 
+      FEATURE_FLAGS.QTI_ASYNC_STORY_SAVE_ENABLED &&
+      FEATURE_FLAGS.QTI_SPLIT_GENERATION_ENABLED &&    // Phase 3 dependency
+      FEATURE_FLAGS.QTI_ASYNC_ASSESSMENTS_ENABLED;     // Phase 4 dependency
+    
+    if (asyncEnabled) {
+      const asyncResult = await this.saveStoryAsync(storyResponse, storyMetadata);
+      return {
+        stimulus: asyncResult.stimulus,
+        assessments: asyncResult.assessments,
+        oneRosterIntegration: asyncResult.oneRosterIntegration
+      };
+    }
+
     try {
       // Use local storage for development
       if (this.USE_LOCAL_STORAGE) {
@@ -244,7 +270,196 @@ export class StoryStorageService {
   }
 
   /**
-   * Get a story by stimulus ID with its assessments
+   * Save story with async question generation (Phase 5)
+   * Stories display instantly, questions generate in background
+   */
+  static async saveStoryAsync(
+    storyResponse: StoryGenerationResponse,
+    storyMetadata: {
+      universe: string;
+      character: string;
+      spark: string;
+      gradeLevel: string;
+      studentId: string;
+      storyId: string;
+      enableOneRosterIntegration?: boolean;
+    }
+  ): Promise<AsyncSaveStoryResult> {
+    if (!FEATURE_FLAGS.QTI_ASYNC_STORY_SAVE_ENABLED) {
+      // Fall back to sync behavior
+      const syncResult = await this.saveStory(storyResponse, storyMetadata);
+      return {
+        ...syncResult,
+        questionGenerationJobId: undefined,
+        questionsReady: true
+      };
+    }
+
+    const operationStartTime = Date.now();
+    
+    try {
+      console.log('🚀 Async story save started:', {
+        operation: 'saveStoryAsync',
+        phase: 'phase-5',
+        storyTitle: storyResponse.title,
+        totalSections: storyResponse.sections.length
+      });
+
+      // Phase 1: Create stimulus immediately (no questions in sections)
+      const stimulusData: CreateStimulusRequest = {
+        identifier: `story-${storyMetadata.storyId}`,
+        title: storyResponse.title,
+        contentType: 'application/json',
+        contentText: JSON.stringify({
+          sections: storyResponse.sections.map(section => ({
+            ...section,
+            // Remove questions - they'll be populated async
+            questions: []
+          })),
+          wordCount: storyResponse.wordCount,
+          readingTime: storyResponse.readingTime,
+          description: `A ${storyMetadata.universe} adventure featuring ${storyMetadata.character} - ${storyMetadata.spark}`,
+          imageUrl: storyResponse.imageUrl || undefined,
+        }),
+        metadata: {
+          // Story generation metadata
+          universe: storyMetadata.universe,
+          character: storyMetadata.character,
+          spark: storyMetadata.spark,
+          gradeLevel: storyMetadata.gradeLevel,
+          studentId: storyMetadata.studentId,
+          storyId: storyMetadata.storyId,
+          
+          // Story content metadata
+          wordCount: storyResponse.wordCount,
+          readingTime: storyResponse.readingTime,
+          sectionCount: storyResponse.sections.length,
+          imageUrl: storyResponse.imageUrl || undefined,
+          
+          // Application metadata
+          appName: 'Teaching Tales',
+          contentType: 'ai-generated-story',
+          version: '2.0', // Async version
+          
+          // Async processing metadata
+          questionsReady: false,
+          questionGenerationMethod: 'async-background',
+          questionGenerationStartedAt: new Date().toISOString(),
+          
+          // AI generation metadata
+          ...storyResponse.metadata
+        }
+      };
+
+      const savedStimulus = await createStimulus(stimulusData);
+
+      // Phase 2: Start background question generation (fire-and-forget)
+      const sections = storyResponse.sections.map((section, index) => ({
+        index,
+        content: section.content
+      }));
+
+      const asyncMetadata: AsyncStoryMetadata = {
+        storyId: storyMetadata.storyId,
+        storyTitle: storyResponse.title,
+        universe: storyMetadata.universe,
+        character: storyMetadata.character,
+        spark: storyMetadata.spark,
+        gradeLevel: storyMetadata.gradeLevel,
+        studentId: storyMetadata.studentId
+      };
+
+      const questionJobId = await BackgroundQuestionService.startQuestionGeneration(
+        sections,
+        savedStimulus.id,
+        asyncMetadata
+      );
+
+      // Phase 2.5: Persist job ID for status tracking
+      try {
+        await updateStimulus(savedStimulus.id, {
+          metadata: {
+            ...savedStimulus.metadata,
+            questionJobId
+          }
+        });
+      } catch (updateError) {
+        console.warn('⚠️ Failed to persist question job ID:', updateError);
+        // Don't fail the whole operation for this
+      }
+
+      // Phase 3: Handle OneRoster Integration (if enabled)
+      let oneRosterIntegration: OneRosterIntegrationResult | undefined;
+      
+      const oneRosterEnabled = process.env.NEXT_PUBLIC_ONEROSTER_ENABLED === 'true';
+      if (oneRosterEnabled && storyMetadata.enableOneRosterIntegration !== false) {
+        try {
+          // For async mode, create OneRoster integration without assessments initially
+          const integrationData: StoryClassCreationData = {
+            storyId: storyMetadata.storyId,
+            storyTitle: storyResponse.title,
+            universe: storyMetadata.universe,
+            character: storyMetadata.character,
+            spark: storyMetadata.spark,
+            gradeLevel: storyMetadata.gradeLevel,
+            studentId: storyMetadata.studentId,
+            assessments: [], // Empty initially, will be updated when questions are ready
+            metadata: {
+              stimulusId: savedStimulus.id,
+              wordCount: storyResponse.wordCount,
+              readingTime: storyResponse.readingTime,
+              sectionCount: storyResponse.sections.length,
+              asyncMode: true,
+              questionJobId
+            }
+          };
+
+          oneRosterIntegration = await OneRosterIntegrationService.createStoryIntegration(integrationData);
+        } catch (integrationError) {
+          console.error('❌ OneRoster integration error:', integrationError);
+          oneRosterIntegration = {
+            success: false,
+            error: integrationError instanceof Error ? integrationError.message : 'Unknown integration error',
+            metadata: {
+              operationsCompleted: [],
+              operationsFailed: ['integration_exception'],
+              totalOperations: 0,
+              executionTime: 0
+            }
+          };
+        }
+      }
+
+      const operationEndTime = Date.now();
+      console.log('✅ Async story save completed:', {
+        operation: 'saveStoryAsync',
+        phase: 'phase-5',
+        durationMs: operationEndTime - operationStartTime,
+        storyId: storyMetadata.storyId,
+        questionJobId: questionJobId,
+        totalSections: sections.length
+      });
+
+      return {
+        stimulus: savedStimulus,
+        assessments: [], // Empty initially - will populate when background job completes
+        oneRosterIntegration,
+        questionGenerationJobId: questionJobId,
+        questionsReady: false
+      };
+    } catch (error) {
+      console.error('❌ Async story save failed:', {
+        operation: 'saveStoryAsync',
+        phase: 'phase-5',
+        error: (error as Error).message,
+        durationMs: Date.now() - operationStartTime
+      });
+      throw error;
+    }
+  }
+
+  /**
+   * Get a story by stimulus ID with enhanced async question support
    */
   static async getStory(stimulusId: string): Promise<StoredStory | null> {
     try {
@@ -253,7 +468,6 @@ export class StoryStorageService {
         return this.getStoryFromLocalStorage(stimulusId);
       }
       
-      
       const stimulus = await getStimulus(stimulusId);
       const story = this.convertStimulusToStory(stimulus);
       
@@ -261,38 +475,109 @@ export class StoryStorageService {
         return null;
       }
       
-      // Load assessments if they exist
-      if (stimulus.metadata?.assessmentIds && Array.isArray(stimulus.metadata.assessmentIds)) {
-        try {
-          const assessmentPromises = stimulus.metadata.assessmentIds.map((id: string) => 
-            AssessmentService.getSectionAssessment(id)
-          );
-          
-          const assessments = await Promise.all(assessmentPromises);
-          const validAssessments = assessments.filter(a => a !== null) as StoryAssessment[];
-          
-          // Add questions back to sections from assessments
-          if (validAssessments.length > 0 && story.sections) {
-            story.sections = story.sections.map((section, index) => {
-              const assessment = validAssessments.find(a => a.metadata?.sectionIndex === index);
-              return {
-                ...section,
-                questions: assessment?.questions || []
-              };
-            });
-          }
-          
-          story.assessments = validAssessments;
-        } catch (assessmentError) {
-          console.warn('⚠️ Failed to load assessments, story will have no questions:', assessmentError);
-          story.assessments = [];
-        }
+      // Check if this is an async story with background question generation
+      const isAsyncStory = stimulus.metadata?.version === '2.0' && stimulus.metadata?.questionGenerationMethod === 'async-background';
+      
+      if (isAsyncStory) {
+        // Handle async story with potential in-progress question generation
+        await this.loadAsyncStoryQuestions(story, stimulus);
+      } else {
+        // Handle sync story (existing logic)
+        await this.loadSyncStoryQuestions(story, stimulus);
       }
       
       return story;
     } catch (error) {
       console.error('Failed to get story:', error);
       return null;
+    }
+  }
+
+  /**
+   * Load questions for async stories (may be in progress)
+   */
+  private static async loadAsyncStoryQuestions(story: StoredStory, stimulus: Stimulus): Promise<void> {
+    try {
+      if (stimulus.metadata?.assessmentIds && Array.isArray(stimulus.metadata.assessmentIds)) {
+        // Questions are ready - load them
+        const assessmentPromises = stimulus.metadata.assessmentIds.map((id: string) => 
+          AssessmentService.getSectionAssessment(id)
+        );
+        
+        const assessments = await Promise.all(assessmentPromises);
+        const validAssessments = assessments.filter(a => a !== null) as StoryAssessment[];
+        
+        if (validAssessments.length > 0 && story.sections) {
+          story.sections = story.sections.map((section, index) => {
+            const assessment = validAssessments.find(a => a.metadata?.sectionIndex === index);
+            return {
+              ...section,
+              questions: assessment?.questions || []
+            };
+          });
+        }
+        
+        story.assessments = validAssessments;
+        // Update metadata to reflect questions are ready
+        if (story.metadata) {
+          story.metadata.questionsReady = true;
+          story.metadata.questionsLoadedAt = new Date().toISOString();
+        }
+      } else {
+        // Questions not ready yet - return story with empty question arrays
+        if (story.sections) {
+          story.sections = story.sections.map(section => ({
+            ...section,
+            questions: [] // Empty - will be populated when ready
+          }));
+        }
+        story.assessments = [];
+        if (story.metadata) {
+          story.metadata.questionsReady = false;
+        }
+      }
+    } catch (error) {
+      console.warn('⚠️ Failed to load async story questions:', error);
+      // Fallback: return story with empty questions
+      if (story.sections) {
+        story.sections = story.sections.map(section => ({
+          ...section,
+          questions: []
+        }));
+      }
+      story.assessments = [];
+    }
+  }
+
+  /**
+   * Load questions for sync stories (existing logic)
+   */
+  private static async loadSyncStoryQuestions(story: StoredStory, stimulus: Stimulus): Promise<void> {
+    // Move existing question loading logic here (unchanged)
+    if (stimulus.metadata?.assessmentIds && Array.isArray(stimulus.metadata.assessmentIds)) {
+      try {
+        const assessmentPromises = stimulus.metadata.assessmentIds.map((id: string) => 
+          AssessmentService.getSectionAssessment(id)
+        );
+        
+        const assessments = await Promise.all(assessmentPromises);
+        const validAssessments = assessments.filter(a => a !== null) as StoryAssessment[];
+        
+        if (validAssessments.length > 0 && story.sections) {
+          story.sections = story.sections.map((section, index) => {
+            const assessment = validAssessments.find(a => a.metadata?.sectionIndex === index);
+            return {
+              ...section,
+              questions: assessment?.questions || []
+            };
+          });
+        }
+        
+        story.assessments = validAssessments;
+      } catch (assessmentError) {
+        console.warn('⚠️ Failed to load assessments, story will have no questions:', assessmentError);
+        story.assessments = [];
+      }
     }
   }
 

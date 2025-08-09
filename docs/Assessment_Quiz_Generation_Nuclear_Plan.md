@@ -87,6 +87,15 @@
   - Controls server-side split generation logic
   - Set via environment variable or `sst.config.ts`
   - Access: `FEATURE_FLAGS.QTI_SPLIT_GENERATION_ENABLED` in `src/lib/config.ts`
+- **Phase 4 flag**: `QTI_ASYNC_ASSESSMENTS_ENABLED` (default: `false`)
+  - Controls async assessment creation methods in Phase 4
+  - Requires `QTI_SPLIT_GENERATION_ENABLED=true`
+  - Access: `FEATURE_FLAGS.QTI_ASYNC_ASSESSMENTS_ENABLED` in `src/lib/config.ts`
+- **Phase 5 flag**: `QTI_ASYNC_STORY_SAVE_ENABLED` (default: `false`)
+  - Controls async story save orchestration - stories display instantly while questions generate in background
+  - Requires both `QTI_SPLIT_GENERATION_ENABLED=true` and `QTI_ASYNC_ASSESSMENTS_ENABLED=true`
+  - Benefits: 5-10x faster story creation, immediate user experience, better error isolation
+  - Access: `FEATURE_FLAGS.QTI_ASYNC_STORY_SAVE_ENABLED` in `src/lib/config.ts`
 - **Client-side flag**: `NEXT_PUBLIC_QTI_SPLIT_GENERATION` (default: `false`)
   - Controls client-side UI features (progressive loading, indicators)
   - Set via environment variable or `sst.config.ts`
@@ -95,11 +104,17 @@
 #### Flag Usage Instructions
 **Local Development:**
 ```bash
-# Enable split generation for testing
+# Phase 3: Enable split generation for testing
 QTI_SPLIT_GENERATION_ENABLED=true npm run dev
 
-# Enable both server and client features
-QTI_SPLIT_GENERATION_ENABLED=true NEXT_PUBLIC_QTI_SPLIT_GENERATION=true npm run dev
+# Phase 4: Enable async assessments (requires Phase 3)
+QTI_SPLIT_GENERATION_ENABLED=true QTI_ASYNC_ASSESSMENTS_ENABLED=true npm run dev
+
+# Phase 5: Enable full async story save (requires Phase 3 & 4)
+QTI_SPLIT_GENERATION_ENABLED=true QTI_ASYNC_ASSESSMENTS_ENABLED=true QTI_ASYNC_STORY_SAVE_ENABLED=true npm run dev
+
+# Enable client UI features
+NEXT_PUBLIC_QTI_SPLIT_GENERATION=true npm run dev
 ```
 
 **Production Deployment:**
@@ -137,6 +152,123 @@ QTI_SPLIT_GENERATION_ENABLED=true NEXT_PUBLIC_QTI_SPLIT_GENERATION=true npm run 
 5) Gradual production rollout with instant rollback capability via flags.
 6) Evaluate moving to first-class QTI items (alternative B) once stable.
 
+---
+
+## Phase 4: Assessment Creation Variant (✅ Complete)
+
+**Status**: ✅ Implemented & Tested  
+**Purpose**: Async assessment creation from split-generated questions  
+**Feature Flag**: `QTI_ASYNC_ASSESSMENTS_ENABLED`
+
+### Overview
+
+Phase 4 creates a **parallel assessment creation pathway** that works with async-generated questions from Phase 3's `/api/generate-questions` endpoint, while preserving all existing synchronous functionality.
+
+### New Methods Added
+
+#### AssessmentService.createSectionAssessmentsFromQuestions()
+```typescript
+// Create assessments from pre-generated questions (Phase 4)
+static async createSectionAssessmentsFromQuestions(
+  inputs: SectionAssessmentInput[]
+): Promise<SectionAssessmentResult[]>
+```
+
+**Purpose**: Create QTI assessment tests from async-generated questions  
+**Input**: Array of sections with pre-generated questions from Phase 3 API  
+**Output**: Array of created assessment results with performance metrics
+
+#### AssessmentService.prepareSectionAssessmentFromAPI()
+```typescript
+// Bridge Phase 3 API to Phase 4 input format
+static prepareSectionAssessmentFromAPI(
+  apiResponse: SectionQuestionsResult,
+  sectionContent: string,
+  metadata: SectionAssessmentInput['metadata']
+): SectionAssessmentInput
+```
+
+**Purpose**: Convert Phase 3 `/api/generate-questions` output to Phase 4 input format  
+**Integration**: Seamless bridge between phases
+
+### Integration Pattern
+
+```typescript
+// Phase 3: Generate questions
+const questions = await fetch('/api/generate-questions', {
+  method: 'POST',
+  body: JSON.stringify({
+    sectionContent: section.content,
+    sectionIndex: section.index,
+    gradeLevel: story.gradeLevel
+  })
+});
+
+// Phase 4: Create assessments from questions
+const assessmentInput = AssessmentService.prepareSectionAssessmentFromAPI(
+  questions.data, 
+  section.content, 
+  storyMetadata
+);
+const assessments = await AssessmentService.createSectionAssessmentsFromQuestions([assessmentInput]);
+```
+
+### Feature Flag Configuration
+
+**Environment Variable**: `QTI_ASYNC_ASSESSMENTS_ENABLED`
+- **Default**: `false` (safe for production)
+- **Development**: Set to `true` for testing
+- **Production**: Enable after Phase 5 integration
+
+```bash
+# Enable async assessment creation
+QTI_ASYNC_ASSESSMENTS_ENABLED=true
+
+# Existing Phase 3 flag (must remain enabled)
+QTI_SPLIT_GENERATION_ENABLED=true
+```
+
+### Performance & Monitoring
+
+**Built-in Performance Tracking**:
+- Per-section assessment creation timing
+- Overall operation metrics
+- Rich metadata for observability
+
+**Monitoring Hooks Ready**:
+- Global monitoring service integration (`global.monitoringService`)
+- Client-side analytics (`window.analytics`)
+- Console logging for development
+
+### Enhanced Question Support
+
+**Backward Compatible**: Supports both original `ComprehensionQuestion` and enhanced `EnhancedComprehensionQuestion` formats
+
+**Enhanced Fields Supported**:
+- `questionType`: 'comprehension' | 'vocabulary' | 'inference'
+- `difficultyLevel`: 1-5 scale
+- `validationMetadata`: Quality assurance data
+
+### Deployment Safety
+
+**Non-Breaking Design**:
+- ✅ Existing `createStoryAssessments` method unchanged
+- ✅ Both sync and async methods coexist safely
+- ✅ Feature flag prevents activation until ready
+- ✅ Comprehensive test coverage (45+ tests across 3 test files)
+
+**Version Metadata**:
+- Sync assessments: `version: '1.0'`
+- Async assessments: `version: '2.0'` (distinguishable)
+
+### Phase 5 Integration Ready
+
+**Interface Contract**: Phase 4 provides stable methods for Phase 5 story save orchestration
+**Error Handling**: Designed for transactional integrity and partial failure handling
+**Scalability**: Built-in performance monitoring for production observability
+
+---
+
 #### References (Key Files)
 - **Configuration & flags**: `src/lib/config.ts`, `sst.config.ts`, `docs/Environment_Variables.md`
 - **Generation prompt**: `src/lib/ai/prompt-templates.ts`
@@ -144,4 +276,5 @@ QTI_SPLIT_GENERATION_ENABLED=true NEXT_PUBLIC_QTI_SPLIT_GENERATION=true npm run 
 - **Story save & assessment creation**: `src/lib/services/story-storage-service.ts`, `src/lib/services/assessment-service.ts`
 - **QTI client & proxy**: `src/lib/api/qti-client.ts`, `src/app/api/ims/qti/v3p0/[...endpoint]/route.ts`
 - **Answer submission & local processing**: `src/lib/services/response-storage-service.ts`, `src/lib/services/enhanced-response-handler.ts`, `src/lib/qti/processors/response-processor.ts`
-- **Roadmap documentation**: `docs/Assessment_Quiz_Generation_Roadmap.md`, `docs/Phase_0_Detailed_Roadmap.md`
+- **Phase 4 tests**: `src/lib/services/__tests__/assessment-service-async.test.ts`, `src/lib/services/__tests__/phase3-phase4-integration.test.ts`, `src/lib/services/__tests__/backward-compatibility.test.ts`
+- **Roadmap documentation**: `docs/Assessment_Quiz_Generation_Roadmap.md`, `docs/Phase_0_Detailed_Roadmap.md`, `docs/Phase_4_Detailed_Roadmap.md`

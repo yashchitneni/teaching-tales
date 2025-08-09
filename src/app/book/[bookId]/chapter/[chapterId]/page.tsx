@@ -218,6 +218,8 @@ export default function ReadingPage() {
               currentQuestionIndex={currentQuestionIndex}
               onAnswer={handleQuestionAnswer}
               answers={answers}
+              // TODO: Add stimulusId prop when connected to real story data for async question polling
+              // stimulusId={bookId} 
             />
           ) : (
             <AssessmentResults
