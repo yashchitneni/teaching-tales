@@ -8,6 +8,7 @@ import { GuidingQuestions } from '@/components/GuidingQuestions'
 import { AssessmentResults } from '@/components/AssessmentResults'
 import { ChapterChoices } from '@/components/ChapterChoices'
 import { Button } from '@/components/ui/button'
+import { useToast } from '@/components/ui/toast'
 
 // Mock data for development
 const mockChapter = {
@@ -51,7 +52,8 @@ The trees were trying to tell a story - a story about an ancient power hidden de
     }
   ],
   wordCount: 287,
-  readingTime: 2
+  readingTime: 2,
+  stimulusId: null // Mock data doesn't use async questions
 }
 
 export default function ReadingPage() {
@@ -64,8 +66,16 @@ export default function ReadingPage() {
   const [startTime] = useState(Date.now())
   const [readingComplete, setReadingComplete] = useState(false)
 
+  // Add question status indicator to chapter header
+  const [chapterQuestionStatus, setChapterQuestionStatus] = useState<{
+    questionsReady: boolean;
+    status: string;
+  }>({ questionsReady: false, status: 'unknown' });
+
   const bookId = params.bookId as string
   const chapterId = params.chapterId as string
+
+  const { addToast } = useToast();
 
   // Function to convert vocabulary markdown to HTML with hover tooltips
   const processVocabularyWords = (content: string) => {
@@ -83,7 +93,7 @@ export default function ReadingPage() {
       
       if (!story || !story.sections) {
         console.warn('Story not found or has no sections, using mock data')
-        return mockChapter
+        return { ...mockChapter, stimulusId: null }
       }
 
       const sectionIndex = parseInt(chapterId) - 1
@@ -91,7 +101,7 @@ export default function ReadingPage() {
       
       if (!section) {
         console.warn(`Section ${chapterId} not found, using mock data`)
-        return mockChapter
+        return { ...mockChapter, stimulusId: null }
       }
 
       // Transform AI-generated structure to match expected format
@@ -107,15 +117,61 @@ export default function ReadingPage() {
           correctAnswer: q.correct
         })),
         wordCount: story.wordCount || 0,
-        readingTime: story.readingTime || '2 minutes'
+        readingTime: story.readingTime || '2 minutes',
+        stimulusId: story.stimulusId || bookId // Use story stimulus ID for async polling
       }
     } catch (error) {
       console.error('Error loading story data:', error)
-      return mockChapter
+      return { ...mockChapter, stimulusId: null }
     }
   }
 
   const chapter = getChapterData()
+
+  // Poll for chapter-level question status
+  useEffect(() => {
+    if (!chapter.stimulusId) return;
+    
+    const checkQuestionStatus = async () => {
+      try {
+        const response = await fetch(`/api/story-question-status/${chapter.stimulusId}`);
+        if (response.ok) {
+          const status = await response.json();
+          setChapterQuestionStatus({
+            questionsReady: status.questionsReady,
+            status: status.status
+          });
+        }
+      } catch (error) {
+        console.error('Failed to check chapter question status:', error);
+      }
+    };
+
+    checkQuestionStatus();
+    
+    // Poll every 5 seconds if questions aren't ready
+    const interval = !chapterQuestionStatus.questionsReady ? 
+      setInterval(checkQuestionStatus, 5000) : null;
+      
+    return () => {
+      if (interval) clearInterval(interval);
+    };
+  }, [chapter.stimulusId, chapterQuestionStatus.questionsReady]);
+
+  // Add smooth scroll to questions when they become ready
+  useEffect(() => {
+    if (chapterQuestionStatus.questionsReady && !readingComplete) {
+      // Subtle notification that questions are ready
+      const questionsPanel = document.querySelector('.questions-panel');
+      if (questionsPanel) {
+        // Add gentle highlight animation
+        questionsPanel.classList.add('questions-ready-highlight');
+        setTimeout(() => {
+          questionsPanel.classList.remove('questions-ready-highlight');
+        }, 3000);
+      }
+    }
+  }, [chapterQuestionStatus.questionsReady, readingComplete]);
 
   const handleQuestionAnswer = (answerIndex: number) => {
     const newAnswers = [...answers]
@@ -135,6 +191,33 @@ export default function ReadingPage() {
     setShowChoices(true)
   }
 
+  // Add reading progress notifications
+  const handleReadingMilestone = () => {
+    // Notify when user reaches chapter end and questions are ready
+    if (chapterQuestionStatus.questionsReady) {
+      addToast({
+        type: 'success',
+        title: '📖 Chapter Complete!',
+        description: 'Ready to test your understanding?',
+        duration: 6000,
+        action: {
+          label: 'Start Questions',
+          onClick: () => {
+            const questionsPanel = document.querySelector('.questions-panel');
+            questionsPanel?.scrollIntoView({ behavior: 'smooth' });
+          }
+        }
+      });
+    } else {
+      addToast({
+        type: 'info',
+        title: '📖 Great Reading!',
+        description: 'Questions are still being prepared - they\'ll appear soon',
+        duration: 5000
+      });
+    }
+  };
+
   const calculateAccuracy = () => {
     const correct = answers.filter((answer, index) => 
       answer === chapter.questions[index].correctAnswer
@@ -147,30 +230,70 @@ export default function ReadingPage() {
     return Math.round(chapter.wordCount / timeElapsed)
   }
 
+  // Question status badge component
+  const QuestionStatusBadge = ({ 
+    status, 
+    questionsReady 
+  }: { 
+    status: string; 
+    questionsReady: boolean; 
+  }) => {
+    if (questionsReady) {
+      return (
+        <div className="flex items-center space-x-2 bg-green-100 text-green-800 px-3 py-1 rounded-full text-sm font-medium">
+          <span className="w-2 h-2 bg-green-600 rounded-full animate-pulse"></span>
+          <span>Questions Ready</span>
+        </div>
+      );
+    }
+    
+    return (
+      <div className="flex items-center space-x-2 bg-blue-100 text-blue-800 px-3 py-1 rounded-full text-sm font-medium">
+        <div className="w-2 h-2 bg-blue-600 rounded-full animate-bounce"></div>
+        <span>Preparing Questions</span>
+      </div>
+    );
+  };
+
   return (
     <div className="min-h-screen bg-gray-50">
       <TopNavWithTabs />
       <FeedbackButton />
 
-      <div className="flex h-[calc(100vh-64px)]">
-        {/* Left Panel - Story Content */}
-        <div className="flex-1 overflow-y-auto p-8">
+      {/* Mobile: Stack vertically, Desktop: Side by side */}
+      <div className="flex flex-col lg:flex-row lg:h-[calc(100vh-64px)]">
+        {/* Story Content Panel */}
+        <div className="flex-1 overflow-y-auto p-4 sm:p-8">
           <div className="max-w-3xl mx-auto">
-            {/* Chapter Header */}
+            {/* Enhanced chapter header with question status indicator */}
             <div className="mb-6">
-              <h1 className="text-3xl font-bold mb-2 text-gray-900">{chapter.title}</h1>
-              <div className="flex items-center gap-4 text-sm text-gray-600">
-                <span>Chapter {chapterId}</span>
-                <span>•</span>
-                <span>{chapter.wordCount} words</span>
-                <span>•</span>
-                <span>{chapter.readingTime} min read</span>
+              <div className="flex items-start justify-between">
+                <div className="flex-1">
+                  <h1 className="text-3xl font-bold mb-2 text-gray-900">{chapter.title}</h1>
+                  <div className="flex items-center gap-4 text-sm text-gray-600">
+                    <span>Chapter {chapterId}</span>
+                    <span>•</span>
+                    <span>{chapter.wordCount} words</span>
+                    <span>•</span>
+                    <span>{chapter.readingTime} min read</span>
+                  </div>
+                </div>
+                
+                {/* Question Status Indicator */}
+                {chapter.stimulusId && (
+                  <div className="ml-4">
+                    <QuestionStatusBadge 
+                      status={chapterQuestionStatus.status}
+                      questionsReady={chapterQuestionStatus.questionsReady}
+                    />
+                  </div>
+                )}
               </div>
             </div>
 
-            {/* Story Content */}
+            {/* Mobile-optimized story content */}
             <div 
-              className="prose prose-lg max-w-none text-gray-900"
+              className="prose prose-sm sm:prose-lg max-w-none text-gray-900 mobile-reading-content"
               dangerouslySetInnerHTML={{ __html: chapter.content }}
             />
 
@@ -196,12 +319,15 @@ export default function ReadingPage() {
               </div>
             )}
 
-            {/* Continue Reading Button */}
+            {/* Mobile continue button */}
             {!readingComplete && !showChoices && (
-              <div className="mt-12 mb-8 text-center">
+              <div className="mt-8 sm:mt-12 mb-8 text-center">
                 <Button
-                  onClick={handleContinueReading}
-                  className="bg-blue-600 hover:bg-blue-700 text-white px-8 py-3"
+                  onClick={() => {
+                    handleContinueReading();
+                    handleReadingMilestone();
+                  }}
+                  className="bg-blue-600 hover:bg-blue-700 text-white px-6 sm:px-8 py-2 sm:py-3 text-sm sm:text-base w-full sm:w-auto"
                 >
                   Continue to Chapter End
                 </Button>
@@ -210,16 +336,15 @@ export default function ReadingPage() {
           </div>
         </div>
 
-        {/* Right Panel - Questions or Assessment */}
-        <div className="w-96 bg-white border-l border-gray-200 overflow-y-auto">
+        {/* Questions Panel - Mobile: Below content, Desktop: Sidebar */}
+        <div className="w-full lg:w-96 bg-white border-t lg:border-t-0 lg:border-l border-gray-200 overflow-y-auto questions-panel">
           {!showAssessment ? (
             <GuidingQuestions
               questions={chapter.questions}
               currentQuestionIndex={currentQuestionIndex}
               onAnswer={handleQuestionAnswer}
               answers={answers}
-              // TODO: Add stimulusId prop when connected to real story data for async question polling
-              // stimulusId={bookId} 
+              stimulusId={chapter.stimulusId} // Now properly connected
             />
           ) : (
             <AssessmentResults
@@ -294,6 +419,52 @@ export default function ReadingPage() {
           border-top-color: #1F2937;
           margin-bottom: 2px;
           z-index: 1001;
+        }
+        
+        /* Phase 6.7 - Enhanced animations and global styles */
+        .questions-ready-highlight {
+          border-color: #3B82F6 !important;
+          box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.2);
+          transition: all 0.5s ease;
+        }
+        
+        @keyframes shine {
+          0% { transform: translateX(-100%); }
+          100% { transform: translateX(100%); }
+        }
+        
+        .animate-shine {
+          animation: shine 2s infinite;
+        }
+        
+        /* Mobile-specific styles */
+        .mobile-reading-content {
+          font-size: 16px;
+          line-height: 1.6;
+        }
+        
+        @media (max-width: 640px) {
+          .mobile-reading-content {
+            font-size: 15px;
+          }
+          
+          .questions-panel {
+            min-height: 50vh;
+          }
+          
+          .questions-ready-highlight {
+            box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.2);
+          }
+        }
+        
+        /* Accessibility enhancements */
+        @media (prefers-reduced-motion: reduce) {
+          .animate-spin,
+          .animate-bounce,
+          .animate-pulse,
+          .animate-shine {
+            animation: none;
+          }
         }
       `}</style>
     </div>

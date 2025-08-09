@@ -7,6 +7,8 @@
  */
 
 import { QTIAssessmentItem, QTIResponseDeclaration, QTIOutcomeDeclaration } from '../types';
+import { ScoringAnalytics } from '@/lib/services/scoring-analytics';
+import { ScoringErrorHandler } from '@/lib/services/scoring-error-handler';
 
 // Response processing interfaces
 export interface ProcessedResponse {
@@ -30,6 +32,8 @@ export interface ProcessedResponse {
     method: 'template' | 'custom' | 'manual';
     /** Any warnings during processing */
     warnings: string[];
+    /** Processing timestamp (Phase 7.2: for cache validation) */
+    timestamp?: number;
   };
 }
 
@@ -61,74 +65,153 @@ export interface ResponseProcessingContext {
 
 /**
  * Main QTI Response Processing Engine
+ * Enhanced with Phase 7.2 Performance Foundation
  */
 export class QTIResponseProcessor {
   private processingCache = new Map<string, ProcessedResponse>();
+  
+  // Phase 7.2: Performance metrics tracking
+  private performanceMetrics = {
+    totalResponses: 0,
+    totalTime: 0,
+    slowResponses: 0, // >500ms
+    cacheHits: 0,
+    lastReset: Date.now()
+  };
 
   /**
    * Process a student response according to QTI rules
+   * PHASE 7.5.2: Enhanced with comprehensive monitoring, analytics, and error handling
    */
   async processResponse(context: ResponseProcessingContext): Promise<ProcessedResponse> {
-    const startTime = Date.now();
-    const warnings: string[] = [];
-
+    const startTime = performance.now();
+    
     try {
-
-      // Normalize the response based on interaction type
-      const normalizedResponse = this.normalizeResponse(
-        context.response, 
-        context.item.responseDeclaration,
-        warnings
-      );
-
-      // Calculate score using appropriate method
-      const scoreResult = await this.calculateScore(
-        normalizedResponse,
-        context.item,
-        context.previousAttempts
-      );
-
-      // Generate feedback
-      const feedback = this.generateFeedback(
-        scoreResult,
-        context.item,
-        context.studentContext
-      );
-
-      const processingTime = Date.now() - startTime;
-
-      const result: ProcessedResponse = {
-        rawResponse: context.response,
-        processedResponse: normalizedResponse,
-        score: scoreResult.score,
-        maxScore: scoreResult.maxScore,
-        isCorrect: scoreResult.isCorrect,
-        feedback,
-        metadata: {
+      // PHASE 7.2: Check cache first for performance optimization
+      const cacheKey = this.getCacheKey(context);
+      const cachedResult = this.processingCache.get(cacheKey);
+      
+      if (cachedResult && this.isCacheValid(cachedResult, context)) {
+        const processingTime = performance.now() - startTime;
+        
+        // PHASE 7.2: Track performance metrics (from cache)
+        this.trackPerformanceMetric(context.item.identifier, processingTime, true);
+        
+        // PHASE 7.5: Track analytics for cached response
+        ScoringAnalytics.trackResponse(
+          context.item.identifier,
           processingTime,
-          method: scoreResult.method,
-          warnings
-        }
-      };
+          cachedResult.isCorrect,
+          true, // fromCache
+          context.item.metadata?.generationMethod === 'async-background'
+        );
+        
+        console.debug('🚀 [Cache Hit] QTIResponseProcessor.processed', {
+          itemId: context.item.identifier,
+          score: `${cachedResult.score}/${cachedResult.maxScore}`,
+          correct: cachedResult.isCorrect,
+          processingTime: `${processingTime.toFixed(2)}ms`,
+          cached: true
+        });
+        
+        return cachedResult;
+      }
 
-      // Cache result for potential retry scenarios
-      const cacheKey = `${context.item.identifier}-${JSON.stringify(normalizedResponse)}`;
+      // PHASE 7.2: Optimize processing order
+      this.optimizeProcessingOrder(context);
+      
+      // Process response with enhanced monitoring
+      const result = await this.processResponseInternal(context);
+      
+      const processingTime = performance.now() - startTime;
+      const isAsyncGenerated = context.item.metadata?.generationMethod === 'async-background';
+      
+      // PHASE 7.2: Track performance metrics (fresh processing)
+      this.trackPerformanceMetric(context.item.identifier, processingTime, false);
+      
+      // PHASE 7.5: Track comprehensive analytics
+      ScoringAnalytics.trackResponse(
+        context.item.identifier,
+        processingTime,
+        result.isCorrect,
+        false, // fromCache
+        isAsyncGenerated
+      );
+      
+      // PHASE 7.5: Log performance warnings for slow responses
+      if (processingTime > 500) {
+        console.warn('🐌 Slow response processing detected', {
+          itemId: context.item.identifier,
+          processingTime: `${processingTime.toFixed(2)}ms`,
+          phase: 'phase-7',
+          isAsyncGenerated,
+          recommendation: 'Consider question complexity review or caching optimization'
+        });
+      }
+      
+      // Cache the result with proper timestamp
+      result.metadata.timestamp = Date.now();
       this.processingCache.set(cacheKey, result);
-
-      console.debug('QTIResponseProcessor.processed', {
+      
+      console.debug('✅ QTIResponseProcessor.processed', {
         itemId: context.item.identifier,
         score: `${result.score}/${result.maxScore}`,
         correct: result.isCorrect,
-        processingTime: `${processingTime}ms`
+        processingTime: `${processingTime.toFixed(2)}ms`,
+        cached: false,
+        isAsyncGenerated
       });
 
       return result;
-
-    } catch (error) {
-      console.error('❌ Error processing response:', error);
       
-      // Return a fallback response
-      return {
+    } catch (error) {
+      const processingTime = performance.now() - startTime;
+      
+      // PHASE 7.4 & 7.5: Comprehensive error handling with analytics integration
+      const errorResult = await ScoringErrorHandler.handleScoringError(
+        error,
+        context.item.identifier,
+        context
+      );
+      
+      // PHASE 7.5: Track failed processing in analytics
+      ScoringAnalytics.trackResponse(
+        context.item.identifier,
+        processingTime,
+        false, // isCorrect - assume false for errors
+        false, // fromCache
+        context.item.metadata?.generationMethod === 'async-background'
+      );
+      
+      // PHASE 7.5: Track error in analytics
+      ScoringAnalytics.trackError(
+        context.item.identifier,
+        error instanceof Error ? error.constructor.name : 'UnknownError'
+      );
+      
+      console.error('❌ QTIResponseProcessor error with comprehensive handling', {
+        itemId: context.item.identifier,
+        processingTime: `${processingTime.toFixed(2)}ms`,
+        error: error instanceof Error ? error.message : 'Unknown error',
+        handled: errorResult.handled,
+        hasFallback: !!errorResult.fallback,
+        phase: 'phase-7'
+      });
+      
+      if (errorResult.handled && errorResult.fallback) {
+        // Return enhanced fallback with proper metadata
+        return {
+          ...errorResult.fallback,
+          metadata: {
+            ...errorResult.fallback.metadata,
+            processingTime,
+            timestamp: Date.now()
+          }
+        };
+      }
+      
+      // Final fallback if error handler couldn't recover
+      const fallbackResponse: ProcessedResponse = {
         rawResponse: context.response,
         processedResponse: context.response,
         score: 0,
@@ -140,12 +223,62 @@ export class QTIResponseProcessor {
           showImmediately: true
         },
         metadata: {
-          processingTime: Date.now() - startTime,
+          processingTime,
           method: 'manual',
-          warnings: [`Processing error: ${error instanceof Error ? error.message : 'Unknown error'}`]
+          warnings: [`Processing error: ${error instanceof Error ? error.message : 'Unknown error'}`],
+          timestamp: Date.now()
         }
       };
+      
+      return fallbackResponse;
     }
+  }
+
+  /**
+   * Internal response processing logic (extracted from original processResponse)
+   * Handles the core processing without caching/monitoring concerns
+   */
+  private async processResponseInternal(context: ResponseProcessingContext): Promise<ProcessedResponse> {
+    const startTime = Date.now();
+    const warnings: string[] = [];
+
+    // Normalize the response based on interaction type
+    const normalizedResponse = this.normalizeResponse(
+      context.response, 
+      context.item.responseDeclaration,
+      warnings
+    );
+
+    // Calculate score using appropriate method
+    const scoreResult = await this.calculateScore(
+      normalizedResponse,
+      context.item,
+      context.previousAttempts
+    );
+
+    // Generate feedback
+    const feedback = this.generateFeedback(
+      scoreResult,
+      context.item,
+      context.studentContext
+    );
+
+    const processingTime = Date.now() - startTime;
+
+    return {
+      rawResponse: context.response,
+      processedResponse: normalizedResponse,
+      score: scoreResult.score,
+      maxScore: scoreResult.maxScore,
+      isCorrect: scoreResult.isCorrect,
+      feedback,
+      metadata: {
+        processingTime,
+        method: scoreResult.method,
+        warnings,
+        timestamp: Date.now()
+      }
+    };
   }
 
   /**
@@ -576,6 +709,168 @@ export class QTIResponseProcessor {
     }
   }
 
+  // ========================================================================
+  // PHASE 7.2: PERFORMANCE CACHING AND FOUNDATION METHODS
+  // ========================================================================
+
+  /**
+   * Generate cache key for response processing context
+   * Used to identify identical processing requests for caching
+   */
+  private getCacheKey(context: ResponseProcessingContext): string {
+    const gradeLevel = context.studentContext?.difficultyPreference || 'medium';
+    return `${context.item.identifier}-${JSON.stringify(context.response)}-${gradeLevel}`;
+  }
+
+  /**
+   * Check if cached result is still valid based on age and context
+   * Cache validity is 5 minutes for performance optimization
+   */
+  private isCacheValid(cachedResult: ProcessedResponse, context: ResponseProcessingContext): boolean {
+    const cacheAge = Date.now() - (cachedResult.metadata?.timestamp || 0);
+    const cacheValidityMs = 300000; // 5 minutes cache validity
+    
+    // Check age-based validity
+    if (cacheAge > cacheValidityMs) {
+      return false;
+    }
+
+    // Validate context compatibility
+    if (context.previousAttempts && context.previousAttempts.length > 0) {
+      // Don't use cache if there are previous attempts (penalty calculations may differ)
+      return false;
+    }
+
+    return true;
+  }
+
+  /**
+   * Optimize processing order for different question types
+   * Fast-path simple questions, defer expensive operations when possible
+   */
+  private optimizeProcessingOrder(context: ResponseProcessingContext): void {
+    // Fast-path for simple multiple choice questions
+    if (context.item.interactionType === 'choiceInteraction' && 
+        context.item.responseProcessing?.template === 'match_correct') {
+      // Mark for fast processing - implementation in Phase 7.5
+      context.item.metadata = {
+        ...context.item.metadata,
+        fastProcessing: true
+      };
+    }
+
+    // Defer expensive feedback generation for complex items
+    if (context.item.responseProcessing?.responseRules &&
+        context.item.responseProcessing.responseRules.length > 3) {
+      // Mark for deferred processing - implementation in Phase 7.5  
+      context.item.metadata = {
+        ...context.item.metadata,
+        deferredFeedback: true
+      };
+    }
+  }
+
+  /**
+   * Track performance metrics for monitoring and optimization
+   * Foundation method - full integration in Phase 7.5
+   */
+  private trackPerformanceMetric(itemId: string, processingTime: number, fromCache: boolean): void {
+    this.performanceMetrics.totalResponses++;
+    this.performanceMetrics.totalTime += processingTime;
+    
+    if (processingTime > 500) {
+      this.performanceMetrics.slowResponses++;
+    }
+
+    if (fromCache) {
+      this.performanceMetrics.cacheHits++;
+    }
+
+    // Phase 7.2: Foundation logging (enhanced in Phase 7.5)
+    if (processingTime > 1000) {
+      console.warn('🐌 Very slow response processing', {
+        itemId,
+        processingTime: `${processingTime.toFixed(2)}ms`,
+        phase: 'phase-7.2-foundation'
+      });
+    }
+  }
+
+  /**
+   * Get current performance statistics
+   * Foundation method - full analytics in Phase 7.5
+   */
+  getPerformanceStats() {
+    const totalTime = this.performanceMetrics.totalTime;
+    const totalResponses = this.performanceMetrics.totalResponses;
+    
+    return {
+      totalResponses,
+      totalTime,
+      averageTime: totalResponses > 0 ? totalTime / totalResponses : 0,
+      slowResponseCount: this.performanceMetrics.slowResponses,
+      slowResponseRate: totalResponses > 0 ? this.performanceMetrics.slowResponses / totalResponses : 0,
+      cacheHits: this.performanceMetrics.cacheHits,
+      cacheHitRate: totalResponses > 0 ? this.performanceMetrics.cacheHits / totalResponses : 0,
+      uptime: Date.now() - this.performanceMetrics.lastReset
+    };
+  }
+
+  /**
+   * Reset performance metrics
+   * Useful for testing and monitoring resets
+   */
+  resetPerformanceMetrics(): void {
+    this.performanceMetrics = {
+      totalResponses: 0,
+      totalTime: 0,
+      slowResponses: 0,
+      cacheHits: 0,
+      lastReset: Date.now()
+    };
+  }
+
+  /**
+   * Warm up cache with common response patterns
+   * Foundation method for performance optimization
+   */
+  async warmupCache(commonPatterns: ResponseProcessingContext[]): Promise<void> {
+    for (const pattern of commonPatterns) {
+      try {
+        await this.processResponse(pattern);
+      } catch (error) {
+        console.warn('Cache warmup failed for pattern:', pattern.item.identifier, error);
+      }
+    }
+  }
+
+  /**
+   * Get cache statistics and health metrics
+   * Foundation method for cache monitoring
+   */
+  getCacheStats(): { 
+    size: number; 
+    keys: string[]; 
+    hitRate: number;
+    efficiency: 'excellent' | 'good' | 'fair' | 'poor';
+  } {
+    const stats = this.getPerformanceStats();
+    const hitRate = stats.cacheHitRate;
+    
+    let efficiency: 'excellent' | 'good' | 'fair' | 'poor';
+    if (hitRate >= 0.8) efficiency = 'excellent';
+    else if (hitRate >= 0.6) efficiency = 'good';
+    else if (hitRate >= 0.4) efficiency = 'fair';
+    else efficiency = 'poor';
+
+    return {
+      size: this.processingCache.size,
+      keys: Array.from(this.processingCache.keys()),
+      hitRate,
+      efficiency
+    };
+  }
+
   /**
    * Clear the processing cache
    */
@@ -583,15 +878,7 @@ export class QTIResponseProcessor {
     this.processingCache.clear();
   }
 
-  /**
-   * Get cache statistics
-   */
-  getCacheStats(): { size: number; keys: string[] } {
-    return {
-      size: this.processingCache.size,
-      keys: Array.from(this.processingCache.keys())
-    };
-  }
+
 }
 
 // Export a default instance
