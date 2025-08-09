@@ -1,9 +1,30 @@
 /**
- * @fileoverview TypeScript interfaces and types for AI story generation system
+ * @fileoverview AI Story Generation Types with Split Generation Support
  * 
- * This module defines all the data structures used for generating educational
- * stories with Google Gemini AI, including request/response formats, story
- * sections, comprehension questions, and error handling.
+ * This module contains types for both unified and split story/question generation:
+ * - ComprehensionQuestion: Core question structure (existing)
+ * - EnhancedComprehensionQuestion: Backward-compatible extension for split generation
+ * - SectionQuestionGenInput: Contract for per-section question generation
+ * - SectionQuestionsResult: Results compatible with existing StorySection
+ * 
+ * Integration Approach:
+ * - All enhanced types extend existing types (zero breaking changes)
+ * - Optional enhanced fields provide additional validation and metadata
+ * - Split generation produces questions compatible with existing StorySection.questions
+ * 
+ * @example Phase 2 Usage:
+ * ```typescript
+ * // Phase 2 will use these contracts:
+ * const input: SectionQuestionGenInput = {
+ *   sectionContent: section.content,
+ *   sectionIndex: section.id,
+ *   gradeLevel: request.gradeLevel
+ * };
+ * 
+ * const result = await generateQuestionsForSection(input);
+ * // result.questions are EnhancedComprehensionQuestion[] 
+ * // but compatible with StorySection.questions: ComprehensionQuestion[]
+ * ```
  */
 
 /**
@@ -166,4 +187,119 @@ export class AIServiceError extends Error {
       Error.captureStackTrace(this, AIServiceError);
     }
   }
+}
+
+// ======================================================================
+// PHASE 1: ENHANCED TYPES FOR SPLIT GENERATION SUPPORT
+// ======================================================================
+
+/**
+ * Enhanced comprehension question with additional metadata for split generation
+ * 
+ * Extends the existing ComprehensionQuestion with optional fields needed
+ * for improved validation and question quality in split generation mode.
+ */
+export interface EnhancedComprehensionQuestion extends ComprehensionQuestion {
+  /** Type of comprehension skill being tested (optional, for split generation) */
+  questionType?: 'comprehension' | 'vocabulary' | 'inference';
+  /** Difficulty level 1-5 (optional, for split generation) */
+  difficultyLevel?: number;
+  /** Validation metadata (optional, for split generation) */
+  validationMetadata?: {
+    /** Whether this question passed enhanced validation */
+    validationPassed: boolean;
+    /** Any validation warnings */
+    warnings?: string[];
+    /** Evidence found in section text */
+    hasTextEvidence?: boolean;
+  };
+}
+
+/**
+ * Input for generating questions for a specific story section
+ * 
+ * This is the only truly new type needed - provides the contract
+ * for split generation while producing compatible ComprehensionQuestion output.
+ */
+export interface SectionQuestionGenInput {
+  /** The text content of the story section */
+  sectionContent: string;
+  /** Zero-based index of this section in the story */
+  sectionIndex: number;
+  /** Grade level for question difficulty (matches existing StoryGenerationRequest.gradeLevel) */
+  gradeLevel: string;
+  /** Optional constraints for question generation */
+  constraints?: {
+    /** Number of questions to generate (default: 2, matches current behavior) */
+    questionCount?: number;
+    /** Question types to include */
+    questionTypes?: ('comprehension' | 'vocabulary' | 'inference')[];
+    /** Maximum length for question prompts */
+    maxQuestionLength?: number;
+    /** Maximum length for answer options */
+    maxOptionLength?: number;
+  };
+  /** Story metadata for context (reuse existing StoryGenerationRequest fields) */
+  storyMetadata?: {
+    universe: string;
+    character: string;
+    spark: string;
+    studentId: string;
+  };
+}
+
+/**
+ * Result of question generation for a single section
+ * 
+ * Produces EnhancedComprehensionQuestion[] that are fully compatible
+ * with existing StorySection.questions: ComprehensionQuestion[]
+ */
+export interface SectionQuestionsResult {
+  /** The section index these questions belong to */
+  sectionIndex: number;
+  /** Enhanced questions that are backward compatible with ComprehensionQuestion */
+  questions: EnhancedComprehensionQuestion[];
+  /** Generation metadata */
+  metadata: {
+    /** Total generation time in milliseconds */
+    generationTimeMs: number;
+    /** Model used for generation */
+    modelUsed: string;
+    /** Number of retry attempts if any */
+    retryCount: number;
+    /** Overall validation status */
+    validationPassed: boolean;
+  };
+}
+
+/**
+ * Enhanced validation error with QTI-style detailed error reporting
+ * 
+ * Provides better error context than simple string messages for enhanced validation
+ */
+export interface ValidationError {
+  /** Category of validation error */
+  field: string;
+  /** Human-readable error message */
+  message: string;
+  /** Question ID this error relates to (if applicable) */
+  questionId?: string;
+  /** Severity level of this error */
+  severity: 'error' | 'warning' | 'info';
+  /** Optional suggestion for fixing the error */
+  suggestion?: string;
+}
+
+/**
+ * Enhanced validation result with section-specific context
+ * 
+ * Extends the existing ValidationResult pattern used throughout the system
+ */
+export interface SectionValidationResult extends ValidationResult {
+  /** Section-specific validation context */
+  sectionContext?: {
+    sectionIndex: number;
+    questionCount: number;
+    hasTextEvidence: boolean;
+  };
 }

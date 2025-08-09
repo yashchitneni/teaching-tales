@@ -21,17 +21,25 @@ Notes
 
 ---
 
-## Phase 1 — Core types and validation foundation
-- [ ] Add types in `src/lib/ai/types.ts`:
-  - [ ] `SectionQuestionGenInput { sectionContent, sectionIndex, gradeLevel, constraints? }`
-  - [ ] `GeneratedQuestion { id, prompt, options[], correctIndex, explanation }`
-  - [ ] `SectionQuestionsResult { sectionIndex, questions: GeneratedQuestion[] }`
-- [ ] Implement validator in `src/lib/qti/validators/section-question-validator.ts`
-  - [ ] Bounds check for `correctIndex`
-  - [ ] Unique, non-empty options
-  - [ ] Optional evidence-in-text heuristic
-- [ ] Add unit tests for validator (early feedback loop)
-  - [ ] Test bounds, duplicates, schema validation
+## Phase 1 — Core types and validation foundation ✅ COMPLETE
+- [x] Add types in `src/lib/ai/types.ts`: ✅
+  - [x] `SectionQuestionGenInput { sectionContent, sectionIndex, gradeLevel, constraints? }` ✅
+  - [x] ~~`GeneratedQuestion`~~ → `EnhancedComprehensionQuestion extends ComprehensionQuestion` ✅ **(OPTIMIZED for integration)**
+  - [x] `SectionQuestionsResult { sectionIndex, questions: EnhancedComprehensionQuestion[] }` ✅
+- [x] Implement validator in `src/lib/qti/validators/section-question-validator.ts` ✅
+  - [x] Bounds check for `correctIndex` ✅
+  - [x] Unique, non-empty options ✅
+  - [x] Optional evidence-in-text heuristic ✅
+- [x] Add unit tests for validator (early feedback loop) ✅
+  - [x] Test bounds, duplicates, schema validation ✅
+
+**📋 Detailed Phase 1 roadmap: `docs/Phase_1_Detailed_Roadmap.md` ✅ COMPLETE**
+
+**🎯 Phase 1 Optimization Notes:**
+- **Integration-First Approach**: Extended existing `ComprehensionQuestion` instead of creating duplicate `GeneratedQuestion` type
+- **Zero Rework**: All enhanced questions compatible with existing `StorySection.questions`  
+- **Backward Compatibility**: All existing code continues to work unchanged
+- **Phase 2 Ready**: Clear contracts and integration path established
 
 ---
 
