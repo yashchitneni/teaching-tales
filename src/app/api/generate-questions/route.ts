@@ -76,10 +76,17 @@ const TIMEBACK_API_URL = process.env.NEXT_PUBLIC_TIMEBACK_API_URL || 'http://loc
  * ```
  */
 export async function POST(request: NextRequest) {
+  // Declare these at function scope so they're available in catch block
+  const requestId = crypto.randomUUID();
+  const requestStartTime = Date.now();
+  
   try {
     // Feature flag check (fail fast - before any processing)
     if (!FEATURE_FLAGS.QTI_SPLIT_GENERATION_ENABLED) {
-      console.log('⚠️ Split generation disabled by feature flag');
+      console.log('⚠️ Split generation disabled by feature flag', {
+        requestId,
+        timestamp: new Date().toISOString()
+      });
       return NextResponse.json(
         { 
           success: false, 
@@ -91,9 +98,6 @@ export async function POST(request: NextRequest) {
         { status: 501 } // Not Implemented
       );
     }
-
-    const requestId = crypto.randomUUID();
-    const requestStartTime = Date.now();
     
     console.log('🚀 Split generation enabled, processing request:', {
       flagEnabled: FEATURE_FLAGS.QTI_SPLIT_GENERATION_ENABLED,
@@ -675,7 +679,7 @@ export async function POST(request: NextRequest) {
 
   } catch (error: any) {
     // Enhanced top-level error handling with comprehensive logging
-    const totalRequestTime = Date.now() - requestStartTime;
+    const totalRequestTime = Date.now() - (requestStartTime || Date.now());
     
     console.error('❌ Unexpected error in generate-questions endpoint:', {
       requestId: requestId || 'unknown',
