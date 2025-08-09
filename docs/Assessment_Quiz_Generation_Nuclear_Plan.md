@@ -82,16 +82,66 @@
 - Significant drop in mismatched or unrecognized-answer incidents in logs.
 - Round-trip (generate → store → answer → score) is consistent across environments.
 
+#### Feature Flag Configuration
+- **Server-side flag**: `QTI_SPLIT_GENERATION_ENABLED` (default: `false`)
+  - Controls server-side split generation logic
+  - Set via environment variable or `sst.config.ts`
+  - Access: `FEATURE_FLAGS.QTI_SPLIT_GENERATION_ENABLED` in `src/lib/config.ts`
+- **Client-side flag**: `NEXT_PUBLIC_QTI_SPLIT_GENERATION` (default: `false`)
+  - Controls client-side UI features (progressive loading, indicators)
+  - Set via environment variable or `sst.config.ts`
+  - Access: `CLIENT_FEATURE_FLAGS.QTI_SPLIT_GENERATION` in `src/lib/config.ts`
+
+#### Flag Usage Instructions
+**Local Development:**
+```bash
+# Enable split generation for testing
+QTI_SPLIT_GENERATION_ENABLED=true npm run dev
+
+# Enable both server and client features
+QTI_SPLIT_GENERATION_ENABLED=true NEXT_PUBLIC_QTI_SPLIT_GENERATION=true npm run dev
+```
+
+**Production Deployment:**
+- Flags are controlled in `sst.config.ts`
+- Default to `false` for safety
+- Can be toggled without code deployment
+
+#### Rollout Strategy (Feature Flag Gated)
+**Phase 1 - Development & Testing:**
+- Implement behind `QTI_SPLIT_GENERATION_ENABLED=false` (no behavior change)
+- Local testing with flags enabled
+- Staging environment validation
+
+**Phase 2 - Controlled Rollout:**
+- Enable for internal users/testing accounts
+- Monitor metrics and error rates
+- Gradual expansion based on stability
+
+**Phase 3 - Full Deployment:**
+- Enable flags in production after validation
+- Monitor correctness improvements
+- Keep rollback option via flag toggle
+
+#### Rollback Strategy
+- **Instant rollback**: Toggle flags to `false` without code deployment
+- **No data loss**: Both paths use same storage format and endpoints
+- **Graceful degradation**: UI falls back to current behavior when flags disabled
+- **Monitoring**: Track error rates and correctness metrics for quick detection
+
 #### Rollout Plan (Incremental)
-1) Add `/api/generate-questions` and `PromptTemplates.generateQuestionsForSection`.
-2) Wire `StoryStorageService.saveStory` to call per-section question generation and persist results.
-3) Update UI to handle progressive assessment availability; instrument analytics for correctness.
-4) Monitor, then evaluate moving to first-class QTI items (alternative B) once stable.
+1) Add `/api/generate-questions` and `PromptTemplates.generateQuestionsForSection` (flag-gated).
+2) Wire `StoryStorageService.saveStory` to call per-section question generation (flag-gated).
+3) Update UI to handle progressive assessment availability (flag-gated).
+4) Enable flags for testing; monitor analytics for correctness improvements.
+5) Gradual production rollout with instant rollback capability via flags.
+6) Evaluate moving to first-class QTI items (alternative B) once stable.
 
 #### References (Key Files)
-- Generation prompt: `src/lib/ai/prompt-templates.ts`
-- Story generation API: `src/app/api/generate-story/route.ts`
-- Story save & assessment creation: `src/lib/services/story-storage-service.ts`, `src/lib/services/assessment-service.ts`
-- QTI client & proxy: `src/lib/api/qti-client.ts`, `src/app/api/ims/qti/v3p0/[...endpoint]/route.ts`
-- Answer submission & local processing: `src/lib/services/response-storage-service.ts`, `src/lib/services/enhanced-response-handler.ts`, `src/lib/qti/processors/response-processor.ts`
-- Env & config: `src/lib/config.ts`, `sst.config.ts`
+- **Configuration & flags**: `src/lib/config.ts`, `sst.config.ts`, `docs/Environment_Variables.md`
+- **Generation prompt**: `src/lib/ai/prompt-templates.ts`
+- **Story generation API**: `src/app/api/generate-story/route.ts`
+- **Story save & assessment creation**: `src/lib/services/story-storage-service.ts`, `src/lib/services/assessment-service.ts`
+- **QTI client & proxy**: `src/lib/api/qti-client.ts`, `src/app/api/ims/qti/v3p0/[...endpoint]/route.ts`
+- **Answer submission & local processing**: `src/lib/services/response-storage-service.ts`, `src/lib/services/enhanced-response-handler.ts`, `src/lib/qti/processors/response-processor.ts`
+- **Roadmap documentation**: `docs/Assessment_Quiz_Generation_Roadmap.md`, `docs/Phase_0_Detailed_Roadmap.md`

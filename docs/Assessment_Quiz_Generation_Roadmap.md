@@ -5,112 +5,136 @@
 
 ---
 
-## Phase 0 — Isolation, flags, and scope
-- [ ] Create Git branch `feature/split-quiz-generation`
-- [ ] Create Taskmaster tag `feature-split-quiz`
-- [ ] Add server flag `QTI_SPLIT_GENERATION_ENABLED=false` (default)
-- [ ] Add client flag `NEXT_PUBLIC_QTI_SPLIT_GENERATION=false` (optional)
-- [ ] Update decision doc with flags and scope
+## Phase 0 — Isolation, flags, and scope ✅ COMPLETE
+- [x] Create Git branch `decoupling-questions-from-passage` ✅
+- [x] Create Taskmaster tag `feature-split-quiz` (SKIPPED - not needed)
+- [x] Add server flag `QTI_SPLIT_GENERATION_ENABLED=false` (default) ✅
+- [x] Add client flag `NEXT_PUBLIC_QTI_SPLIT_GENERATION=false` (optional) ✅
+- [x] Update decision doc with flags and scope ✅
+- [x] Add CHANGELOG entry ✅
+- [x] Validate isolation setup ✅
+
+**📋 Detailed Phase 0 roadmap: `docs/Phase_0_Detailed_Roadmap.md`**
 
 Notes
 - Keep flags false until rollout; no default behavior change.
 
 ---
 
-## Phase 1 — Questions-only prompt and types
+## Phase 1 — Core types and validation foundation
 - [ ] Add types in `src/lib/ai/types.ts`:
   - [ ] `SectionQuestionGenInput { sectionContent, sectionIndex, gradeLevel, constraints? }`
   - [ ] `GeneratedQuestion { id, prompt, options[], correctIndex, explanation }`
   - [ ] `SectionQuestionsResult { sectionIndex, questions: GeneratedQuestion[] }`
-- [ ] Implement `PromptTemplates.generateQuestionsForSection(input)` in `src/lib/ai/prompt-templates.ts`
-  - [ ] Enforce deterministic JSON schema (single correct index, options length, explanation references section text)
 - [ ] Implement validator in `src/lib/qti/validators/section-question-validator.ts`
   - [ ] Bounds check for `correctIndex`
   - [ ] Unique, non-empty options
   - [ ] Optional evidence-in-text heuristic
+- [ ] Add unit tests for validator (early feedback loop)
+  - [ ] Test bounds, duplicates, schema validation
 
 ---
 
-## Phase 2 — Questions generation API
+## Phase 2 — Questions-only prompt and generation service
+- [ ] Implement `PromptTemplates.generateQuestionsForSection(input)` in `src/lib/ai/prompt-templates.ts`
+  - [ ] Enforce deterministic JSON schema (single correct index, options length, explanation references section text)
+- [ ] Create `src/lib/ai/question-generation-service.ts`
+  - [ ] Export `generateQuestionsForSection(input)` with retries/backoff
+  - [ ] Integrate validator from Phase 1
+- [ ] Add unit tests for prompt and service
+  - [ ] Mock AI responses, test validation integration
+
+---
+
+## Phase 3 — Questions generation API endpoint
 - [ ] Create `src/app/api/generate-questions/route.ts`
   - [ ] Auth: cookie/bearer; verify via `${NEXT_PUBLIC_TIMEBACK_API_URL}/api/auth/me`
   - [ ] Input: `{ sectionContent, sectionIndex, gradeLevel, storyMetadata, constraints? }`
-  - [ ] Use `GeminiClient` + `PromptTemplates.generateQuestionsForSection`
+  - [ ] Use `GeminiClient` + `question-generation-service` from Phase 2
   - [ ] Run validation; return `{ sectionIndex, questions[] }`
   - [ ] Log latency/size; redact PII
-- [ ] Create `src/lib/ai/question-generation-service.ts`
-  - [ ] Export `generateQuestionsForSection(input)` with retries/backoff
+- [ ] Integration test for API endpoint
+  - [ ] Test auth, validation, error handling
 
 ---
 
-## Phase 3 — Assessment creation variant (non-breaking)
+## Phase 4 — Assessment creation variant (non-breaking)
 - [ ] Add `createSectionAssessmentsFromQuestions(...)` to `src/lib/services/assessment-service.ts`
   - [ ] Build `CreateAssessmentTestRequest` per section from generated questions
   - [ ] Persist via `POST /api/ims/qti/v3p0/assessment-tests` using `src/lib/api/qti-client.ts`
 - [ ] Do not modify existing `createStoryAssessments` (avoid churn)
+- [ ] Unit tests for new assessment creation method
 
 ---
 
-## Phase 4 — Story save orchestration (flag-gated)
+## Phase 5 — Story save orchestration (flag-gated)
 - [ ] In `src/lib/services/story-storage-service.ts` update `saveStory`:
-  - [ ] If flag off → current behavior
+  - [ ] If flag off → current behavior (no changes)
   - [ ] If flag on:
     - [ ] Step 1: Create stimulus (sections only)
-    - [ ] Step 2: For each section, call `generateQuestionsForSection` (parallel with concurrency cap)
+    - [ ] Step 2: For each section, call `/api/generate-questions` (parallel with concurrency cap)
     - [ ] Step 3: Validate; dedupe; retry once on failure
     - [ ] Step 4: `createSectionAssessmentsFromQuestions` to persist assessments
     - [ ] Step 5: Update stimulus metadata with `assessmentIds`
+- [ ] Integration test: full story save flow with flag on/off
 
 ---
 
-## Phase 5 — UI progressive availability (flag-gated)
+## Phase 6 — UI progressive availability (flag-gated)
 - [ ] In `src/app/book/[bookId]/page.tsx` (no breaking changes):
+  - [ ] When flag off: existing behavior unchanged
   - [ ] When flag on: show story immediately, then poll/refresh assessments by ids from stimulus metadata
   - [ ] Render per-section "Questions loading…" indicator until ready
-  - [ ] Keep existing path intact when flag off
+- [ ] UI tests for progressive rendering and loading states
 
 ---
 
-## Phase 6 — Scoring and submission (verify only)
+## Phase 7 — Scoring and submission verification
 - [ ] Ensure client submission remains `POST /api/ims/qti/v3p0/responses`
 - [ ] Confirm local `QTIResponseProcessor` correctness aligns with generated `correctIndex`
+- [ ] E2E test: story creation → question generation → answer submission → correctness verification
 
 ---
 
-## Phase 7 — Telemetry, logging, analytics
+## Phase 8 — Telemetry and monitoring
 - [ ] Add structured logs for `/api/generate-questions` (latency, output size, validation/retry counts)
 - [ ] Log assessment creation outcomes per section
 - [ ] Add lightweight metrics to compare correctness disputes pre/post flag enablement
+- [ ] Dashboard/monitoring setup for flag rollout
 
 ---
 
-## Phase 8 — Tests
-- Unit tests
-  - [ ] Prompt/validator tests (bounds, duplicates, schema)
-- Integration tests
-  - [ ] E2E: save story (flag on) → per-section questions → assessment creation → answer submission → correctness
-  - [ ] Use mocked upstream via proxy routes
-- UI tests
-  - [ ] Progressive rendering of sections/questions and loading indicator
-
----
-
-## Phase 9 — Docs and ops
+## Phase 9 — Documentation updates
 - [ ] Update `docs/Assessment_Quiz_Generation_Nuclear_Plan.md` with `/api/generate-questions` contract
 - [ ] Update `STORY_STORAGE_API_FLOW.md` and `QUIZ_XP_API_FLOW.md` to include split flow
 - [ ] Add "how to enable" section for flags (local/staging)
+- [ ] Create deployment runbook with rollback procedures
 
 ---
 
-## Phase 10 — Rollout
-- Staging
-  - [ ] Enable flag; generate multiple stories; validate assessments and correctness
-  - [ ] Review logs/metrics
-- Production (gradual)
+## Phase 10 — Controlled rollout and validation
+- **Stage 1: Development validation**
+  - [ ] Enable flags in development environment
+  - [ ] Generate test stories and validate question generation
+  - [ ] Verify correctness scoring and assessment flow
+  - [ ] Review logs and metrics for issues
+
+- **Stage 2: Staging validation**
+  - [ ] Enable flags in staging environment
+  - [ ] Run comprehensive E2E tests
+  - [ ] Load test question generation endpoint
+  - [ ] Validate against production-like data
+
+- **Stage 3: Production rollout (gradual)**
   - [ ] Enable for internal testers (cookie/tenant/flag gate)
-  - [ ] Expand as metrics show stability
-- Fallback
-  - [ ] Ensure instant rollback by turning off the flag
+  - [ ] Monitor error rates and correctness metrics
+  - [ ] Expand to limited user cohort (5-10%)
+  - [ ] Full rollout after metrics show stability
+
+- **Stage 4: Fallback preparedness**
+  - [ ] Document instant rollback procedure (toggle flags to false)
+  - [ ] Test rollback in staging environment
+  - [ ] Monitor for any rollback-related issues
 
 ---
 

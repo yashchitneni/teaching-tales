@@ -42,6 +42,9 @@ export default $config({
         GEMINI_MODEL_NAME: 'gemini-2.0-flash',
         GEMINI_MAX_TOKENS: '4096',
         REPLICATE_MODEL: 'black-forest-labs/flux-schnell',
+        // Feature flags (default to false for safety)
+        QTI_SPLIT_GENERATION_ENABLED: 'false',
+        NEXT_PUBLIC_QTI_SPLIT_GENERATION: 'false',
       },
     });
 

@@ -4,6 +4,14 @@ export const API_CONFIG = {
   QTI_BASE_PATH: '/ims/qti/v3p0'
 };
 
+export const FEATURE_FLAGS = {
+  QTI_SPLIT_GENERATION_ENABLED: process.env.QTI_SPLIT_GENERATION_ENABLED === 'true',
+} as const;
+
+export const CLIENT_FEATURE_FLAGS = {
+  QTI_SPLIT_GENERATION: process.env.NEXT_PUBLIC_QTI_SPLIT_GENERATION === 'true',
+} as const;
+
 // Helper function to safely access SST Resources
 function getSSResourceValue(resourceName: string): string | undefined {
   try {
