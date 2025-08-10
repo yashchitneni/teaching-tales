@@ -20,7 +20,7 @@ import { useAuth } from '@/contexts/AuthContext'
 import { StoryStorageService, type StoredStory } from '@/lib/services/story-storage-service'
 import { ChapterQuiz } from '@/components/ChapterQuiz'
 import { NextChapterChoice } from '@/components/NextChapterChoice'
-import { StoryGenerationService } from '@/lib/ai/story-generation-service'
+
 
 // Legacy interfaces for backward compatibility
 interface Question {
