@@ -948,7 +948,7 @@ export class QTIResponseProcessor {
     }
 
     // Fallback: analyze question content for type hints
-    const questionText = item.itemBody?.toLowerCase() || '';
+    const questionText = item.body?.toLowerCase() || '';
     
     if (questionText.includes('meaning') || questionText.includes('definition') || 
         questionText.includes('word') || questionText.includes('vocabulary')) {
@@ -975,7 +975,7 @@ export class QTIResponseProcessor {
     }
 
     // Fallback: estimate based on question characteristics
-    const questionText = item.itemBody || '';
+    const questionText = item.body || '';
     const optionsCount = item.responseDeclaration?.mapping?.mapEntries?.length || 4;
     
     let difficulty = 3; // Default medium difficulty
