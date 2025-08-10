@@ -3,6 +3,7 @@
 import { useState, useEffect, useRef } from 'react'
 import { Button } from '@/components/ui/button'
 import { useToast } from '@/components/ui/toast'
+import { TelemetryService } from '@/lib/services/telemetry-service'
 
 interface Question {
   id: string
@@ -31,6 +32,12 @@ interface GuidingQuestionsProps {
   isLastSection?: boolean
   /** Stimulus ID for async question status polling */
   stimulusId?: string
+  /** Story ID for telemetry tracking */
+  storyId?: string
+  /** Grade level for telemetry */
+  gradeLevel?: string
+  /** Section index for context */
+  sectionIndex?: number
 }
 
 export function GuidingQuestions({ 
@@ -41,7 +48,10 @@ export function GuidingQuestions({
   selectedAnswer,
   onSelectAnswer,
   isLastSection = false,
-  stimulusId
+  stimulusId,
+  storyId,
+  gradeLevel,
+  sectionIndex
 }: GuidingQuestionsProps) {
   const [questionStatus, setQuestionStatus] = useState<QuestionStatusState>({
     questionsReady: questions.length > 0,
@@ -54,6 +64,11 @@ export function GuidingQuestions({
   
   // Add ARIA live region for status announcements
   const [announcements, setAnnouncements] = useState<string>('');
+  
+  // PHASE 8.1: Add telemetry state for tracking reading engagement
+  const [componentMountTime] = useState<number>(Date.now());
+  const [questionStartTime, setQuestionStartTime] = useState<number>(Date.now());
+  const [hasTrackedComponentLoad, setHasTrackedComponentLoad] = useState(false);
 
   // Add toast notifications for status changes
   const { addToast } = useToast();
@@ -117,19 +132,72 @@ export function GuidingQuestions({
     }
   };
 
+  // PHASE 8.1: Track component load and reading engagement
+  useEffect(() => {
+    if (!hasTrackedComponentLoad) {
+      TelemetryService.trackUserEvent({
+        category: 'reading_engagement',
+        action: 'guiding_questions_loaded',
+        storyId,
+        stimulusId,
+        gradeLevel,
+        sectionIndex,
+        properties: {
+          questionsReady: questionStatus.questionsReady,
+          questionCount: questions.length,
+          status: questionStatus.status
+        }
+      });
+      setHasTrackedComponentLoad(true);
+      setQuestionStartTime(Date.now());
+    }
+  }, [hasTrackedComponentLoad, questionStatus.questionsReady, questions.length, questionStatus.status, storyId, stimulusId, gradeLevel, sectionIndex]);
+
   // Enhanced status change detection with notifications
   useEffect(() => {
     if (questionStatus.status !== lastKnownStatus && lastKnownStatus !== '') {
       if (questionStatus.status === 'completed' && lastKnownStatus !== 'completed') {
         setShowNotification(true);
         setTimeout(() => setShowNotification(false), 5000); // Auto-hide after 5s
+
+        // PHASE 8.1: Track async questions becoming ready
+        TelemetryService.trackLearningEvent({
+          category: 'async_questions',
+          action: 'questions_ready',
+          storyId,
+          stimulusId,
+          gradeLevel,
+          sectionIndex,
+          duration: Date.now() - componentMountTime,
+          properties: {
+            questionCount: questions.length,
+            waitTime: Date.now() - componentMountTime
+          }
+        });
+      }
+      
+      if (questionStatus.status === 'failed') {
+        // PHASE 8.1: Track async question failures
+        TelemetryService.trackErrorEvent({
+          category: 'async_questions',
+          action: 'questions_failed',
+          storyId,
+          stimulusId,
+          gradeLevel,
+          sectionIndex,
+          duration: Date.now() - componentMountTime,
+          properties: {
+            error: questionStatus.error || 'Unknown error',
+            previousStatus: lastKnownStatus
+          }
+        });
       }
       
       // Hook for future notification system (Phase 6.3)
       handleStatusChange(questionStatus.status, lastKnownStatus);
       setLastKnownStatus(questionStatus.status);
     }
-  }, [questionStatus.status, lastKnownStatus]);
+  }, [questionStatus.status, lastKnownStatus, componentMountTime, questions.length, storyId, stimulusId, gradeLevel, sectionIndex]);
 
   // Screen reader announcements for status changes
   useEffect(() => {
@@ -490,7 +558,23 @@ export function GuidingQuestions({
               key={index}
               onClick={() => {
                 if (!hasAnswered && onSelectAnswer) {
-                  onSelectAnswer(index)
+                  // PHASE 8.1: Track option selection
+                  TelemetryService.trackUserEvent({
+                    category: 'guiding_questions',
+                    action: 'option_selected',
+                    questionId: currentQuestion.id,
+                    storyId,
+                    stimulusId,
+                    gradeLevel,
+                    sectionIndex,
+                    properties: {
+                      questionIndex: safeIndex,
+                      optionIndex: index,
+                      timeToSelect: Date.now() - questionStartTime
+                    }
+                  });
+
+                  onSelectAnswer(index);
                 }
               }}
               disabled={hasAnswered}
@@ -540,7 +624,33 @@ export function GuidingQuestions({
       {/* Answer & Continue Button - Shows when an option is selected but not answered */}
       {hasSelected && !hasAnswered && (
         <Button
-          onClick={() => onAnswer(selectedAnswer)}
+          onClick={() => {
+            const answerTime = Date.now() - questionStartTime;
+            const isCorrect = selectedAnswer === currentQuestion.correctAnswer;
+
+            // PHASE 8.1: Track answer submission
+            TelemetryService.trackLearningEvent({
+              category: 'guiding_questions',
+              action: 'question_answered',
+              questionId: currentQuestion.id,
+              storyId,
+              stimulusId,
+              gradeLevel,
+              sectionIndex,
+              isCorrect,
+              attemptNumber: 1,
+              duration: answerTime,
+              properties: {
+                questionIndex: safeIndex,
+                selectedOption: selectedAnswer,
+                correctOption: currentQuestion.correctAnswer,
+                totalQuestions: questions.length
+              }
+            });
+
+            onAnswer(selectedAnswer);
+            setQuestionStartTime(Date.now()); // Reset for next question
+          }}
           className="w-full mb-6 bg-blue-600 hover:bg-blue-700 text-white"
         >
           Answer & Continue Reading
@@ -585,7 +695,30 @@ export function GuidingQuestions({
           
           {/* Continue Reading Button */}
           <Button
-            onClick={() => onAnswer(-1)} // Special value to signal "next question" or "continue"
+            onClick={() => {
+              // PHASE 8.1: Track reading continuation
+              TelemetryService.trackUserEvent({
+                category: 'reading_engagement',
+                action: currentQuestionIndex < questions.length - 1 
+                  ? 'continue_reading' 
+                  : (isLastSection ? 'view_results' : 'continue_reading'),
+                questionId: currentQuestion.id,
+                storyId,
+                stimulusId,
+                gradeLevel,
+                sectionIndex,
+                properties: {
+                  questionIndex: safeIndex,
+                  totalQuestions: questions.length,
+                  isLastQuestion: currentQuestionIndex >= questions.length - 1,
+                  isLastSection,
+                  timeOnQuestion: Date.now() - questionStartTime
+                }
+              });
+
+              onAnswer(-1); // Special value to signal "next question" or "continue"
+              setQuestionStartTime(Date.now()); // Reset timer
+            }}
             className="w-full mb-6 bg-blue-600 hover:bg-blue-700 text-white"
           >
             {currentQuestionIndex < questions.length - 1

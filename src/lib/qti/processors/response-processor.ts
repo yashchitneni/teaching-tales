@@ -9,6 +9,7 @@
 import { QTIAssessmentItem, QTIResponseDeclaration, QTIOutcomeDeclaration } from '../types';
 import { ScoringAnalytics } from '@/lib/services/scoring-analytics';
 import { ScoringErrorHandler } from '@/lib/services/scoring-error-handler';
+import { TelemetryService } from '@/lib/services/telemetry-service';
 
 // Response processing interfaces
 export interface ProcessedResponse {
@@ -85,6 +86,15 @@ export class QTIResponseProcessor {
    */
   async processResponse(context: ResponseProcessingContext): Promise<ProcessedResponse> {
     const startTime = performance.now();
+    const eventContext = {
+      stimulusId: context.item.identifier,
+      questionId: context.item.identifier,
+      questionType: this.getQuestionType(context.item),
+      difficultyLevel: this.getDifficultyLevel(context.item),
+      gradeLevel: context.studentContext?.difficultyPreference || 'medium',
+      asyncMode: context.item.metadata?.generationMethod === 'async-background',
+      phase: 'phase-8'
+    };
     
     try {
       // PHASE 7.2: Check cache first for performance optimization
@@ -105,6 +115,25 @@ export class QTIResponseProcessor {
           true, // fromCache
           context.item.metadata?.generationMethod === 'async-background'
         );
+
+        // PHASE 8.1: Enhanced telemetry beyond Phase 7 basic tracking
+        TelemetryService.trackPerformanceEvent({
+          category: 'response_processing',
+          action: 'question_scored',
+          duration: processingTime,
+          isCorrect: cachedResult.isCorrect,
+          cacheHit: true,
+          processingTime,
+          ...eventContext
+        });
+
+        TelemetryService.trackLearningEvent({
+          category: 'question_answering',
+          action: cachedResult.isCorrect ? 'correct_answer' : 'incorrect_answer',
+          attemptNumber: (context.previousAttempts?.length || 0) + 1,
+          isCorrect: cachedResult.isCorrect,
+          ...eventContext
+        });
         
         console.debug('🚀 [Cache Hit] QTIResponseProcessor.processed', {
           itemId: context.item.identifier,
@@ -137,6 +166,25 @@ export class QTIResponseProcessor {
         false, // fromCache
         isAsyncGenerated
       );
+      
+      // PHASE 8.1: Enhanced telemetry for fresh processing
+      TelemetryService.trackPerformanceEvent({
+        category: 'response_processing',
+        action: 'question_scored',
+        duration: processingTime,
+        isCorrect: result.isCorrect,
+        cacheHit: false,
+        processingTime,
+        ...eventContext
+      });
+
+      TelemetryService.trackLearningEvent({
+        category: 'question_answering',
+        action: result.isCorrect ? 'correct_answer' : 'incorrect_answer',
+        attemptNumber: (context.previousAttempts?.length || 0) + 1,
+        isCorrect: result.isCorrect,
+        ...eventContext
+      });
       
       // PHASE 7.5: Log performance warnings for slow responses
       if (processingTime > 500) {
@@ -188,6 +236,18 @@ export class QTIResponseProcessor {
         context.item.identifier,
         error instanceof Error ? error.constructor.name : 'UnknownError'
       );
+      
+      // PHASE 8.1: Enhanced error telemetry
+      TelemetryService.trackErrorEvent({
+        category: 'system_error',
+        action: 'scoring_failed',
+        duration: processingTime,
+        ...eventContext,
+        properties: { 
+          error: error instanceof Error ? error.message : 'Unknown error',
+          errorType: error instanceof Error ? error.constructor.name : 'UnknownError'
+        }
+      });
       
       console.error('❌ QTIResponseProcessor error with comprehensive handling', {
         itemId: context.item.identifier,
@@ -876,6 +936,60 @@ export class QTIResponseProcessor {
    */
   clearCache(): void {
     this.processingCache.clear();
+  }
+
+  /**
+   * PHASE 8.1: Helper method to extract question type from QTI item
+   */
+  private getQuestionType(item: QTIAssessmentItem): 'comprehension' | 'vocabulary' | 'inference' {
+    // Try to extract from metadata first
+    if (item.metadata?.questionType) {
+      return item.metadata.questionType;
+    }
+
+    // Fallback: analyze question content for type hints
+    const questionText = item.itemBody?.toLowerCase() || '';
+    
+    if (questionText.includes('meaning') || questionText.includes('definition') || 
+        questionText.includes('word') || questionText.includes('vocabulary')) {
+      return 'vocabulary';
+    }
+    
+    if (questionText.includes('infer') || questionText.includes('suggest') || 
+        questionText.includes('probably') || questionText.includes('likely') ||
+        questionText.includes('conclude') || questionText.includes('imply')) {
+      return 'inference';
+    }
+    
+    // Default to comprehension
+    return 'comprehension';
+  }
+
+  /**
+   * PHASE 8.1: Helper method to extract difficulty level from QTI item
+   */
+  private getDifficultyLevel(item: QTIAssessmentItem): number {
+    // Try to extract from metadata first
+    if (item.metadata?.difficultyLevel && typeof item.metadata.difficultyLevel === 'number') {
+      return item.metadata.difficultyLevel;
+    }
+
+    // Fallback: estimate based on question characteristics
+    const questionText = item.itemBody || '';
+    const optionsCount = item.responseDeclaration?.mapping?.mapEntries?.length || 4;
+    
+    let difficulty = 3; // Default medium difficulty
+    
+    // Adjust based on question length (longer = potentially more complex)
+    if (questionText.length > 200) difficulty += 1;
+    if (questionText.length < 50) difficulty -= 1;
+    
+    // Adjust based on option count
+    if (optionsCount > 4) difficulty += 1;
+    if (optionsCount < 4) difficulty -= 1;
+    
+    // Ensure difficulty is within bounds (1-5)
+    return Math.max(1, Math.min(5, difficulty));
   }
 
 

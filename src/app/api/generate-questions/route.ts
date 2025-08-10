@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { cookies } from 'next/headers';
 import { QuestionGenerationService, SectionQuestionGenInput, SectionQuestionsResult, AIServiceError } from '@/lib/ai';
 import { FEATURE_FLAGS } from '@/lib/config';
+import { TelemetryService } from '@/lib/services/telemetry-service';
 
 const TIMEBACK_API_URL = process.env.NEXT_PUBLIC_TIMEBACK_API_URL || 'http://localhost:8080';
 
@@ -452,6 +453,22 @@ export async function POST(request: NextRequest) {
       timestamp: new Date().toISOString()
     });
 
+    // PHASE 8.1: Track question generation request
+    TelemetryService.trackUserEvent({
+      category: 'question_generation',
+      action: 'questions_request_started',
+      sectionIndex: body.sectionIndex,
+      gradeLevel: body.gradeLevel,
+      stimulusId: body.storyMetadata?.studentId ? `${body.storyMetadata.studentId}_${body.sectionIndex}` : undefined,
+      properties: {
+        requestId,
+        contentWords,
+        asyncMode: true, // This is the async generation endpoint
+        hasConstraints: !!body.constraints,
+        questionCount: body.constraints?.questionCount || 'default'
+      }
+    });
+
     // Service integration (Task 3.5)
     // Initialize service instance
     const questionService = new QuestionGenerationService();
@@ -577,6 +594,40 @@ export async function POST(request: NextRequest) {
         },
         timestamp: new Date().toISOString()
       });
+
+      // PHASE 8.1: Track successful question generation
+      TelemetryService.trackPerformanceEvent({
+        category: 'question_generation',
+        action: 'questions_generated',
+        duration: totalRequestTime,
+        processingTime: serviceCallDuration,
+        sectionIndex: result.sectionIndex,
+        gradeLevel: body.gradeLevel,
+        stimulusId: body.storyMetadata?.studentId ? `${body.storyMetadata.studentId}_${body.sectionIndex}` : undefined,
+        properties: {
+          requestId,
+          questionCount: result.questions.length,
+          questionWords,
+          modelUsed: result.metadata.modelUsed,
+          retryCount: result.metadata.retryCount,
+          validationPassed: result.metadata.validationPassed,
+          avgQuestionLength: Math.round(result.questions.reduce((total, q) => total + q.question.length, 0) / result.questions.length),
+          asyncMode: true
+        }
+      });
+
+      TelemetryService.trackLearningEvent({
+        category: 'content_creation',
+        action: 'questions_created',
+        sectionIndex: result.sectionIndex,
+        gradeLevel: body.gradeLevel,
+        stimulusId: body.storyMetadata?.studentId ? `${body.storyMetadata.studentId}_${body.sectionIndex}` : undefined,
+        properties: {
+          requestId,
+          questionCount: result.questions.length,
+          questionTypes: result.questions.map(q => q.questionType || 'comprehension').join(',')
+        }
+      });
       
       return NextResponse.json(responseData);
 
@@ -594,6 +645,24 @@ export async function POST(request: NextRequest) {
         serviceCallDurationMs: serviceCallDuration,
         userId: authenticatedUser.id,
         timestamp: new Date().toISOString()
+      });
+
+      // PHASE 8.1: Track question generation errors
+      TelemetryService.trackErrorEvent({
+        category: 'question_generation',
+        action: 'questions_generation_failed',
+        duration: serviceCallDuration,
+        sectionIndex: body.sectionIndex,
+        gradeLevel: body.gradeLevel,
+        stimulusId: body.storyMetadata?.studentId ? `${body.storyMetadata.studentId}_${body.sectionIndex}` : undefined,
+        properties: {
+          requestId,
+          error: error.message,
+          errorCode: error.code || 'UNKNOWN_ERROR',
+          errorName: error.name,
+          isRetryable: error.isRetryable || false,
+          asyncMode: true
+        }
       });
 
       // Handle AIServiceError from Phase 2 service
