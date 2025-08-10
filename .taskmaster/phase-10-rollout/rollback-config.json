@@ -1,0 +1,26 @@
+{
+  "triggers": {
+    "error_rate_threshold": 0.5,
+    "performance_degradation": 20,
+    "user_complaint_threshold": 5,
+    "system_availability": 99.8,
+    "story_creation_failure_rate": 2,
+    "question_generation_timeout_rate": 5
+  },
+  "performance_targets": {
+    "story_creation_success_rate": 99.5,
+    "story_appearance_time": 2000,
+    "question_availability_time": 45000,
+    "response_processing_time": 150,
+    "system_error_rate": 0.1,
+    "cache_hit_rate": 70,
+    "memory_usage_peak": 80
+  },
+  "automatic_rollback_enabled": true,
+  "rollback_notification_channels": [
+    "email",
+    "slack",
+    "dashboard"
+  ],
+  "created_at": "2025-08-10T17:51:20.849Z"
+}
