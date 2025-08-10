@@ -1,0 +1,28 @@
+{
+  "validation_period": "3 days",
+  "start_time": "2025-08-10T18:54:30.537Z",
+  "end_time": "2025-08-10T19:41:22.847Z",
+  "total_measurements": 46,
+  "overall_metrics": {
+    "story_creation_time": 2988.3561435945694,
+    "question_generation_time": 90083.20613247585,
+    "response_processing_time": 201.4793936883526,
+    "analytics_generation_time": 9789.310607286729,
+    "system_availability": 99.62562002897707,
+    "error_rate": 0.2245491986764994,
+    "memory_usage": 797.2359703187535,
+    "cpu_utilization": 70.43942261568155,
+    "user_satisfaction": 4.296648902065107,
+    "feature_adoption": 87.11047528862709,
+    "support_tickets_per_day": 3.012806117782705,
+    "day": 1,
+    "targets_met": {
+      "targets_met": 8,
+      "total_targets": 11,
+      "success_rate": 72.72727272727273
+    }
+  },
+  "daily_summaries": [],
+  "validation_successful": false,
+  "next_phase_ready": false
+}
