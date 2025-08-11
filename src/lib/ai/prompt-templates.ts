@@ -54,6 +54,12 @@ For each section, create exactly 2 comprehension questions:
 - 1 literal comprehension question (what happened in the story?)
 - 1 inferential question (why did this happen? what might happen next? how did the character feel?)
 
+QUESTION ID REQUIREMENTS:
+- Generate unique question IDs by combining universe, character, section and question number
+- Pattern: [universe_prefix]-[character_prefix]-s[section]q[question]
+- For ${request.universe} + ${request.character}: use "s1q1", "s1q2", "s2q1", "s2q2", etc.
+- Make IDs short but unique to this story combination
+
 CONTENT GUIDELINES:
 - Keep content appropriate for children
 - Promote positive values and problem-solving
@@ -72,7 +78,7 @@ You must return your response as a valid JSON object with this exact structure:
       "content": "The story text for section 1 goes here...",
       "questions": [
         {
-          "id": "q1_1",
+          "id": "GENERATE_UNIQUE_ID_FOLLOWING_PATTERN_ABOVE",
           "type": "multiple_choice",
           "question": "What did ${request.character} discover at the beginning of the story?",
           "options": ["Option A", "Option B", "Option C", "Option D"],
@@ -80,7 +86,7 @@ You must return your response as a valid JSON object with this exact structure:
           "explanation": "Provide a detailed, educational explanation that helps students understand WHY this is the correct answer by referencing specific story details"
         },
         {
-          "id": "q1_2",
+          "id": "GENERATE_UNIQUE_ID_FOLLOWING_PATTERN_ABOVE",
           "type": "multiple_choice",
           "question": "How do you think ${request.character} felt when this happened?",
           "options": ["Excited", "Worried", "Curious", "Confused"],

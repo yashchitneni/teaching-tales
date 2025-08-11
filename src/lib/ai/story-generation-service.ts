@@ -281,7 +281,7 @@ export class StoryGenerationService {
         id: section.id || index + 1,
         content: section.content,
         questions: section.questions.map((q: any, qIndex: number) => ({
-          id: q.id || `q${index + 1}_${qIndex + 1}`,
+          id: q.id || `s${index + 1}q${qIndex + 1}-${request.universe}-${request.character}`,
           type: q.type || 'multiple_choice',
           question: q.question,
           options: q.options,

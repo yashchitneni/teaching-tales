@@ -196,6 +196,10 @@ export class EnhancedResponseHandler {
     
     try {
       // Step 1: Store response in backend
+      // Find the question and assessment for complete QTI item data
+      const assessment = story.assessments.find(a => a.id === responseData.assessmentId);
+      const question = assessment?.questions.find(q => q.id === responseData.questionId);
+      
       const storedResponse = await ResponseStorageService.storeResponse(
         responseData.assessmentId,
         responseData.studentId,
@@ -206,7 +210,8 @@ export class EnhancedResponseHandler {
           timeSpent: responseData.timeSpent,
           attempts: responseData.attempts,
           metadata: responseData.metadata
-        }
+        },
+        question // Pass complete question for QTI item definition
       );
 
       // Step 2: Submit to OneRoster gradebook (if integrated)

@@ -420,7 +420,7 @@ export class AssessmentService {
               
               // Questions data (stored as metadata since QTI items require XML)
               questions: section.questions.map((q, index) => ({
-                id: q.id || `q${index + 1}`,
+                id: q.id || `${storyId.slice(0,8)}-s${section.id}q${index + 1}`,
                 question: q.question,
                 options: q.options,
                 correct: q.correct,
