@@ -269,7 +269,14 @@ export default function StoryReadingPage() {
                   id: q.id,
                   text: q.prompt,
                   options: q.interactions[0]?.choices?.map(c => c.content) || [],
-                  correctAnswer: parseInt(q.correctResponse?.[0] || '0'),
+                  correctAnswer: (() => {
+                    const response = q.correctResponse?.[0] || '0';
+                    // Handle both 'choice_X' format and direct number format
+                    if (typeof response === 'string' && response.startsWith('choice_')) {
+                      return parseInt(response.replace('choice_', '')) || 0;
+                    }
+                    return parseInt(response) || 0;
+                  })(),
                   explanation: q.feedback?.find(f => f.type === 'correct')?.content || ''
                 })))
             })),

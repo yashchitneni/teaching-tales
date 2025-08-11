@@ -87,6 +87,7 @@ export async function POST(
         if (testsResponse.ok) {
           const testsData = await testsResponse.json();
           console.log('📋 [QTI] Found assessment tests, searching for item:', itemId);
+          console.log('🔍 [QTI] Available tests:', (testsData.tests || testsData.data?.tests || []).map((t: any) => t.id));
           
           // Search through tests for the item, prioritizing newer assessments
           const tests = (testsData.tests || testsData.data?.tests || [])
@@ -94,32 +95,41 @@ export async function POST(
           
           let foundQuestion = null;
           
-          for (const test of tests) {
-            // Try to get full test details
-            try {
-              const testResponse = await fetch(`${TIMEBACK_API_URL}/ims/qti/v3p0/assessment-tests/${test.id}`, {
-                headers: {
-                  'Authorization': `Bearer ${token}`,
-                  'Content-Type': 'application/json',
-                }
-              });
-              
-              if (testResponse.ok) {
-                const testData = await testResponse.json();
-                const questions = testData?.test?.metadata?.questions || 
-                                testData?.metadata?.questions || 
-                                testData?.questions || [];
+          // Optimization: Search most recent assessments first (likely to contain the current question)
+          const recentTests = tests.slice(0, 5); // Check newest 5 first
+          const olderTests = tests.slice(5);
+          
+          for (const testBatch of [recentTests, olderTests]) {
+            if (foundQuestion) break;
+            
+            for (const test of testBatch) {
+              try {
+                const testResponse = await fetch(`${TIMEBACK_API_URL}/ims/qti/v3p0/assessment-tests/${test.id}`, {
+                  headers: {
+                    'Authorization': `Bearer ${token}`,
+                    'Content-Type': 'application/json',
+                  }
+                });
                 
-                console.log('🔍 [QTI] Assessment', test.id, 'has questions:', questions.map((q: any) => q.id));
-                
-                foundQuestion = questions.find((q: any) => q.id === itemId);
-                if (foundQuestion) {
-                  console.log('🎯 [QTI] Found matching question:', foundQuestion);
-                  break;
+                if (testResponse.ok) {
+                  const testData = await testResponse.json();
+                  const questions = testData?.test?.metadata?.questions || 
+                                  testData?.metadata?.questions || 
+                                  testData?.questions || [];
+                  
+                  if (questions.length > 0) {
+                    console.log('🔍 [QTI] Assessment', test.id, 'has questions:', questions.map((q: any) => q.id));
+                  }
+                  
+                  foundQuestion = questions.find((q: any) => q.id === itemId);
+                  if (foundQuestion) {
+                    console.log('🎯 [QTI] Found matching question:', foundQuestion);
+                    break;
+                  }
                 }
+              } catch (e) {
+                console.warn('⚠️ [QTI] Failed to get test details for', test.id);
               }
-            } catch (e) {
-              console.warn('⚠️ [QTI] Failed to get test details for', test.id);
             }
           }
           
