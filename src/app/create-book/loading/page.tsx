@@ -27,6 +27,7 @@ export default function StoryLoadingPage() {
   const { user } = useAuth()
   const [progress, setProgress] = useState(0)
   const [messageIndex, setMessageIndex] = useState(0)
+  const [jobId, setJobId] = useState<string | null>(null)
   const [bookId, setBookId] = useState<string | null>(null)
   const [error, setError] = useState<string | null>(null)
   const isGeneratingRef = useRef(false)
@@ -52,29 +53,17 @@ export default function StoryLoadingPage() {
   }, [user])
 
   useEffect(() => {
-    // Update progress and messages
-    const progressInterval = setInterval(() => {
-      setProgress(prev => {
-        if (prev >= 100) {
-          clearInterval(progressInterval)
-          return 100
-        }
-        return prev + 2
-      })
-    }, 100)
-
+    // Rotate helper messages for UX only
     const messageInterval = setInterval(() => {
       setMessageIndex(prev => {
         if (prev >= loadingMessages.length - 1) {
-          clearInterval(messageInterval)
           return prev
         }
         return prev + 1
       })
-    }, 2000)
+    }, 2500)
 
     return () => {
-      clearInterval(progressInterval)
       clearInterval(messageInterval)
     }
   }, [])
@@ -106,55 +95,54 @@ export default function StoryLoadingPage() {
       // Note: We'll save to QTI API after successful generation
       // No need to store initial metadata since we save complete stories
       
-      // Generate real AI story using our server-side API
-      
-      const response = await fetch('/api/generate-story', {
+      // Start async job for generation + save
+      const startRes = await fetch('/api/generate-story/start', {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        credentials: 'include', // Include HttpOnly cookies for authentication
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
         body: JSON.stringify({
-          universe: universe,
-          character: character,
-          spark: spark,
-          gradeLevel: user.grades?.[0] || '4-5', // Default to 4-5 if no grade available
-          studentId: user.sourcedId || user.id || user.cognitoId // Fallback chain
+          universe,
+          character,
+          spark,
+          gradeLevel: user.grades?.[0] || '4-5',
+          studentId: user.sourcedId || user.id || user.cognitoId
         })
       })
-      
-      if (!response.ok) {
-        const errorData = await response.json()
-        throw new Error(`API Error: ${errorData.error} - ${errorData.details}`)
+
+      if (!startRes.ok) {
+        const txt = await startRes.text()
+        throw new Error(`Failed to start: ${txt}`)
       }
-      
-      const storyResponse = await response.json()
-      
-      // Save complete story to QTI Stimuli API and create assessment tests
-      const { 
-        stimulus: savedStimulus, 
-        assessments, 
-        oneRosterIntegration 
-      } = await StoryStorageService.saveStory(storyResponse, {
-        universe: universe,
-        character: character,
-        spark: spark,
-        gradeLevel: user.grades?.[0] || '4-5',
-        studentId: user.sourcedId,
-        storyId: storyId,
-        enableOneRosterIntegration: true // Enable OneRoster integration
-      })
-      
-      // Log OneRoster integration results
-      if (oneRosterIntegration) {
-        if (!oneRosterIntegration.success) {
-          console.warn('⚠️ OneRoster integration failed:', oneRosterIntegration.error)
-          // Story creation continues even if OneRoster integration fails
+
+      const { jobId } = await startRes.json()
+      setJobId(jobId)
+
+      await new Promise<void>((resolve, reject) => {
+        const es = new EventSource(`/api/generate-story/progress?jobId=${jobId}`)
+        es.addEventListener('progress', (ev: MessageEvent) => {
+          try {
+            const data = JSON.parse(ev.data as any)
+            if (typeof data.percent === 'number') {
+              setProgress(Math.min(95, data.percent))
+            }
+            if (data.done) {
+              es.close()
+              if (data.error) {
+                reject(new Error(data.error))
+              } else if (data.stimulusId) {
+                setProgress(100)
+                resolve()
+                router.push(`/book/${data.stimulusId}`)
+              }
+            }
+          } catch (e) {
+            console.error('progress parse error', e)
+          }
+        })
+        es.onerror = (e) => {
+          console.warn('SSE error', e)
         }
-      }
-      
-      // Navigate to reading interface using the stimulus ID
-      router.push(`/book/${savedStimulus.id}`)
+      })
 
     } catch (error) {
       console.error('Error generating story:', error)
@@ -248,7 +236,7 @@ export default function StoryLoadingPage() {
           </div>
 
           {/* Progress Percentage */}
-          <p className="text-sm text-gray-500">{progress}% Complete</p>
+          <p className="text-sm text-gray-500">{Math.floor(progress)}% Complete</p>
         </div>
       </div>
 
