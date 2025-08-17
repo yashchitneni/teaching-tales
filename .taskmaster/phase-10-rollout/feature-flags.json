@@ -1,0 +1,16 @@
+{
+  "environment": "production",
+  "rollout_stage": "phase_10_3",
+  "user_percentage": 10,
+  "flags": {
+    "QTI_SPLIT_GENERATION_ENABLED": true,
+    "QTI_ASYNC_ASSESSMENTS_ENABLED": true,
+    "QTI_ASYNC_STORY_SAVE_ENABLED": true,
+    "QTI_PERFORMANCE_CACHING_ENABLED": true,
+    "TELEMETRY_ENABLED": true,
+    "ML_OPTIMIZATION_ENABLED": false,
+    "INTELLIGENT_ALERTING_ENABLED": true
+  },
+  "created_at": "2025-08-10T17:51:20.848Z",
+  "created_by": "phase_10_3_rollout_configuration"
+}

@@ -1,4 +1,4 @@
-import { StoryGenerationRequest, ContinuationRequest } from './types';
+import { StoryGenerationRequest, ContinuationRequest, SectionQuestionGenInput } from './types';
 
 export class PromptTemplates {
   static generateStoryPrompt(request: StoryGenerationRequest): string {
@@ -54,6 +54,12 @@ For each section, create exactly 2 comprehension questions:
 - 1 literal comprehension question (what happened in the story?)
 - 1 inferential question (why did this happen? what might happen next? how did the character feel?)
 
+QUESTION ID REQUIREMENTS:
+- Generate unique question IDs by combining universe, character, section and question number
+- Pattern: [universe_prefix]-[character_prefix]-s[section]q[question]
+- For ${request.universe} + ${request.character}: use "s1q1", "s1q2", "s2q1", "s2q2", etc.
+- Make IDs short but unique to this story combination
+
 CONTENT GUIDELINES:
 - Keep content appropriate for children
 - Promote positive values and problem-solving
@@ -72,7 +78,7 @@ You must return your response as a valid JSON object with this exact structure:
       "content": "The story text for section 1 goes here...",
       "questions": [
         {
-          "id": "q1_1",
+          "id": "GENERATE_UNIQUE_ID_FOLLOWING_PATTERN_ABOVE",
           "type": "multiple_choice",
           "question": "What did ${request.character} discover at the beginning of the story?",
           "options": ["Option A", "Option B", "Option C", "Option D"],
@@ -80,7 +86,7 @@ You must return your response as a valid JSON object with this exact structure:
           "explanation": "Provide a detailed, educational explanation that helps students understand WHY this is the correct answer by referencing specific story details"
         },
         {
-          "id": "q1_2",
+          "id": "GENERATE_UNIQUE_ID_FOLLOWING_PATTERN_ABOVE",
           "type": "multiple_choice",
           "question": "How do you think ${request.character} felt when this happened?",
           "options": ["Excited", "Worried", "Curious", "Confused"],
@@ -191,6 +197,100 @@ Return a valid JSON object with this exact structure:
 Important: Ensure JSON validity and maintain story continuity while introducing new exciting elements.`;
   }
 
+  static generateQuestionsForSection(input: SectionQuestionGenInput): string {
+    // Validate input
+    const errors = this.validateQuestionGenInputs(input);
+    if (errors.length > 0) {
+      throw new Error(`Invalid input: ${errors.join(', ')}`);
+    }
+
+    // Get grade-level guidance
+    const gradeGuidance = this.getGradeLevelGuidance(input.gradeLevel);
+    
+    // Extract parameters with defaults
+    const questionCount = input.constraints?.questionCount || 2;
+    const questionTypes = input.constraints?.questionTypes || ['comprehension', 'inference'];
+    const maxQuestionLength = input.constraints?.maxQuestionLength || 100;
+    const maxOptionLength = input.constraints?.maxOptionLength || 50;
+    
+    // Sanitize section content
+    const sanitizedContent = this.sanitizeInput(input.sectionContent);
+    
+    // Format question types guidance
+    const questionTypesGuidance = this.formatQuestionTypesGuidance(questionTypes);
+    
+    // Get difficulty level for grade
+    const difficultyLevel = this.getDifficultyForGrade(input.gradeLevel);
+
+    return `Generate comprehension questions for this story section:
+
+SECTION PARAMETERS:
+- Section Content: ${sanitizedContent}
+- Section Index: ${input.sectionIndex}
+- Target Grade Level: ${input.gradeLevel}
+- Question Count: ${questionCount}
+
+${gradeGuidance}
+
+QUESTION GENERATION REQUIREMENTS:
+For this story section, create exactly ${questionCount} comprehension questions that test reading comprehension:
+${questionTypesGuidance}
+
+QUESTION CONSTRAINTS:
+- Questions must be answerable from the section content alone
+- Question text should not exceed ${maxQuestionLength} characters
+- Answer options should not exceed ${maxOptionLength} characters each
+- Use vocabulary appropriate for ${input.gradeLevel} grade level
+- Create engaging, educational questions that test reading comprehension
+- Ensure questions have clear correct answers supported by text evidence
+- Make answer choices plausible but clearly distinguishable
+- Reference specific details, characters, or events from this section
+
+CONTENT GUIDELINES:
+- Questions must reference specific details from the provided section content
+- Explanations must cite evidence from the section text using phrases like "The text states..." or "According to the section..."
+- Avoid questions that require knowledge from outside this section
+- Focus on comprehension skills appropriate for ${input.gradeLevel}
+- Make questions engaging and educational
+
+OUTPUT FORMAT: 
+You must return your response as a valid JSON array with this exact structure:
+
+[
+  {
+    "id": "section_${input.sectionIndex}_q1",
+    "type": "multiple_choice",
+    "question": "Based on this section, what did the character discover?",
+    "options": ["Option A", "Option B", "Option C", "Option D"],
+    "correct": 0,
+    "explanation": "The text states that... This shows the character discovered...",
+    "questionType": "comprehension",
+    "difficultyLevel": ${difficultyLevel}
+  },
+  {
+    "id": "section_${input.sectionIndex}_q2", 
+    "type": "multiple_choice",
+    "question": "How do you think the character felt when this happened?",
+    "options": ["Excited", "Worried", "Curious", "Confused"],
+    "correct": 2,
+    "explanation": "Based on the character's actions and words in the text, we can infer...",
+    "questionType": "inference",
+    "difficultyLevel": ${difficultyLevel}
+  }
+]
+
+CRITICAL OUTPUT REQUIREMENTS:
+- Return ONLY the JSON array, no additional text, markdown, or code blocks
+- Do NOT wrap the response in code blocks or markdown formatting
+- The response must start with [ and end with ]
+- Ensure the JSON is valid and properly formatted
+- Include exactly ${questionCount} questions
+- Each question must have a unique ID following the pattern: section_${input.sectionIndex}_q[number]
+- All questions must reference content from the provided section
+- Explanations must be 2-3 sentences minimum and reference specific section details
+- Make questions challenging but appropriate for ${input.gradeLevel} grade level`;
+  }
+
   static validatePromptInputs(request: StoryGenerationRequest): string[] {
     const errors: string[] = [];
 
@@ -278,6 +378,79 @@ GRADE 6-8 SPECIFIC REQUIREMENTS:
     };
 
     return guidance[gradeLevel] || guidance['4-5']; // Default to 4-5 if not found
+  }
+
+  static validateQuestionGenInputs(input: SectionQuestionGenInput): string[] {
+    const errors: string[] = [];
+
+    if (!input.sectionContent?.trim()) {
+      errors.push('Section content is required');
+    }
+
+    if (typeof input.sectionIndex !== 'number' || input.sectionIndex < 0) {
+      errors.push('Section index must be a non-negative number');
+    }
+
+    if (!input.gradeLevel?.trim()) {
+      errors.push('Grade level is required');
+    }
+
+    // Validate reasonable lengths
+    if (input.sectionContent && input.sectionContent.length > 5000) {
+      errors.push('Section content is too long (max 5000 characters)');
+    }
+
+    // Validate constraints if provided
+    if (input.constraints) {
+      if (input.constraints.questionCount !== undefined) {
+        if (typeof input.constraints.questionCount !== 'number' || 
+            input.constraints.questionCount < 1 || 
+            input.constraints.questionCount > 5) {
+          errors.push('Question count must be between 1 and 5');
+        }
+      }
+
+      if (input.constraints.questionTypes) {
+        const validTypes = ['comprehension', 'vocabulary', 'inference'];
+        const invalidTypes = input.constraints.questionTypes.filter(type => !validTypes.includes(type));
+        if (invalidTypes.length > 0) {
+          errors.push(`Invalid question types: ${invalidTypes.join(', ')}. Must be one of: ${validTypes.join(', ')}`);
+        }
+      }
+
+      if (input.constraints.maxQuestionLength !== undefined && 
+          (typeof input.constraints.maxQuestionLength !== 'number' || input.constraints.maxQuestionLength < 10)) {
+        errors.push('Maximum question length must be at least 10 characters');
+      }
+
+      if (input.constraints.maxOptionLength !== undefined && 
+          (typeof input.constraints.maxOptionLength !== 'number' || input.constraints.maxOptionLength < 5)) {
+        errors.push('Maximum option length must be at least 5 characters');
+      }
+    }
+
+    return errors;
+  }
+
+  static formatQuestionTypesGuidance(questionTypes: string[]): string {
+    const typeDescriptions: Record<string, string> = {
+      'comprehension': '- 1 literal comprehension question (what happened in this section?)',
+      'vocabulary': '- 1 vocabulary question (understanding of key terms or concepts)',
+      'inference': '- 1 inferential question (why did this happen? what might happen next? how did character feel?)'
+    };
+
+    return questionTypes.map(type => typeDescriptions[type] || `- 1 ${type} question`).join('\n');
+  }
+
+  static getDifficultyForGrade(gradeLevel: string): number {
+    const difficultyMap: Record<string, number> = {
+      'K-1': 1,
+      '2-3': 2,
+      '4-5': 3,
+      '6-8': 4
+    };
+
+    return difficultyMap[gradeLevel] || 3; // Default to level 3 if not found
   }
 
   static generateStoryPromptWithGradeLevel(request: StoryGenerationRequest): string {

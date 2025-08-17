@@ -1,7 +1,8 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { Button } from '@/components/ui/button'
+import { TelemetryService } from '@/lib/services/telemetry-service'
 
 export interface ChapterQuizQuestion {
   id: string
@@ -14,12 +15,32 @@ export interface ChapterQuizQuestion {
 interface ChapterQuizProps {
   questions: ChapterQuizQuestion[]
   onComplete: (answers: number[]) => void
+  storyId?: string
+  gradeLevel?: string
 }
 
-export function ChapterQuiz({ questions, onComplete }: ChapterQuizProps) {
+export function ChapterQuiz({ questions, onComplete, storyId, gradeLevel }: ChapterQuizProps) {
   const [currentIndex, setCurrentIndex] = useState(0)
   const [answers, setAnswers] = useState<number[]>([])
   const [selected, setSelected] = useState<number | undefined>(undefined)
+  const [quizStartTime, setQuizStartTime] = useState<number>(Date.now())
+  const [questionStartTime, setQuestionStartTime] = useState<number>(Date.now())
+
+  // PHASE 8.1: Track quiz start
+  useEffect(() => {
+    TelemetryService.trackUserEvent({
+      category: 'chapter_quiz',
+      action: 'quiz_started',
+      storyId,
+      gradeLevel,
+      properties: {
+        totalQuestions: questions.length,
+        questionIds: questions.map(q => q.id).join(',')
+      }
+    });
+    setQuizStartTime(Date.now());
+    setQuestionStartTime(Date.now());
+  }, [questions, storyId, gradeLevel]);
 
   const current = questions[currentIndex]
   const hasAnswered = answers[currentIndex] !== undefined
@@ -27,13 +48,57 @@ export function ChapterQuiz({ questions, onComplete }: ChapterQuizProps) {
 
   const submitCurrent = () => {
     if (selected === undefined) return
+
+    const questionTime = Date.now() - questionStartTime;
+    const isCorrect = selected === current.correctAnswer;
+    
+    // PHASE 8.1: Track individual question answer
+    TelemetryService.trackLearningEvent({
+      category: 'chapter_quiz',
+      action: 'question_answered',
+      questionId: current.id,
+      storyId,
+      gradeLevel,
+      isCorrect,
+      attemptNumber: 1,
+      duration: questionTime,
+      properties: {
+        questionIndex: currentIndex,
+        selectedOption: selected,
+        correctOption: current.correctAnswer,
+        totalQuestions: questions.length
+      }
+    });
+
     const nextAnswers = [...answers]
     nextAnswers[currentIndex] = selected
     setAnswers(nextAnswers)
     setSelected(undefined)
+    
     if (currentIndex < questions.length - 1) {
       setCurrentIndex(currentIndex + 1)
+      setQuestionStartTime(Date.now()); // Reset timer for next question
     } else {
+      const totalQuizTime = Date.now() - quizStartTime;
+      const correctAnswers = nextAnswers.reduce((count, answer, index) => 
+        count + (answer === questions[index].correctAnswer ? 1 : 0), 0);
+      
+      // PHASE 8.1: Track quiz completion
+      TelemetryService.trackLearningEvent({
+        category: 'chapter_quiz',
+        action: 'quiz_completed',
+        storyId,
+        gradeLevel,
+        duration: totalQuizTime,
+        properties: {
+          totalQuestions: questions.length,
+          correctAnswers,
+          accuracy: correctAnswers / questions.length,
+          averageTimePerQuestion: totalQuizTime / questions.length,
+          completionRate: 1.0
+        }
+      });
+
       onComplete(nextAnswers)
     }
   }
@@ -64,7 +129,24 @@ export function ChapterQuiz({ questions, onComplete }: ChapterQuizProps) {
           {current.options.map((option, idx) => (
             <button
               key={idx}
-              onClick={() => setSelected(idx)}
+              onClick={() => {
+                setSelected(idx);
+                
+                // PHASE 8.1: Track option selection
+                TelemetryService.trackUserEvent({
+                  category: 'chapter_quiz',
+                  action: 'option_selected',
+                  questionId: current.id,
+                  storyId,
+                  gradeLevel,
+                  properties: {
+                    questionIndex: currentIndex,
+                    optionIndex: idx,
+                    optionText: option.substring(0, 50) + (option.length > 50 ? '...' : ''),
+                    timeToSelect: Date.now() - questionStartTime
+                  }
+                });
+              }}
               className={`w-full text-left p-4 rounded-lg border-2 transition-all ${
                 selected === idx ? 'border-blue-500 bg-blue-50' : 'border-gray-200 hover:border-blue-300 hover:bg-blue-50'
               }`}

@@ -1,5 +1,10 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
+  compiler: {
+    turbopack: {
+      enabled: false,
+    },
+  },
   // output: 'export', // Disabled to support API routes
   // distDir: 'out',
   // Remove 'standalone' output for SST NextJS component

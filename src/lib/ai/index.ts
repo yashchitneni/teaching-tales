@@ -2,6 +2,7 @@
 export { GeminiClient } from './gemini-client';
 export { PromptTemplates } from './prompt-templates';
 export { StoryGenerationService } from './story-generation-service';
+export { QuestionGenerationService } from './question-generation-service';
 export { RetryManager } from './retry-manager';
 export * from './types';
 
@@ -11,6 +12,9 @@ export type {
   StoryGenerationResponse,
   StorySection,
   ComprehensionQuestion,
+  EnhancedComprehensionQuestion,
+  SectionQuestionGenInput,
+  SectionQuestionsResult,
   ContinuationRequest,
   ValidationResult,
   AIServiceError,

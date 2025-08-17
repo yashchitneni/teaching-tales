@@ -19,13 +19,8 @@ export class S3Service {
    * Get bucket name from SST Resource or fallback to environment variable
    */
   private getBucketName(): string {
-    try {
-      const { Resource } = require('sst');
-      return Resource.TeachingTalesBucket.name;
-    } catch (error) {
-      // Fallback for local development
-      return process.env.S3_BUCKET_NAME || 'teaching-tales-production-teachingtalesbucketbucket-ncvkkabz';
-    }
+    // Always use environment variable to avoid SST imports
+    return process.env.S3_BUCKET_NAME || 'teaching-tales-production-teachingtalesbucketbucket-ncvkkabz';
   }
 
   /**

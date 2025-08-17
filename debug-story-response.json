@@ -3,111 +3,75 @@
   "sections": [
     {
       "id": 1,
-      "content": "Pikachu loved exploring the Viridian Forest.  Sunlight dappled through the green leaves.  He bounced happily along a mossy path.  He smelled sweet berries and heard birds singing.  Suddenly, Pikachu saw something amazing!  A crystal glowed softly in the undergrowth.  It sparkled with a magical light.  Pikachu was very curious.",
+      "content": "Pikachu loved exploring the Viridian Forest.  Sunlight dappled through the green leaves.  He saw fluffy Pidgeys fly high above.  He smelled sweet berries.  Suddenly, Pikachu saw something amazing!  A crystal glowed softly under a big oak tree. It sparkled with a magical, rainbow light. Pikachu felt very curious.",
       "questions": [
         {
           "id": "q1_1",
           "type": "multiple_choice",
-          "question": "What did Pikachu find?",
+          "question": "What did the character find?",
           "options": ["A crystal", "A flower", "A friend", "A path"],
           "correct": 0,
-          "explanation": "Pikachu found a glowing crystal"
+          "explanation": "The character found a crystal"
         },
         {
           "id": "q1_2",
           "type": "multiple_choice",
-          "question": "How did Pikachu feel?",
+          "question": "How did the character feel?",
           "options": ["Happy", "Scared", "Curious", "Tired"],
           "correct": 2,
-          "explanation": "Pikachu felt curious"
+          "explanation": "The character felt curious"
         }
       ]
     },
     {
       "id": 2,
-      "content": "Pikachu carefully picked up the crystal. It felt warm and smooth in his paws.  He wanted to show his friends.  But the forest path was tricky.  Thick vines blocked his way.  A grumpy-looking Fearow flew overhead.  Pikachu needed to find a way around.",
+      "content": "Pikachu cautiously approached the glowing crystal.  He touched it gently with his paw.  The crystal pulsed with warm light.  It felt smooth and cool.  Then, a grumpy Growlithe appeared!  He growled loudly. The Growlithe guarded the crystal. Pikachu was a little scared, but he knew he had to be brave.",
       "questions": [
         {
           "id": "q2_1",
-          "type": "multiple_choice",
-          "question": "What was blocking Pikachu's path?",
-          "options": ["Vines", "Rocks", "Water", "A Fearow"],
-          "correct": 0,
-          "explanation": "Thick vines blocked Pikachu's path"
-        },
-        {
-          "id": "q2_2",
           "type": "true_false",
-          "question": "Was the Fearow friendly?",
-          "options": ["True", "False"],
-          "correct": 1,
-          "explanation": "The Fearow was grumpy"
+          "question": "Did Pikachu feel scared?",
+          "correct": true,
+          "explanation": "Yes, Pikachu was a little scared."
         }
       ]
     },
     {
       "id": 3,
-      "content": "Pikachu remembered his trainer taught him to use his quick reflexes. He zipped under the vines!  He saw a small opening.  He carefully climbed over some rocks.  The crystal glowed brighter.  Pikachu felt a warm energy.  He realized the crystal wasn't just pretty; it was magical!",
+      "content": "Pikachu remembered his Trainer's words.  \"Kindness helps everyone.\"  He offered the Growlithe a delicious berry.  The Growlithe sniffed it cautiously. He ate the berry and wagged his tail!  He seemed happy.  The Growlithe was protecting the crystal because it healed his injured paw.  Pikachu learned that even grumpy Pokemon need help.",
       "questions": [
         {
           "id": "q3_1",
           "type": "multiple_choice",
-          "question": "What did Pikachu remember?",
-          "options": ["His trainer's lesson", "His favorite food", "His home", "His friends"],
-          "correct": 0,
-          "explanation": "Pikachu remembered his trainer's lesson"
-        },
-        {
-          "id": "q3_2",
-          "type": "true_false",
-          "question": "Was the crystal just pretty?",
-          "options": ["True", "False"],
+          "question": "What did Pikachu offer the Growlithe?",
+          "options": ["A crystal", "A berry", "A flower", "A hug"],
           "correct": 1,
-          "explanation": "The crystal was magical"
+          "explanation": "Pikachu offered the Growlithe a berry."
         }
       ]
     },
     {
       "id": 4,
-      "content": "Pikachu continued his journey.  He reached a deep ravine.  It was too wide to jump.  The crystal pulsed with light.  Pikachu felt a surge of energy.  He knew he could use the crystal's power.  Could the crystal help him cross?",
+      "content": "Pikachu and the Growlithe were now friends.  The Growlithe showed Pikachu a hidden path.  This path led to a sparkling waterfall.  But a large, muddy puddle blocked the path. It was too wide to jump!  Pikachu needed a plan to cross the muddy puddle.",
       "questions": [
         {
           "id": "q4_1",
-          "type": "multiple_choice",
-          "question": "What obstacle did Pikachu encounter?",
-          "options": ["A ravine", "A river", "A mountain", "A forest"],
-          "correct": 0,
-          "explanation": "Pikachu encountered a deep ravine"
-        },
-        {
-          "id": "q4_2",
           "type": "true_false",
-          "question": "Did Pikachu know how to cross the ravine?",
-          "options": ["True", "False"],
-          "correct": 0,
-          "explanation": "Pikachu thought the crystal could help him cross"
+          "question": "Pikachu and the Growlithe are friends now.",
+          "correct": true,
+          "explanation": "Yes, they are friends."
         }
       ]
     },
     {
       "id": 5,
-      "content": "The crystal glowed intensely!  A vine shot out, creating a bridge across the ravine.  Pikachu safely crossed.  He reached his friends.  They were amazed by the glowing crystal.  Pikachu smiled.  He learned about the crystal's power.  Maybe more adventures await!",
+      "content": "Pikachu used his quick thinking!  He used a big, flat leaf as a raft.  He carefully floated across the puddle.  He reached the waterfall! It was beautiful. Pikachu smiled. He made a new friend and had a wonderful adventure.  Maybe tomorrow, he'll explore a new part of the forest!",
       "questions": [
         {
           "id": "q5_1",
-          "type": "multiple_choice",
-          "question": "How did Pikachu cross the ravine?",
-          "options": ["He jumped", "He used the crystal", "He found a bridge", "He flew"],
-          "correct": 1,
-          "explanation": "Pikachu used the crystal's power to create a vine bridge"
-        },
-        {
-          "id": "q5_2",
-          "type": "true_false",
-          "question": "Did Pikachu's friends see the crystal?",
-          "options": ["True", "False"],
-          "correct": 0,
-          "explanation": "Pikachu's friends saw the crystal"
+          "type": "short_answer",
+          "question": "How did Pikachu cross the puddle?",
+          "answer": "He used a leaf as a raft."
         }
       ]
     }

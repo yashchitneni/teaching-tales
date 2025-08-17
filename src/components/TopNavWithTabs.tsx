@@ -85,16 +85,7 @@ export function TopNavWithTabs() {
               <div className="text-center text-blue-600 text-base font-bold whitespace-nowrap">Lvl 0</div>
             </Link>
 
-            {/* Coins */}
-            <Link href="/redeem-rewards" className="min-w-8 h-9 max-sm:h-7 p-2 cursor-pointer bg-gray-100 hover:bg-gray-200 rounded-full border border-gray-300/20 justify-start items-center gap-1.5 inline-flex transition-colors" title="Redeem coins for Robux">
-              <div className="w-4 h-4 relative">
-                <svg className="w-full h-full" viewBox="0 0 16 16" fill="#FFC107">
-                  <circle cx="8" cy="8" r="7" />
-                  <text x="8" y="11" textAnchor="middle" fill="#FFF" fontSize="10" fontWeight="bold">$</text>
-                </svg>
-              </div>
-                              <div className="text-center text-gray-900 text-base font-bold">867</div>
-            </Link>
+            {/* Coins - Removed placeholder button for "Redeem coins for Robux" */}
 
             {/* Notification Bell */}
             <div className="relative">

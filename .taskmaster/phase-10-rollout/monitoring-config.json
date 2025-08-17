@@ -1,0 +1,71 @@
+{
+  "dashboards": {
+    "executive_rollout_dashboard": {
+      "metrics": [
+        "user_satisfaction_scores",
+        "rollout_adoption_rate",
+        "performance_vs_baseline",
+        "support_ticket_volume",
+        "automatic_rollback_status"
+      ],
+      "refresh_rate": "1m",
+      "alert_integration": true
+    },
+    "technical_rollout_dashboard": {
+      "metrics": [
+        "story_creation_success_rate",
+        "question_generation_timing",
+        "response_processing_performance",
+        "system_resource_utilization",
+        "cache_performance",
+        "error_rates_by_endpoint"
+      ],
+      "refresh_rate": "10s",
+      "alert_integration": true
+    },
+    "user_experience_dashboard": {
+      "metrics": [
+        "story_appearance_timing",
+        "question_availability_timing",
+        "user_engagement_patterns",
+        "session_duration_changes",
+        "feature_adoption_rates"
+      ],
+      "refresh_rate": "30s",
+      "user_feedback_integration": true
+    }
+  },
+  "alerts": {
+    "critical": [
+      {
+        "name": "rollout_error_rate_exceeded",
+        "threshold": 0.5,
+        "action": "immediate_rollback_consideration"
+      },
+      {
+        "name": "story_creation_failure_spike",
+        "threshold": 2,
+        "action": "immediate_investigation"
+      },
+      {
+        "name": "system_availability_drop",
+        "threshold": 99.8,
+        "action": "immediate_rollback_trigger"
+      }
+    ],
+    "warning": [
+      {
+        "name": "performance_degradation_detected",
+        "threshold": 20,
+        "action": "enhanced_monitoring"
+      },
+      {
+        "name": "user_complaint_increase",
+        "threshold": 5,
+        "action": "user_feedback_analysis"
+      }
+    ]
+  },
+  "deployment_id": "rollout-1754848280842",
+  "created_at": "2025-08-10T17:51:20.849Z"
+}

@@ -56,6 +56,52 @@ export class ResponseStorageService {
   private static readonly RETRY_DELAY = 2000; // 2 seconds
 
   /**
+   * Extract correct choice identifier from question data
+   */
+  private static extractCorrectChoice(question: any): string {
+    if (!question) return 'choice_1'; // fallback
+    
+    console.log('🔍 [DEBUG] extractCorrectChoice input:', question);
+    
+    // Try different possible locations for correct answer
+    let correctAnswer = null;
+    
+    // Method 1: Check interactions[0].choices for correct flag
+    if (question.interactions?.[0]?.choices) {
+      const correctChoice = question.interactions[0].choices.find((c: any) => c.correct === true);
+      if (correctChoice) {
+        correctAnswer = correctChoice.identifier;
+        console.log('🔍 [DEBUG] Found correct choice in interactions:', correctChoice);
+      }
+    }
+    
+    // Method 2: Check top-level correctAnswer
+    if (!correctAnswer && question.correctAnswer !== undefined) {
+      correctAnswer = question.correctAnswer;
+    }
+    
+    // Method 3: Check other possible locations
+    if (!correctAnswer) {
+      correctAnswer = question.interactions?.[0]?.correctResponse ??
+                     question.choices?.find((c: any) => c.correct)?.identifier ??
+                     question.options?.findIndex((opt: any, idx: number) => 
+                       question.correctAnswer === idx || question.correct === idx
+                     );
+    }
+    
+    // Convert to choice identifier format if needed
+    if (typeof correctAnswer === 'number') {
+      const result = `choice_${correctAnswer}`;
+      console.log('🔍 [DEBUG] Converted number to choice:', correctAnswer, '→', result);
+      return result;
+    }
+    
+    const result = correctAnswer?.toString() || 'choice_1';
+    console.log('🔍 [DEBUG] Final extracted choice:', result);
+    return result;
+  }
+
+  /**
    * Store a response (online with offline fallback)
    */
   static async storeResponse(
@@ -68,7 +114,8 @@ export class ResponseStorageService {
       timeSpent?: number;
       attempts?: number;
       metadata?: Record<string, any>;
-    } = {}
+    } = {},
+    completeQuestion?: any // Complete QTI question data for server processing
   ): Promise<ResponseSubmissionResult> {
     const timestamp = new Date().toISOString();
     const responseId = `response-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
@@ -105,7 +152,7 @@ export class ResponseStorageService {
       });
 
       // Try to submit online first
-      const onlineResult = await this.submitResponseOnline(storedResponse);
+      const onlineResult = await this.submitResponseOnline(storedResponse, completeQuestion);
       
       if (onlineResult.success) {
         // Store locally as synced
@@ -154,32 +201,191 @@ export class ResponseStorageService {
    * Submit response to online API
    */
   private static async submitResponseOnline(
-    response: StoredResponse
+    response: StoredResponse,
+    completeQuestion?: any
   ): Promise<{ success: boolean; responseId?: string; submissionId?: string; error?: string }> {
     try {
+      // Align payload with upstream IMS QTI v3.0 API spec
       const payload = {
         assessmentId: response.assessmentId,
         studentId: response.studentId,
-        itemResponses: [{
+        responses: [{
           itemId: response.itemId,
-          responseIdentifier: response.responseIdentifier,
+          responseIdentifier: response.responseIdentifier || 'RESPONSE',
           response: response.processedResponse,
           timeSpent: response.timeSpent,
-          attempts: response.attempts
+          attempts: response.attempts,
+          timestamp: response.timestamp
         }],
         timestamp: response.timestamp
       };
 
-      const apiResponse = await fetch('/api/ims/qti/v3p0/responses', {
+      // Use the QTI response processing endpoint with complete item definition
+      const processPayload = {
+        item: completeQuestion ? {
+          identifier: response.itemId,
+          // Build response declaration from the question-level correctResponse if present
+          responseDeclarations: [{
+            identifier: 'RESPONSE',
+            cardinality: 'single',
+            baseType: 'identifier',
+            correctResponse: {
+              values: Array.isArray(completeQuestion.correctResponse)
+                ? (completeQuestion.correctResponse as any[])
+                : [this.extractCorrectChoice(completeQuestion)]
+            }
+          }],
+          outcomeDeclarations: [{
+            identifier: 'SCORE',
+            baseType: 'float',
+            cardinality: 'single',
+            defaultValue: 0,
+            normalMaximum: completeQuestion.scoring?.maxScore || 1
+          }, {
+            identifier: 'MAXSCORE',
+            baseType: 'float',
+            cardinality: 'single',
+            defaultValue: completeQuestion.scoring?.maxScore || 1
+          }],
+          responseProcessingTemplate: 'http://www.imsglobal.org/question/qti_v3p0/rptemplates/match_correct'
+        } : {
+          identifier: response.itemId
+        },
+        responses: {
+          'RESPONSE': Array.isArray(response.rawResponse || response.processedResponse)
+            ? (response.rawResponse || response.processedResponse)
+            : [response.rawResponse || response.processedResponse]
+        },
+        attemptId: response.id
+      } as const;
+
+      // DEBUG: Log the exact payload being sent
+      console.log('🔍 [DEBUG] Payload sent to server:', JSON.stringify(processPayload, null, 2));
+      console.log('🔍 [DEBUG] Complete question data:', completeQuestion);
+      console.log('🔍 [DEBUG] Question.correctResponse:', completeQuestion?.correctResponse);
+      console.log('🔍 [DEBUG] Response data checks:', {
+        responseIdentifier: response.responseIdentifier,
+        rawResponse: response.rawResponse,
+        processedResponse: response.processedResponse,
+        itemId: response.itemId
+      });
+      
+      // DEBUG: Deep dive into question structure
+      if (completeQuestion) {
+        console.log('🔍 [DEBUG] Question structure analysis:', {
+          id: completeQuestion.id,
+          correctAnswer: completeQuestion.correctAnswer,
+          interactions: completeQuestion.interactions,
+          choices: completeQuestion.choices,
+          options: completeQuestion.options,
+          scoring: completeQuestion.scoring
+        });
+        
+        // DEBUG: Dive deeper into interactions
+        if (completeQuestion.interactions && completeQuestion.interactions.length > 0) {
+          console.log('🔍 [DEBUG] First interaction details:', completeQuestion.interactions[0]);
+        }
+      }
+
+      let apiResponse = await fetch('/api/ims/qti/v3p0/process-response', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
         credentials: 'include',
-        body: JSON.stringify(payload)
+        body: JSON.stringify(processPayload)
       });
 
-      const result = await apiResponse.json();
+      let result = await apiResponse.json();
+
+      // Fallback: If server returns no correct responses, try item-specific endpoint
+      if (apiResponse.ok && result?.success &&
+          result?.data?.feedback?.includes?.('No correct responses') && completeQuestion?.id) {
+        // Try to resolve server-side item id via assessment-test questions listing
+        let serverItemId: string | undefined = undefined;
+        try {
+          const qListRes = await fetch(`/api/ims/qti/v3p0/assessment-tests/${encodeURIComponent(response.assessmentId)}/questions`, {
+            method: 'GET',
+            credentials: 'include'
+          });
+          if (qListRes.ok) {
+            const qListRaw = await qListRes.text();
+            let qListJson: any = {};
+            try { qListJson = JSON.parse(qListRaw); } catch {}
+            console.log('🔎 [DEBUG] Questions endpoint raw:', qListRaw);
+            // Robustly locate questions array regardless of wrapper shape
+            let questions = (qListJson?.questions
+              || qListJson?.data?.questions
+              || qListJson?.data?.items
+              || qListJson?.items
+              || []) as any[];
+            if ((!questions || questions.length === 0) && Array.isArray(qListJson)) {
+              questions = qListJson as any[];
+            }
+            const byIdentifier = questions.find((q: any) => q.identifier === response.itemId || q.id === response.itemId);
+            serverItemId = byIdentifier?.id || questions[0]?.id; // fallback to first if unidentified
+            console.log('🔁 [DEBUG] Resolved server itemId (questions):', serverItemId);
+          } else {
+            console.log('ℹ️ [DEBUG] Questions endpoint status:', qListRes.status);
+          }
+          // If still not resolved, try fetching the test itself for nested items
+          if (!serverItemId) {
+            const testRes = await fetch(`/api/ims/qti/v3p0/assessment-tests/${encodeURIComponent(response.assessmentId)}`, {
+              method: 'GET',
+              credentials: 'include'
+            });
+            if (testRes.ok) {
+              const testRaw = await testRes.text();
+              let testJson: any = {};
+              try { testJson = JSON.parse(testRaw); } catch {}
+              console.log('🔎 [DEBUG] Test endpoint raw:', testRaw);
+              const allCandidates: any[] = [];
+              const pushIfArray = (v: any) => { if (Array.isArray(v)) allCandidates.push(...v); };
+              pushIfArray(testJson?.questions);
+              pushIfArray(testJson?.data?.questions);
+              pushIfArray(testJson?.items);
+              pushIfArray(testJson?.data?.items);
+              // Check nested metadata path where questions are actually stored
+              pushIfArray(testJson?.metadata?.questions);
+              pushIfArray(testJson?.test?.metadata?.questions);
+              // Some backends may nest under parts/sections
+              const parts = testJson?.parts || testJson?.data?.parts || [];
+              for (const p of parts) {
+                pushIfArray(p?.questions);
+                pushIfArray(p?.items);
+              }
+              const byIdentifier2 = allCandidates.find((q: any) => q.identifier === response.itemId || q.id === response.itemId);
+              serverItemId = byIdentifier2?.id || serverItemId;
+              console.log('🔁 [DEBUG] Resolved server itemId (test):', serverItemId);
+            } else {
+              console.log('ℹ️ [DEBUG] Test endpoint status:', testRes.status);
+            }
+          }
+        } catch (e) {
+          console.warn('⚠️ [DEBUG] Failed to resolve server item id:', e);
+        }
+
+        const targetItemId = serverItemId || completeQuestion.id;
+        const fallbackUrl = `/api/ims/qti/v3p0/items/${encodeURIComponent(targetItemId)}/process-response`;
+        const fallbackPayload = {
+          responses: processPayload.responses,
+          attemptId: processPayload.attemptId
+        } as const;
+
+        console.log('🔁 [DEBUG] Falling back to item process-response:', fallbackUrl, fallbackPayload);
+
+        apiResponse = await fetch(fallbackUrl, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          credentials: 'include',
+          body: JSON.stringify(fallbackPayload)
+        });
+        try {
+          result = await apiResponse.json();
+        } catch {
+          // keep previous result shape if response has no body
+        }
+      }
 
       if (apiResponse.ok && result.success) {
         return {

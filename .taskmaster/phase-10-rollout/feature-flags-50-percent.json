@@ -1,0 +1,62 @@
+{
+  "rollout_metadata": {
+    "stage": "expanded_production",
+    "phase": "10.4.1",
+    "user_percentage": 50,
+    "deployment_date": "$(date)",
+    "based_on_success": "phase_10.3_exceptional_results",
+    "confidence_level": "very_high"
+  },
+  
+  "feature_flags": {
+    "core_async_features": {
+      "QTI_SPLIT_GENERATION_ENABLED": true,
+      "QTI_ASYNC_ASSESSMENTS_ENABLED": true,
+      "QTI_ASYNC_STORY_SAVE_ENABLED": true,
+      "description": "Core async functionality proven in Phase 10.3"
+    },
+    
+    "performance_optimization": {
+      "QTI_PERFORMANCE_CACHING_ENABLED": true,
+      "description": "Performance caching validated with 73.98% hit rate"
+    },
+    
+    "monitoring_and_analytics": {
+      "TELEMETRY_ENABLED": true,
+      "INTELLIGENT_ALERTING_ENABLED": true,
+      "description": "Phase 8 monitoring systems proven operational"
+    },
+    
+    "advanced_features_new": {
+      "ML_OPTIMIZATION_ENABLED": true,
+      "LEARNING_ANALYTICS_ENABLED": true,
+      "description": "Advanced ML features enabled based on user satisfaction foundation"
+    }
+  },
+  
+  "user_selection_criteria": {
+    "selection_strategy": "established_and_expanding",
+    "include_power_users": true,
+    "device_compatibility": "medium",
+    "region": "all_supported_regions",
+    "account_age_minimum": "7_days"
+  },
+  
+  "rollback_configuration": {
+    "level_1_disable_flags": ["ML_OPTIMIZATION_ENABLED"],
+    "level_2_disable_flags": ["ML_OPTIMIZATION_ENABLED", "LEARNING_ANALYTICS_ENABLED"],
+    "level_3_rollback_percentage": 10,
+    "automatic_rollback_enabled": true
+  },
+  
+  "success_validation": {
+    "performance_targets": {
+      "story_creation_max": "2500ms",
+      "response_processing_max": "175ms",
+      "system_availability_min": 99.3,
+      "error_rate_max": 0.5
+    },
+    "user_satisfaction_minimum": 4.0,
+    "monitoring_alerts_enabled": true
+  }
+}
