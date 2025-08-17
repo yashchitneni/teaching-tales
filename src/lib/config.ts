@@ -15,29 +15,10 @@ export const CLIENT_FEATURE_FLAGS = {
   QTI_SPLIT_GENERATION: process.env.NEXT_PUBLIC_QTI_SPLIT_GENERATION === 'true',
 } as const;
 
-// Helper function to safely access SST Resources (lazy evaluation)
-function getSSResourceValue(resourceName: string): string | undefined {
-  // Only try SST in server environments
-  if (typeof window !== 'undefined') {
-    // We're in the browser, SST is not available
-    return undefined;
-  }
-  
-  try {
-    const { Resource } = require("sst");
-    return Resource[resourceName]?.value;
-  } catch (error) {
-    // SST not available in this environment
-    return undefined;
-  }
-}
-
-// Lazy getters for configs to avoid SST execution during module loading
+// Client-safe Gemini configuration (no SST imports)
 export const GEMINI_CONFIG = {
-  get API_KEY() {
-    return getSSResourceValue("GOOGLE_AI_API_KEY") || process.env.GOOGLE_AI_API_KEY;
-  },
-  MODEL_NAME: process.env.GEMINI_MODEL_NAME || 'gemini-2.0-flash', // Stable Gemini 2.0 Flash
+  API_KEY: process.env.GOOGLE_AI_API_KEY,
+  MODEL_NAME: process.env.GEMINI_MODEL_NAME || 'gemini-2.0-flash',
   MAX_TOKENS: parseInt(process.env.GEMINI_MAX_TOKENS || '4096'),
   TEMPERATURE: 0.7,
   TOP_P: 0.9,
@@ -46,10 +27,9 @@ export const GEMINI_CONFIG = {
   MAX_DELAY: 30000
 };
 
+// Client-safe Replicate configuration (no SST imports)
 export const REPLICATE_CONFIG = {
-  get API_KEY() {
-    return getSSResourceValue("REPLICATE_API_TOKEN") || process.env.REPLICATE_API_TOKEN;
-  },
+  API_KEY: process.env.REPLICATE_API_TOKEN,
   MODEL_NAME: process.env.REPLICATE_MODEL || 'black-forest-labs/flux-schnell',
   MAX_RETRIES: 3,
   BASE_DELAY: 2000,

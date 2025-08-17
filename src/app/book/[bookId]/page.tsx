@@ -1033,47 +1033,7 @@ export default function StoryReadingPage() {
         {/* Right Panel - QTI Section Management & Questions */}
         <div className="w-96 bg-white border-l border-gray-200 sticky top-0 self-start max-h-screen overflow-y-auto">
           
-          {/* QTI Section Progress (if QTI story is loaded) */}
-          {qtiStory && (
-            <div className="p-4 border-b border-gray-200">
-              <SectionProgressOverview
-                sections={qtiStory.sections}
-                currentSectionIndex={currentSectionIndex}
-                totalProgress={calculateOverallProgress()}
-                className="mb-4"
-              />
-              
-              {/* Section unlock indicators */}
-              <div className="space-y-2">
-                <h4 className="font-semibold text-sm text-gray-700 mb-2">Story Sections</h4>
-                {qtiStory.sections.slice(0, 3).map((section, index) => (
-                  <SectionUnlockIndicator
-                    key={section.id}
-                    section={section}
-                    sectionIndex={index}
-                    totalSections={qtiStory.sections.length}
-                    currentProgress={{
-                      completedSections: qtiStory.sections.filter(s => s.isCompleted).length,
-                      currentAccuracy: 85, // Placeholder - would be calculated from responses
-                      timeSpent: Date.now() - startTime
-                    }}
-                    unlockRequirements={{
-                      requiredPreviousCompletion: true,
-                      minimumAccuracy: 60
-                    }}
-                    onSectionClick={navigateToSection}
-                    className="text-xs"
-                  />
-                ))}
-                
-                {qtiStory.sections.length > 3 && (
-                  <div className="text-xs text-gray-500 text-center py-2">
-                    ... and {qtiStory.sections.length - 3} more sections
-                  </div>
-                )}
-              </div>
-            </div>
-          )}
+          {/* QTI Section Progress (if QTI story is loaded) - Removed filler content */}
 
           {/* Removed duplicate unstyled QTI question list to avoid duplication. GuidedQuestions remains as the styled UI. */}
 

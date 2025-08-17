@@ -3,6 +3,16 @@ import { GEMINI_CONFIG } from '@/lib/config';
 import { GeminiGenerationConfig, GeminiSafetySettings, AIServiceError } from './types';
 import { RetryManager } from './retry-manager';
 
+// Try to load server config if available (only in server context)
+let serverConfig: any;
+try {
+  if (typeof window === 'undefined') {
+    serverConfig = require('@/lib/config.server').GEMINI_SERVER_CONFIG;
+  }
+} catch (e) {
+  // Server config not available, use regular config
+}
+
 /**
  * Client class for interacting with Google Gemini AI API
  * 
@@ -32,23 +42,26 @@ export class GeminiClient {
    * @throws {Error} When GOOGLE_AI_API_KEY environment variable is not set
    */
   constructor() {
-    if (!GEMINI_CONFIG.API_KEY) {
+    const config = serverConfig || GEMINI_CONFIG;
+    
+    if (!config.API_KEY) {
       throw new Error('GOOGLE_AI_API_KEY environment variable is required');
     }
 
-    this.genAI = new GoogleGenerativeAI(GEMINI_CONFIG.API_KEY);
+    this.genAI = new GoogleGenerativeAI(config.API_KEY);
     this.model = this.genAI.getGenerativeModel({
-      model: GEMINI_CONFIG.MODEL_NAME,
+      model: config.MODEL_NAME,
       generationConfig: this.getDefaultGenerationConfig(),
       safetySettings: this.getDefaultSafetySettings(),
     });
   }
 
   private getDefaultGenerationConfig(): GenerationConfig {
+    const config = serverConfig || GEMINI_CONFIG;
     return {
-      temperature: GEMINI_CONFIG.TEMPERATURE,
-      topP: GEMINI_CONFIG.TOP_P,
-      maxOutputTokens: GEMINI_CONFIG.MAX_TOKENS,
+      temperature: config.TEMPERATURE,
+      topP: config.TOP_P,
+      maxOutputTokens: config.MAX_TOKENS,
       candidateCount: 1,
     };
   }

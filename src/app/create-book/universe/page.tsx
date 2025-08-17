@@ -78,6 +78,7 @@ export default function UniverseSelectionPage() {
           {/* Header Section */}
           <div className="flex gap-5 p-4 bg-white rounded-t-2xl border-b border-solid border-gray-200 justify-start items-center max-lg:rounded-none">
             <h2 className="text-3xl font-semibold leading-9 text-neutral-800 max-lg:text-xl">Create a Book</h2>
+            {/* Create with a Friend button - commented out as filler
             <button 
               onClick={() => {}} 
               className="flex items-center gap-2 px-2 py-1 text-sm font-medium bg-white border rounded-full hover:bg-blue-50" style={{ color: '#0d6efd', borderColor: '#0d6efd' }}
@@ -87,6 +88,7 @@ export default function UniverseSelectionPage() {
               </svg>
               <span className="md:inline hidden">Create with a Friend</span>
             </button>
+            */}
             <div className="flex flex-1 justify-end">
               <nav className="flex gap-1 my-auto rounded-xl overflow-hidden max-md:flex-1 max-md:flex-wrap">
                 <div className="h-5 cursor-pointer w-28 max-md:w-auto max-md:flex-1" style={{ backgroundColor: '#0d6efd' }}></div>
