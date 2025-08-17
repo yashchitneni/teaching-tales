@@ -7,7 +7,6 @@ import { useRouter, useSearchParams } from 'next/navigation'
 import { TopNavWithTabs } from '@/components/TopNavWithTabs'
 import { FeedbackButton } from '@/components/FeedbackButton'
 import { useAuth } from '@/contexts/AuthContext'
-import { fetchUsers } from '@/lib/api/oneroster-client'
 import { StoryStorageService } from '@/lib/services/story-storage-service'
 
 
@@ -25,8 +24,8 @@ export default function StoryLoadingPage() {
   const router = useRouter()
   const searchParams = useSearchParams()
   const { user } = useAuth()
-  const [progress, setProgress] = useState(0)
   const [messageIndex, setMessageIndex] = useState(0)
+  const [isFinishing, setIsFinishing] = useState(false)
   const [bookId, setBookId] = useState<string | null>(null)
   const [error, setError] = useState<string | null>(null)
   const isGeneratingRef = useRef(false)
@@ -52,30 +51,22 @@ export default function StoryLoadingPage() {
   }, [user])
 
   useEffect(() => {
-    // Update progress and messages
-    const progressInterval = setInterval(() => {
-      setProgress(prev => {
-        if (prev >= 100) {
-          clearInterval(progressInterval)
-          return 100
-        }
-        return prev + 2
-      })
-    }, 100)
-
+    // Rotate messages
     const messageInterval = setInterval(() => {
       setMessageIndex(prev => {
         if (prev >= loadingMessages.length - 1) {
-          clearInterval(messageInterval)
           return prev
         }
         return prev + 1
       })
-    }, 2000)
+    }, 2500)
+
+    // After 20s, change the copy to a generic finishing message
+    const finishingTimer = setTimeout(() => setIsFinishing(true), 20000)
 
     return () => {
-      clearInterval(progressInterval)
       clearInterval(messageInterval)
+      clearTimeout(finishingTimer)
     }
   }, [])
 
@@ -237,19 +228,26 @@ export default function StoryLoadingPage() {
             {loadingMessages[messageIndex]}
           </p>
 
-          {/* Progress Bar */}
-          <div className="w-full max-w-xs mx-auto mb-4">
-            <div className="w-full bg-gray-200 rounded-full h-3">
-              <div 
-                className="bg-blue-600 h-3 rounded-full transition-all duration-300"
-                style={{ width: `${progress}%` }}
-              ></div>
-            </div>
+          {/* Indeterminate Spinner */}
+          <div className="flex items-center justify-center mb-4">
+            <svg className="animate-spin h-8 w-8 text-blue-600" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+              <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+              <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z"></path>
+            </svg>
           </div>
+          <p className="text-sm text-gray-500">
+            {isFinishing ? 'Finishing up your story…' : 'This may take a moment depending on server load'}
+          </p>
 
-          {/* Progress Percentage */}
-          <p className="text-sm text-gray-500">{progress}% Complete</p>
-        </div>
+          {/* Cancel/back */}
+          <div className="mt-6">
+            <button
+              onClick={() => router.push(`/create-book/spark?universe=${universe}&character=${character}`)}
+              className="text-blue-600 hover:underline text-sm"
+            >
+              Cancel and choose a different spark
+            </button>
+          </div>
       </div>
 
       <style jsx>{`
