@@ -1,0 +1,10 @@
+{
+  "/api/auth/me/route": "app/api/auth/me/route.js",
+  "/create-book/character/page": "app/create-book/character/page.js",
+  "/create-book/loading/page": "app/create-book/loading/page.js",
+  "/create-book/spark/page": "app/create-book/spark/page.js",
+  "/create-book/universe/page": "app/create-book/universe/page.js",
+  "/dashboard/page": "app/dashboard/page.js",
+  "/icon.svg/route": "app/icon.svg/route.js",
+  "/page": "app/page.js"
+}
