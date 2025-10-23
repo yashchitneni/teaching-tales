@@ -1,0 +1,42 @@
+{
+  "version": "0.1.0",
+  "updatedAt": "2025-09-20T00:00:00.000Z",
+  "universes": [
+    {
+      "id": "space",
+      "name": "Space Adventures",
+      "characters": [
+        {
+          "id": "astro-ali",
+          "name": "Astro Ali",
+          "suggestedSparks": [
+            { "id": "spark-meteor-mystery", "label": "Meteor Mystery", "weight": 0.9, "tags": ["mystery", "space"] },
+            { "id": "spark-lost-satellite", "label": "The Lost Satellite", "weight": 0.7, "tags": ["quest", "teamwork"] }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "ocean",
+      "name": "Ocean Realms",
+      "characters": [
+        {
+          "id": "marina",
+          "name": "Marina",
+          "suggestedSparks": [
+            { "id": "spark-underwater-city", "label": "Underwater City", "weight": 0.85, "tags": ["adventure", "ocean"] },
+            { "id": "spark-coral-heist", "label": "The Coral Heist", "weight": 0.6, "tags": ["mystery", "teamwork"] }
+          ]
+        }
+      ]
+    }
+  ],
+  "allSparks": [
+    { "id": "spark-meteor-mystery", "label": "Meteor Mystery", "tags": ["mystery", "space"] },
+    { "id": "spark-lost-satellite", "label": "The Lost Satellite", "tags": ["quest", "teamwork"] },
+    { "id": "spark-underwater-city", "label": "Underwater City", "tags": ["adventure", "ocean"] },
+    { "id": "spark-coral-heist", "label": "The Coral Heist", "tags": ["mystery", "ocean"] }
+  ]
+}
+
+

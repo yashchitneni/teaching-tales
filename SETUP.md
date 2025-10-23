@@ -5,10 +5,12 @@
 Create a `.env.local` file in the project root with the following variables:
 
 ```env
-# AWS Cognito Configuration for TeachTales
-NEXT_PUBLIC_COGNITO_USER_POOL_ID=your_cognito_user_pool_id_here
-NEXT_PUBLIC_COGNITO_USER_POOL_CLIENT_ID=your_cognito_client_id_here
-NEXT_PUBLIC_COGNITO_REGION=your_aws_region_here
+# Supabase Configuration for TeachTales
+NEXT_PUBLIC_SUPABASE_URL=your_supabase_project_url_here
+NEXT_PUBLIC_SUPABASE_ANON_KEY=your_supabase_anon_key_here
+
+# Service Role Key (for server-side operations - keep secure!)
+SUPABASE_SERVICE_ROLE_KEY=your_supabase_service_role_key_here
 ```
 
 ## Development
@@ -23,10 +25,11 @@ NEXT_PUBLIC_COGNITO_REGION=your_aws_region_here
    npm run dev
    ```
 
-3. Open [http://localhost:3000](http://localhost:3000) in your browser.
+3. Open [http://localhost:3001](http://localhost:3001) in your browser.
 
 ## Security Notes
 
 - The `.env.local` file is automatically gitignored
 - Never commit API keys or database passwords to version control
-- Use AWS IAM best practices for access management 
+- Keep your Supabase service role key secure and never expose it in client-side code
+- Use Supabase Row Level Security (RLS) policies for data access control 

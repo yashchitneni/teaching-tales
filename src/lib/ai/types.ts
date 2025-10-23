@@ -33,6 +33,26 @@
  * Contains all the information needed to generate a grade-appropriate story
  * with educational content and comprehension questions.
  */
+export interface CustomUniverse {
+  name: string
+  description: string
+  image?: string | null
+}
+
+export interface CustomCharacter {
+  name: string
+  description: string
+  age?: string | null
+  traits?: string[]
+  image?: string | null
+}
+
+export interface CustomSpark {
+  title: string
+  description: string
+  category?: string | null
+}
+
 export interface StoryGenerationRequest {
   /** The fictional universe or setting for the story (e.g., "Pokemon", "Harry Potter") */
   universe: string;
@@ -48,6 +68,12 @@ export interface StoryGenerationRequest {
   previousChapter?: string;
   /** Optional path selection for branching narratives */
   selectedPath?: string;
+  /** Custom universe details if user created their own */
+  customUniverse?: CustomUniverse;
+  /** Custom character details if user created their own */
+  customCharacter?: CustomCharacter;
+  /** Custom spark details if user created their own */
+  customSpark?: CustomSpark;
 }
 
 /**

@@ -9,6 +9,10 @@ export const FEATURE_FLAGS = {
   QTI_ASYNC_ASSESSMENTS_ENABLED: process.env.QTI_ASYNC_ASSESSMENTS_ENABLED === 'true',
   // Phase 5: Controls async story save orchestration where stories display instantly while questions generate in background
   QTI_ASYNC_STORY_SAVE_ENABLED: process.env.QTI_ASYNC_STORY_SAVE_ENABLED === 'true',
+  // Caliper Analytics: Controls forwarding of telemetry events to Caliper endpoint
+  CALIPER_ENABLED: process.env.CALIPER_ENABLED === 'true',
+  // TimeBack assessment persistence: enable once endpoints are confirmed
+  TIMEBACK_PERSISTENCE_ENABLED: process.env.TIMEBACK_PERSISTENCE_ENABLED === 'true',
 } as const;
 
 export const CLIENT_FEATURE_FLAGS = {

@@ -1,7 +1,122 @@
 import { StoryGenerationRequest, ContinuationRequest, SectionQuestionGenInput } from './types';
+import type { ChapterPlan } from '@/lib/services/chapter-planning-service';
+import { ReadingLevelService } from '@/lib/services/reading-level-service';
+import { SparksService } from '@/lib/services/sparks-service';
+import { ABTestingService } from '@/lib/services/ab-testing-service';
 
 export class PromptTemplates {
-  static generateStoryPrompt(request: StoryGenerationRequest): string {
+  static generateChapterPrompt(
+    request: StoryGenerationRequest,
+    chapterPlan: ChapterPlan,
+    totalChapters: number,
+    previousContext?: string,
+    userId?: string
+  ): string {
+    const isFirstChapter = chapterPlan.chapterNumber === 1;
+    const isLastChapter = chapterPlan.chapterNumber === totalChapters;
+    
+    // Get A/B testing configuration
+    const abConfig = userId ? 
+      ABTestingService.getPromptModifications(userId, request.gradeLevel) : 
+      { useEnhancedReadingLevel: true, useSparkContext: true, useAdvancedScaffolding: true };
+    
+    // Get reading level parameters (if enabled by A/B test)
+    const readingParams = abConfig.useEnhancedReadingLevel ? 
+      ReadingLevelService.generatePromptParameters(request.gradeLevel) : 
+      this.getBasicGuidance(request.gradeLevel);
+    
+    // Get spark context (if enabled by A/B test)
+    const sparkContext = abConfig.useSparkContext ? 
+      this.getSparkContext(request.spark, request.universe, request.character, request) : 
+      `STORY PREMISE: ${request.spark}`;
+    
+    let prompt = `Generate Chapter ${chapterPlan.chapterNumber} of a ${totalChapters}-chapter story for grade ${request.gradeLevel}.
+
+STORY PARAMETERS:
+- Universe: ${request.universe}
+- Main Character: ${request.character}
+- Story Premise: ${request.spark}
+- Target Grade Level: ${request.gradeLevel}
+- Chapter Purpose: ${chapterPlan.purpose}
+
+${sparkContext}
+
+CHAPTER STRUCTURE:
+This chapter should have exactly ${chapterPlan.beatCount} beats (${chapterPlan.totalWords.min}-${chapterPlan.totalWords.max} words total).
+
+Beat structure for this chapter:`;
+
+    chapterPlan.beatStructure.forEach((beat, index) => {
+      prompt += `\n${index + 1}. ${beat.name} (${beat.wordRange.min}-${beat.wordRange.max} words): ${beat.description}`;
+    });
+
+    if (previousContext) {
+      prompt += `\n\nSTORY CONTEXT:\n${previousContext}`;
+    }
+
+    if (isFirstChapter) {
+      prompt += `\n\nFIRST CHAPTER REQUIREMENTS:
+- Establish character, world, and initial conflict
+- Create strong opening hook to engage readers
+- Set up the overall story arc
+- Introduce key themes and vocabulary`;
+    } else if (isLastChapter) {
+      prompt += `\n\nFINAL CHAPTER REQUIREMENTS:
+- Resolve all major plot threads
+- Show character growth and lessons learned
+- Provide satisfying conclusion
+- Leave room for imagination about future adventures`;
+    } else {
+      prompt += `\n\nMIDDLE CHAPTER REQUIREMENTS:
+- Advance the plot and character development
+- Maintain continuity with previous chapters
+- Build toward the story's climax`;
+    }
+
+    if (chapterPlan.cliffhangerType && !isLastChapter) {
+      prompt += `\n\nCLIFFHANGER REQUIREMENT:
+End with a compelling ${chapterPlan.cliffhangerType.replace('_', ' ')} that makes readers want to continue to the next chapter.`;
+    }
+
+    // Add reading level specific guidance
+    if (abConfig.useEnhancedReadingLevel && 'sentenceStructureGuidance' in readingParams) {
+      prompt += readingParams.sentenceStructureGuidance;
+      prompt += readingParams.vocabularyGuidance;
+      prompt += readingParams.lengthGuidance;
+      prompt += readingParams.complexityGuidance;
+      prompt += readingParams.scaffoldingGuidance;
+      prompt += readingParams.thematicGuidance;
+    } else {
+      prompt += readingParams as string; // Basic guidance is a string
+    }
+    
+    prompt += this.getQuestionGenerationGuidanceForChapter();
+    
+    // Add custom prompt suffix if specified in A/B test
+    if (abConfig.customPromptSuffix) {
+      prompt += `\n\n${abConfig.customPromptSuffix}`;
+    }
+
+    return prompt;
+  }
+
+  static generateStoryPrompt(request: StoryGenerationRequest, userId?: string): string {
+    // Get A/B testing configuration
+    const abConfig = userId ? 
+      ABTestingService.getPromptModifications(userId, request.gradeLevel) : 
+      { useEnhancedReadingLevel: true, useSparkContext: true, useAdvancedScaffolding: true };
+    
+    // Get reading level parameters (if enabled by A/B test)
+    const readingParams = abConfig.useEnhancedReadingLevel ? 
+      ReadingLevelService.generatePromptParameters(request.gradeLevel) : 
+      this.getBasicGuidance(request.gradeLevel);
+    const readingConfig = ReadingLevelService.getReadingLevelParameters(request.gradeLevel);
+    
+    // Get spark context (if enabled by A/B test)
+    const sparkContext = abConfig.useSparkContext ? 
+      this.getSparkContext(request.spark, request.universe, request.character, request) : 
+      `STORY PREMISE: ${request.spark}`;
+    
     return `Generate an educational children's story with the following requirements:
 
 STORY PARAMETERS:
@@ -9,7 +124,9 @@ STORY PARAMETERS:
 - Main Character: ${request.character}
 - Story Premise: ${request.spark}
 - Target Grade Level: ${request.gradeLevel}
-- Word Count Target: 800-1200 words
+- Word Count Target: ${readingConfig.targetWordCount.min}-${readingConfig.targetWordCount.max} words
+
+${sparkContext}
 
 STORY BEAT STRUCTURE:
 Create exactly 5 story sections that follow classic narrative structure with compelling cliffhangers:
@@ -44,10 +161,16 @@ CLIFFHANGER REQUIREMENTS:
 - Make readers think "I need to know what happens next!"
 - Ensure natural story flow between sections
 
-VOCABULARY INTEGRATION:
-- Include 3-5 age-appropriate vocabulary words per section  
-- Mark vocabulary as: **word** (meaning: simple definition)
-- Choose words that enhance the story and are appropriate for ${request.gradeLevel}
+${abConfig.useEnhancedReadingLevel && 'vocabularyGuidance' in readingParams ? `
+${readingParams.vocabularyGuidance}
+
+${readingParams.sentenceStructureGuidance}
+
+${readingParams.complexityGuidance}
+
+${readingParams.scaffoldingGuidance}
+
+${readingParams.thematicGuidance}` : readingParams}
 
 EDUCATIONAL INTEGRATION:
 For each section, create exactly 2 comprehension questions:
@@ -639,5 +762,152 @@ GRADE 6-8 SPECIFIC REQUIREMENTS:
       }
     }
     return null;
+  }
+
+  private static getVocabularyGuidanceForChapter(gradeLevel: string): string {
+    const vocabCounts = {
+      'K-1': 2,
+      '2-3': 3,
+      '4-5': 4,
+      '6-8': 5
+    };
+
+    const count = vocabCounts[gradeLevel as keyof typeof vocabCounts] || 3;
+
+    return `
+
+VOCABULARY INTEGRATION:
+- Include ${count} age-appropriate vocabulary words per beat
+- Mark vocabulary as: **word** (meaning: simple definition)
+- Choose words that enhance the story and are appropriate for ${gradeLevel}
+- Integrate vocabulary naturally into the narrative
+- Provide clear, simple definitions that help comprehension`;
+  }
+
+  private static getQuestionGenerationGuidanceForChapter(): string {
+    return `
+
+COMPREHENSION QUESTIONS:
+Generate exactly 2 comprehension questions per beat that test reading comprehension:
+
+1. LITERAL COMPREHENSION: Test direct recall of story details
+   - "What did [character] find/see/do?"
+   - "Where did [event] happen?"
+   - "Who helped [character]?"
+
+2. INFERENTIAL COMPREHENSION: Test deeper understanding
+   - "Why did [character] feel [emotion]?"
+   - "What can you conclude about [situation]?"
+   - "How did [character] solve the problem?"
+
+QUESTION REQUIREMENTS:
+- Questions must be answerable from the beat content alone
+- Provide 4 multiple choice options with one clearly correct answer
+- Include brief explanations that reference the text
+- Use vocabulary appropriate for the target grade level
+- Make questions engaging and educational`;
+  }
+
+  private static getSparkContext(spark: string, universe: string, character: string, request?: StoryGenerationRequest): string {
+    // Try to find the spark in our curated data
+    const sparkData = SparksService.findSparkById(spark);
+    
+    let context = `SPARK CONTEXT:
+- Story Premise: ${spark}`;
+
+    // Use custom spark data if available
+    if (request?.customSpark) {
+      context += `
+- Detailed Description: ${request.customSpark.description}`;
+      if (request.customSpark.category) {
+        context += `
+- Spark Category: ${request.customSpark.category}`;
+      }
+    } else if (sparkData) {
+      context += `
+- Spark Type: ${sparkData.tags?.join(', ') || 'Adventure'}`;
+      
+      if ('notes' in sparkData && sparkData.notes) {
+        context += `
+- Context Notes: ${sparkData.notes}`;
+      }
+    }
+
+    // Add universe-specific context
+    const universeName = request?.customUniverse?.name || universe;
+    const universeDescription = request?.customUniverse?.description;
+    
+    context += `
+- Universe Setting: ${universeName}`;
+    
+    if (universeDescription) {
+      context += ` - ${universeDescription}`;
+    } else {
+      context += ` - Ensure story elements, terminology, and world-building align with this universe`;
+    }
+
+    // Add character-specific context
+    const characterName = request?.customCharacter?.name || character;
+    const characterDescription = request?.customCharacter?.description;
+    const characterTraits = request?.customCharacter?.traits;
+    const characterAge = request?.customCharacter?.age;
+
+    context += `
+- Main Character: ${characterName}`;
+    
+    if (characterDescription) {
+      context += ` - ${characterDescription}`;
+    } else {
+      context += ` - Character should act consistently with their established personality and abilities`;
+    }
+
+    if (characterAge) {
+      context += `
+- Character Age: ${characterAge} years old - Ensure age-appropriate dialogue and actions`;
+    }
+
+    if (characterTraits && characterTraits.length > 0) {
+      context += `
+- Character Traits: ${characterTraits.join(', ')} - Incorporate these personality traits into the character's actions and decisions`;
+    }
+
+    // Add spark-specific guidance based on common patterns
+    const sparkText = (request?.customSpark?.description || spark).toLowerCase();
+    if (sparkText.includes('mystery') || sparkText.includes('discover')) {
+      context += `
+- Story Focus: Mystery/Discovery - Include clues, investigation, and revelation elements`;
+    } else if (sparkText.includes('friend') || sparkText.includes('team')) {
+      context += `
+- Story Focus: Friendship/Teamwork - Emphasize collaboration, trust, and social bonds`;
+    } else if (sparkText.includes('challenge') || sparkText.includes('problem')) {
+      context += `
+- Story Focus: Problem-Solving - Show logical thinking, persistence, and creative solutions`;
+    } else if (sparkText.includes('adventure') || sparkText.includes('journey')) {
+      context += `
+- Story Focus: Adventure/Journey - Include exploration, obstacles, and personal growth`;
+    }
+
+    return context;
+  }
+
+  private static getBasicGuidance(gradeLevel: string): string {
+    // Basic guidance for A/B testing control group
+    const basicRanges = {
+      'K-1': { words: '150-300', sentences: '5-8 words' },
+      '2-3': { words: '300-600', sentences: '8-12 words' },
+      '4-5': { words: '600-1000', sentences: '10-16 words' },
+      '6-8': { words: '1000-1500', sentences: '12-20 words' }
+    };
+
+    const range = basicRanges[gradeLevel as keyof typeof basicRanges] || basicRanges['4-5'];
+
+    return `
+
+BASIC WRITING GUIDELINES:
+- Target word count: ${range.words} words
+- Use sentences of ${range.sentences} on average
+- Choose age-appropriate vocabulary for ${gradeLevel}
+- Include 2-3 new vocabulary words with simple definitions
+- Create engaging, educational content`;
   }
 }

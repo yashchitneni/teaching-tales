@@ -24,7 +24,12 @@ export default function CharacterSelectionPage() {
   }, [universe])
 
   const handleCharacterSelect = (characterId: string) => {
-    if (characterId === 'create-own') return // Not implemented yet
+    if (characterId === 'create-own') {
+      // Navigate to create character page
+      const params = new URLSearchParams(searchParams.toString())
+      router.push(`/create-book/create-character?${params.toString()}`)
+      return
+    }
     setSelectedCharacter(characterId)
   }
 

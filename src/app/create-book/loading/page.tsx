@@ -97,19 +97,51 @@ export default function StoryLoadingPage() {
       
       // Generate real AI story using our server-side API
       
+      // Prepare story generation request with custom content support
+      const storyRequest: any = {
+        universe: universe,
+        character: character,
+        spark: spark,
+        gradeLevel: user.grades?.[0] || '4-5', // Default to 4-5 if no grade available
+        studentId: user.sourcedId || user.id || user.cognitoId // Fallback chain
+      }
+
+      // Add custom universe data if present
+      if (searchParams.get('customUniverse') === 'true') {
+        storyRequest.customUniverse = {
+          name: searchParams.get('universeName') || universe,
+          description: searchParams.get('universeDescription') || '',
+          image: searchParams.get('universeImage') || null
+        }
+      }
+
+      // Add custom character data if present
+      if (searchParams.get('customCharacter') === 'true') {
+        storyRequest.customCharacter = {
+          name: searchParams.get('characterName') || character,
+          description: searchParams.get('characterDescription') || '',
+          age: searchParams.get('characterAge') || null,
+          traits: searchParams.get('characterTraits')?.split(',') || [],
+          image: searchParams.get('characterImage') || null
+        }
+      }
+
+      // Add custom spark data if present
+      if (searchParams.get('customSpark') === 'true') {
+        storyRequest.customSpark = {
+          title: spark,
+          description: searchParams.get('sparkDescription') || '',
+          category: searchParams.get('sparkCategory') || null
+        }
+      }
+
       const response = await fetch('/api/generate-story', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
         credentials: 'include', // Include HttpOnly cookies for authentication
-        body: JSON.stringify({
-          universe: universe,
-          character: character,
-          spark: spark,
-          gradeLevel: user.grades?.[0] || '4-5', // Default to 4-5 if no grade available
-          studentId: user.sourcedId || user.id || user.cognitoId // Fallback chain
-        })
+        body: JSON.stringify(storyRequest)
       })
       
       if (!response.ok) {

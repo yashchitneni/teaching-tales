@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react'
 import { Button } from '@/components/ui/button'
 import { TelemetryService } from '@/lib/services/telemetry-service'
+import { TimeBackAssessmentClient, type AttemptRecord } from '@/lib/api/timeback-assessment-client'
 
 export interface ChapterQuizQuestion {
   id: string
@@ -16,90 +17,143 @@ interface ChapterQuizProps {
   questions: ChapterQuizQuestion[]
   onComplete: (answers: number[]) => void
   storyId?: string
+  chapterId?: string | number
   gradeLevel?: string
 }
 
-export function ChapterQuiz({ questions, onComplete, storyId, gradeLevel }: ChapterQuizProps) {
+export function ChapterQuiz({ questions, onComplete, storyId, chapterId, gradeLevel }: ChapterQuizProps) {
   const [currentIndex, setCurrentIndex] = useState(0)
   const [answers, setAnswers] = useState<number[]>([])
   const [selected, setSelected] = useState<number | undefined>(undefined)
   const [quizStartTime, setQuizStartTime] = useState<number>(Date.now())
   const [questionStartTime, setQuestionStartTime] = useState<number>(Date.now())
+  const [attemptRecord, setAttemptRecord] = useState<AttemptRecord | null>(null)
+  const [isSubmitting, setIsSubmitting] = useState(false)
 
-  // PHASE 8.1: Track quiz start
+  // Phase 1: Begin assessment attempt + Phase 8.1: Track quiz start
   useEffect(() => {
-    TelemetryService.trackUserEvent({
-      category: 'chapter_quiz',
-      action: 'quiz_started',
-      storyId,
-      gradeLevel,
-      properties: {
-        totalQuestions: questions.length,
-        questionIds: questions.map(q => q.id).join(',')
+    const initializeQuiz = async () => {
+      try {
+        // Begin TimeBack assessment attempt if we have required IDs
+        if (storyId && chapterId) {
+          const attempt = await TimeBackAssessmentClient.beginAttempt({
+            storyId,
+            chapterId,
+            assessmentId: `${storyId}-${chapterId}-quiz`
+          });
+          setAttemptRecord(attempt);
+          console.log('📝 Assessment attempt started:', attempt.attemptId);
+        }
+
+        // Track quiz start in telemetry
+        TelemetryService.trackUserEvent({
+          category: 'chapter_quiz',
+          action: 'quiz_started',
+          storyId,
+          gradeLevel,
+          properties: {
+            totalQuestions: questions.length,
+            questionIds: questions.map(q => q.id).join(','),
+            chapterId: chapterId?.toString()
+          }
+        });
+
+        setQuizStartTime(Date.now());
+        setQuestionStartTime(Date.now());
+      } catch (error) {
+        console.warn('Failed to begin assessment attempt:', error);
+        // Continue with quiz even if TimeBack fails
       }
-    });
-    setQuizStartTime(Date.now());
-    setQuestionStartTime(Date.now());
-  }, [questions, storyId, gradeLevel]);
+    };
+
+    initializeQuiz();
+  }, [questions, storyId, chapterId, gradeLevel]);
 
   const current = questions[currentIndex]
   const hasAnswered = answers[currentIndex] !== undefined
   const hasSelected = selected !== undefined
 
-  const submitCurrent = () => {
-    if (selected === undefined) return
+  const submitCurrent = async () => {
+    if (selected === undefined || isSubmitting) return
+    setIsSubmitting(true);
 
-    const questionTime = Date.now() - questionStartTime;
-    const isCorrect = selected === current.correctAnswer;
-    
-    // PHASE 8.1: Track individual question answer
-    TelemetryService.trackLearningEvent({
-      category: 'chapter_quiz',
-      action: 'question_answered',
-      questionId: current.id,
-      storyId,
-      gradeLevel,
-      isCorrect,
-      attemptNumber: 1,
-      duration: questionTime,
-      properties: {
-        questionIndex: currentIndex,
-        selectedOption: selected,
-        correctOption: current.correctAnswer,
-        totalQuestions: questions.length
-      }
-    });
-
-    const nextAnswers = [...answers]
-    nextAnswers[currentIndex] = selected
-    setAnswers(nextAnswers)
-    setSelected(undefined)
-    
-    if (currentIndex < questions.length - 1) {
-      setCurrentIndex(currentIndex + 1)
-      setQuestionStartTime(Date.now()); // Reset timer for next question
-    } else {
-      const totalQuizTime = Date.now() - quizStartTime;
-      const correctAnswers = nextAnswers.reduce((count, answer, index) => 
-        count + (answer === questions[index].correctAnswer ? 1 : 0), 0);
+    try {
+      const questionTime = Date.now() - questionStartTime;
+      const isCorrect = selected === current.correctAnswer;
       
-      // PHASE 8.1: Track quiz completion
-      TelemetryService.trackLearningEvent({
-        category: 'chapter_quiz',
-        action: 'quiz_completed',
+      // Phase 1: Record answer in TimeBack with idempotency
+      if (attemptRecord) {
+        const idempotencyKey = `${attemptRecord.attemptId}-${current.id}-${Date.now()}`;
+        await TimeBackAssessmentClient.recordAnswer({
+          attemptId: attemptRecord.attemptId,
+          questionId: current.id,
+          selectedIndex: selected,
+          isCorrect,
+          timeMs: questionTime,
+          idempotencyKey
+        });
+        console.log('📝 Answer recorded for question:', current.id);
+      }
+
+      // Phase 8.1: Track individual question answer in telemetry
+      TelemetryService.trackQuestionAnswered({
+        userId: undefined, // Will be populated by telemetry service
         storyId,
-        gradeLevel,
-        duration: totalQuizTime,
-        properties: {
-          totalQuestions: questions.length,
-          correctAnswers,
-          accuracy: correctAnswers / questions.length,
-          averageTimePerQuestion: totalQuizTime / questions.length,
-          completionRate: 1.0
-        }
+        questionId: current.id,
+        sectionIndex: currentIndex,
+        isCorrect,
+        attemptNumber: 1,
+        processingTime: questionTime
       });
 
-      onComplete(nextAnswers)
+      const nextAnswers = [...answers]
+      nextAnswers[currentIndex] = selected
+      setAnswers(nextAnswers)
+      setSelected(undefined)
+      
+      if (currentIndex < questions.length - 1) {
+        setCurrentIndex(currentIndex + 1)
+        setQuestionStartTime(Date.now()); // Reset timer for next question
+      } else {
+        // Submit the complete attempt to TimeBack
+        if (attemptRecord) {
+          await TimeBackAssessmentClient.submitAttempt({
+            attemptId: attemptRecord.attemptId
+          });
+          console.log('📝 Assessment attempt submitted:', attemptRecord.attemptId);
+        }
+
+        const totalQuizTime = Date.now() - quizStartTime;
+        const correctAnswers = nextAnswers.reduce((count, answer, index) => 
+          count + (answer === questions[index].correctAnswer ? 1 : 0), 0);
+        
+        // Phase 8.1: Track assessment submission
+        TelemetryService.trackAssessmentSubmitted({
+          userId: undefined,
+          storyId,
+          stimulusId: attemptRecord?.assessmentId,
+          sectionIndex: 0, // Chapter level
+          processingTime: totalQuizTime
+        });
+
+        onComplete(nextAnswers)
+      }
+    } catch (error) {
+      console.error('Failed to submit answer:', error);
+      // Continue with local flow even if TimeBack fails
+      const nextAnswers = [...answers]
+      nextAnswers[currentIndex] = selected
+      setAnswers(nextAnswers)
+      setSelected(undefined)
+      
+      if (currentIndex < questions.length - 1) {
+        setCurrentIndex(currentIndex + 1)
+        setQuestionStartTime(Date.now());
+      } else {
+        onComplete(nextAnswers)
+      }
+    } finally {
+      setIsSubmitting(false);
     }
   }
 
@@ -162,8 +216,12 @@ export function ChapterQuiz({ questions, onComplete, storyId, gradeLevel }: Chap
         </div>
       </div>
 
-      <Button onClick={submitCurrent} disabled={!hasSelected} className="w-full mb-6 bg-blue-600 hover:bg-blue-700 text-white">
-        {currentIndex < questions.length - 1 ? 'Next' : 'Submit Quiz'}
+      <Button 
+        onClick={submitCurrent} 
+        disabled={!hasSelected || isSubmitting} 
+        className="w-full mb-6 bg-blue-600 hover:bg-blue-700 text-white disabled:opacity-50"
+      >
+        {isSubmitting ? 'Saving...' : (currentIndex < questions.length - 1 ? 'Next' : 'Submit Quiz')}
       </Button>
     </div>
   )

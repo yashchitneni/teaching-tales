@@ -1,8 +1,10 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { TopNavWithTabs } from '@/components/TopNavWithTabs'
+import { LibraryService } from '@/lib/services/library-service'
+import { LibraryStoryMetadata } from '@/lib/types/library-types'
 import Image from 'next/image'
 
 // Define our data structure based on the Library Tree with HTML.txt
@@ -243,6 +245,24 @@ export default function LibraryPage() {
   const [expandedArea, setExpandedArea] = useState<string | null>(null)
   const [expandedCategory, setExpandedCategory] = useState<string | null>(null)
   const [selectedLastChoice, setSelectedLastChoice] = useState<string | null>(null)
+  const [realStories, setRealStories] = useState<LibraryStoryMetadata[]>([])
+  const [showRealStories, setShowRealStories] = useState(false)
+
+  useEffect(() => {
+    // Initialize with sample data and load real stories
+    const initializeLibrary = async () => {
+      await LibraryService.initializeWithSampleData()
+      const stories = LibraryService.getPublishedStories()
+      setRealStories(stories)
+      
+      // Show real stories section if we have any
+      if (stories.length > 0) {
+        setShowRealStories(true)
+      }
+    }
+    
+    initializeLibrary()
+  }, [])
 
   const toggleArea = (areaName: string) => {
     if (expandedArea === areaName) {
@@ -280,6 +300,87 @@ export default function LibraryPage() {
       <TopNavWithTabs />
       
       <div className="px-32 py-6 space-y-12">
+        {/* Featured Stories Section */}
+        {showRealStories && realStories.length > 0 && (
+          <div className="bg-white rounded-3xl p-8 shadow-sm border border-gray-100">
+            <div className="text-center mb-8">
+              <h1 className="text-3xl font-bold text-gray-800 mb-2">Featured Stories</h1>
+              <p className="text-gray-600">Discover engaging multi-chapter stories perfect for your reading level</p>
+            </div>
+            
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
+              {realStories.slice(0, 6).map((story) => (
+                <div
+                  key={story.id}
+                  onClick={() => router.push(`/library/story/${story.id}`)}
+                  className="group cursor-pointer bg-gray-50 rounded-lg overflow-hidden hover:shadow-lg transition-all duration-200 border border-gray-200 hover:border-blue-300"
+                >
+                  {story.coverImage ? (
+                    <div className="aspect-[4/3] relative">
+                      <Image
+                        src={story.coverImage}
+                        alt={`Cover of ${story.title}`}
+                        fill
+                        className="object-cover"
+                      />
+                    </div>
+                  ) : (
+                    <div className="aspect-[4/3] bg-gradient-to-br from-blue-400 to-purple-500 flex items-center justify-center">
+                      <div className="text-white text-center p-4">
+                        <div className="text-lg font-bold mb-1">{story.title}</div>
+                        <div className="text-sm opacity-90">by {story.author}</div>
+                      </div>
+                    </div>
+                  )}
+                  
+                  <div className="p-4">
+                    <div className="flex items-start justify-between mb-2">
+                      <h3 className="font-semibold text-gray-900 group-hover:text-blue-600 transition-colors line-clamp-2">
+                        {story.title}
+                      </h3>
+                      <span className="bg-blue-100 text-blue-800 px-2 py-1 rounded text-xs font-medium ml-2 flex-shrink-0">
+                        {story.readingLevel}
+                      </span>
+                    </div>
+                    
+                    <p className="text-sm text-gray-600 mb-2">by {story.author}</p>
+                    
+                    {story.description && (
+                      <p className="text-sm text-gray-700 mb-3 line-clamp-2">{story.description}</p>
+                    )}
+                    
+                    <div className="flex items-center justify-between text-xs text-gray-500">
+                      <span>{story.estimatedReadingTime} min read</span>
+                      <span>{story.category}</span>
+                    </div>
+                    
+                    {story.tags.length > 0 && (
+                      <div className="flex flex-wrap gap-1 mt-2">
+                        {story.tags.slice(0, 3).map(tag => (
+                          <span key={tag} className="bg-gray-200 text-gray-700 px-2 py-1 rounded text-xs">
+                            {tag}
+                          </span>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                </div>
+              ))}
+            </div>
+            
+            {realStories.length > 6 && (
+              <div className="text-center">
+                <button
+                  onClick={() => router.push('/library/browse')}
+                  className="bg-blue-600 text-white px-6 py-2 rounded-lg hover:bg-blue-700 transition-colors"
+                >
+                  Browse All Stories ({realStories.length})
+                </button>
+              </div>
+            )}
+          </div>
+        )}
+
         {/* Section 1: Pick an Area of Interest - Always Visible */}
         <div className="bg-white rounded-3xl p-8 shadow-sm border border-gray-100 w-fit mx-auto">
           <div className="text-center mb-8">

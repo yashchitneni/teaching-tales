@@ -145,6 +145,197 @@ export class TelemetryService {
   }
 
   /**
+   * Track assessment question answer submission (for Caliper AssessmentItemEvent)
+   */
+  static trackQuestionAnswered(params: {
+    userId?: string;
+    storyId?: string;
+    questionId: string;
+    sectionIndex?: number;
+    isCorrect?: boolean;
+    attemptNumber?: number;
+    processingTime?: number;
+  }): void {
+    this.trackLearningEvent({
+      category: 'question_answering',
+      action: 'question_answered',
+      userId: params.userId,
+      storyId: params.storyId,
+      questionId: params.questionId,
+      sectionIndex: params.sectionIndex,
+      isCorrect: params.isCorrect,
+      attemptNumber: params.attemptNumber,
+      processingTime: params.processingTime
+    });
+  }
+
+  /**
+   * Track assessment submission (for Caliper AssessmentEvent)
+   */
+  static trackAssessmentSubmitted(params: {
+    userId?: string;
+    storyId?: string;
+    stimulusId?: string;
+    sectionIndex?: number;
+    processingTime?: number;
+  }): void {
+    this.trackLearningEvent({
+      category: 'question_answering',
+      action: 'assessment_submitted',
+      userId: params.userId,
+      storyId: params.storyId,
+      stimulusId: params.stimulusId,
+      sectionIndex: params.sectionIndex,
+      processingTime: params.processingTime
+    });
+  }
+
+  /**
+   * Track chapter completion
+   */
+  static trackChapterCompleted(params: {
+    userId?: string;
+    storyId?: string;
+    sectionIndex: number;
+    readingTime?: number;
+  }): void {
+    this.trackLearningEvent({
+      category: 'question_answering',
+      action: 'chapter_completed',
+      userId: params.userId,
+      storyId: params.storyId,
+      sectionIndex: params.sectionIndex,
+      readingTime: params.readingTime
+    });
+  }
+
+  /**
+   * Track story completion
+   */
+  static trackStoryCompleted(params: {
+    userId?: string;
+    storyId: string;
+    readingTime?: number;
+  }): void {
+    this.trackLearningEvent({
+      category: 'story_reading',
+      action: 'story_completed',
+      userId: params.userId,
+      storyId: params.storyId,
+      readingTime: params.readingTime
+    });
+  }
+
+  /**
+   * Track spark selection
+   */
+  static trackSparkSelected(params: {
+    userId?: string;
+    sparkId: string;
+    universe?: string;
+    character?: string;
+    wasSuggested?: boolean;
+    selectionMethod?: 'suggested_chip' | 'dropdown_override' | 'direct_input';
+  }): void {
+    this.trackUserEvent({
+      category: 'story_creation',
+      action: 'spark_selected',
+      userId: params.userId,
+      properties: {
+        sparkId: params.sparkId,
+        universe: params.universe,
+        character: params.character,
+        wasSuggested: params.wasSuggested,
+        selectionMethod: params.selectionMethod || 'direct_input'
+      }
+    });
+  }
+
+  static trackSparkSuggestionsShown(params: {
+    userId?: string;
+    universe: string;
+    character: string;
+    suggestedSparkIds: string[];
+    totalSuggestions: number;
+  }): void {
+    this.trackUserEvent({
+      category: 'story_creation',
+      action: 'spark_suggestions_shown',
+      userId: params.userId,
+      properties: {
+        universe: params.universe,
+        character: params.character,
+        suggestedSparkIds: params.suggestedSparkIds.join(','),
+        totalSuggestions: params.totalSuggestions
+      }
+    });
+  }
+
+  static trackSparkSuggestionAccepted(params: {
+    userId?: string;
+    sparkId: string;
+    universe: string;
+    character: string;
+    suggestionRank: number;
+    totalSuggestions: number;
+  }): void {
+    this.trackUserEvent({
+      category: 'story_creation',
+      action: 'spark_suggestion_accepted',
+      userId: params.userId,
+      properties: {
+        sparkId: params.sparkId,
+        universe: params.universe,
+        character: params.character,
+        suggestionRank: params.suggestionRank,
+        totalSuggestions: params.totalSuggestions,
+        acceptanceRate: 1 / params.totalSuggestions
+      }
+    });
+  }
+
+  static trackSparkDropdownOpened(params: {
+    userId?: string;
+    universe: string;
+    character: string;
+    hadSuggestions: boolean;
+    suggestionsCount: number;
+  }): void {
+    this.trackUserEvent({
+      category: 'story_creation',
+      action: 'spark_dropdown_opened',
+      userId: params.userId,
+      properties: {
+        universe: params.universe,
+        character: params.character,
+        hadSuggestions: params.hadSuggestions,
+        suggestionsCount: params.suggestionsCount
+      }
+    });
+  }
+
+  static trackSparkOverride(params: {
+    userId?: string;
+    selectedSparkId: string;
+    universe: string;
+    character: string;
+    rejectedSuggestions: string[];
+  }): void {
+    this.trackUserEvent({
+      category: 'story_creation',
+      action: 'spark_suggestion_overridden',
+      userId: params.userId,
+      properties: {
+        selectedSparkId: params.selectedSparkId,
+        universe: params.universe,
+        character: params.character,
+        rejectedSuggestions: params.rejectedSuggestions.join(','),
+        rejectedCount: params.rejectedSuggestions.length
+      }
+    });
+  }
+
+  /**
    * Get aggregated metrics from recent events
    */
   static async getAggregatedMetrics(timeframe: string = '24h'): Promise<TelemetryMetrics> {
@@ -375,12 +566,19 @@ export class TelemetryService {
     // Send to multiple analytics endpoints for redundancy
     const promises = [];
     
-    // Internal analytics API
+    // Internal analytics API (now handles Caliper forwarding)
     promises.push(
       fetch('/api/analytics/events', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ events })
+      }).then(response => {
+        if (!response.ok) {
+          throw new Error(`Analytics API failed: ${response.status}`);
+        }
+        return response.json();
+      }).then(result => {
+        console.debug('📊 Analytics events processed:', result);
       })
     );
     

@@ -3,6 +3,7 @@ import { cookies } from 'next/headers'
 import { StoryGenerationService } from '@/lib/ai'
 import type { StoryGenerationRequest } from '@/lib/ai/types'
 import { TelemetryService } from '@/lib/services/telemetry-service'
+import { MultiChapterStoryService, type MultiChapterStoryRequest } from '@/lib/services/multi-chapter-story-service'
 
 const TIMEBACK_API_URL = process.env.NEXT_PUBLIC_TIMEBACK_API_URL || 'http://localhost:8080';
 
@@ -61,10 +62,37 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    // Generate story using the AI service
-    const storyService = new StoryGenerationService()
+    // Check if multi-chapter generation is requested
+    const multiChapterRequest = body as MultiChapterStoryRequest;
+    const useMultiChapter = multiChapterRequest.enableMultiChapter ?? false;
+
+    let storyResponse: any;
     const storyGenerationStart = performance.now();
-    const storyResponse = await storyService.generateStory(body)
+
+    if (useMultiChapter) {
+      // Use multi-chapter story service
+      const chapterResult = await MultiChapterStoryService.generateNewStory(multiChapterRequest);
+      
+      // Convert to expected response format
+      storyResponse = {
+        success: true,
+        data: {
+          storyId: chapterResult.storyId,
+          title: `Chapter ${chapterResult.chapterNumber}`,
+          content: chapterResult.content,
+          isMultiChapter: true,
+          currentChapter: chapterResult.chapterNumber,
+          isComplete: chapterResult.isComplete,
+          nextChapterAvailable: chapterResult.nextChapterAvailable,
+          choices: chapterResult.choices
+        }
+      };
+    } else {
+      // Use original single-story generation
+      const storyService = new StoryGenerationService()
+      storyResponse = await storyService.generateStory(body)
+    }
+
     const storyGenerationTime = performance.now() - storyGenerationStart;
     const totalTime = performance.now() - startTime;
 

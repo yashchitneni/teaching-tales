@@ -17,7 +17,7 @@ interface Universe {
 }
 
 const universes: Universe[] = [
-  { id: 'create-own', name: 'Create Your Own Universe', image: '', isLocked: true, tokensRequired: 0 },
+  { id: 'create-own', name: 'Create Your Own Universe', image: '', isLocked: false, tokensRequired: 0 },
   { id: 'amulet', name: 'Amulet', image: 'https://d3dp0uoydvg1je.cloudfront.net/universes/amulet.jpg' },
   { id: 'artemis-fowl', name: 'Artemis Fowl', image: 'https://d3dp0uoydvg1je.cloudfront.net/universes/artemis-fowl.jpg' },
   { id: 'babysitters-club', name: "Babysitter's Club", image: 'https://d3dp0uoydvg1je.cloudfront.net/universes/babysitters-club.jpg' },
@@ -55,7 +55,11 @@ export default function UniverseSelectionPage() {
   }, [])
 
   const handleUniverseSelect = (universeId: string) => {
-    if (universeId === 'create-own') return // Locked
+    if (universeId === 'create-own') {
+      // Navigate to create universe page
+      router.push('/create-book/create-universe')
+      return
+    }
     setSelectedUniverse(universeId)
   }
 

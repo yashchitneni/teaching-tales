@@ -38,3 +38,14 @@ export const REPLICATE_SERVER_CONFIG = {
 export const S3_SERVER_CONFIG = {
   BUCKET_NAME: Resource.TeachingTalesBucket?.name || process.env.S3_BUCKET_NAME || 'teaching-tales-production-teachingtalesbucketbucket-ncvkkabz'
 };
+
+// Server-side Caliper configuration (OAuth2 Client Credentials)
+export const CALIPER_SERVER_CONFIG = {
+  BASE_URL: process.env.CALIPER_BASE_URL, // e.g., https://caliper.alpha-1edtech.com
+  TOKEN_URL: process.env.CALIPER_TOKEN_URL, // e.g., https://alpha-auth-production-idp.auth.us-west-2.amazoncognito.com/oauth2/token
+  CLIENT_ID: process.env.CALIPER_CLIENT_ID,
+  CLIENT_SECRET: process.env.CALIPER_CLIENT_SECRET,
+  SCOPE: process.env.CALIPER_SCOPE, // optional if required by IDP
+  SENSOR_IRI: process.env.CALIPER_SENSOR_IRI || 'https://teachtales.app/sensors/caliper-primary',
+  VERSION: process.env.CALIPER_VERSION || '1.2'
+};
